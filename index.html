@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎯 Dart Quest</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0F0F11">
+</head>
+<body>
+  <div class="game">
+
+    <div id="loadingScreen" class="loading">
+      <div class="loading-card">
+        <div class="spinner"></div>
+        <div class="loading-text">Chargement du pas de tir…</div>
+      </div>
+    </div>
+
+    <div id="loginScreen" class="hidden">
+      <div class="card form-card">
+        <h2>🎯 DART QUEST</h2>
+        <p class="hint" style="text-align: center;">Connecte-toi pour enregistrer tes lancers</p>
+        
+        <label>Email</label>
+        <input type="email" id="authEmail" placeholder="Ex: joueur@mail.com">
+        
+        <label>Mot de passe</label>
+        <input type="password" id="authPassword" placeholder="••••••••">
+
+        <div class="actions">
+          <button id="btnLogin" class="primary">Se connecter</button>
+          <button id="btnSignup" class="ghost">Créer un compte</button>
+        </div>
+      </div>
+    </div>
+
+    <section id="homeScreen" class="hidden stack">
+      <header class="topbar">
+        <h2>🎯 Dart Quest</h2>
+        <button id="btnLogout" class="icon-btn" title="Déconnexion">🚪</button>
+      </header>
+
+      <div class="card">
+        <h3>Bienvenue, <span id="playerNameDisplay" style="color: var(--primary-strong);">Joueur</span> !</h3>
+      </div>
+
+      <div class="worlds-grid">
+        <button class="world-btn active" id="menuNewGame">
+          <div class="world-row">
+            <div class="world-icon-big">🆕</div>
+            <div class="world-right"><div class="world-name">Nouvelle Partie</div></div>
+          </div>
+        </button>
+
+        <button class="world-btn" id="menuPlayers">
+          <div class="world-row">
+            <div class="world-icon-big">👥</div>
+            <div class="world-right"><div class="world-name">Joueurs</div></div>
+          </div>
+        </button>
+
+        <button class="world-btn" id="menuHistory">
+          <div class="world-row">
+            <div class="world-icon-big">📜</div>
+            <div class="world-right"><div class="world-name">Historique</div></div>
+          </div>
+        </button>
+
+        <button class="world-btn" id="menuRanking">
+          <div class="world-row">
+            <div class="world-icon-big">🏆</div>
+            <div class="world-right"><div class="world-name">Classement</div></div>
+          </div>
+        </button>
+
+        <button class="world-btn" id="menuTraining">
+          <div class="world-row">
+            <div class="world-icon-big">🏋️</div>
+            <div class="world-right"><div class="world-name">Entraînement</div></div>
+          </div>
+        </button>
+
+        <button class="world-btn" id="menuTournament">
+          <div class="world-row">
+            <div class="world-icon-big">⚔️</div>
+            <div class="world-right"><div class="world-name">Tournoi</div></div>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <section id="newGameScreen" class="hidden stack">
+      <header class="topbar">
+        <button id="backHomeBtn" class="icon-btn">←</button>
+        <h2>Paramètres</h2>
+        <div style="width:40px;"></div>
+      </header>
+
+      <div class="tabs">
+        <button class="tab-btn active" id="tabBtnPlayers" data-tab="panePlayers">👥 Joueurs</button>
+        <button class="tab-btn" id="tabBtnGames" data-tab="paneGames">🎲 Jeux</button>
+      </div>
+
+      <div id="panePlayers" class="tab-panel card form-card">
+        <h3>Sélectionne les participants</h3>
+        <div id="playersCheckboxList">
+          </div>
+      </div>
+
+      <div id="paneGames" class="tab-panel card form-card hidden">
+        <h3>Choix du mode de jeu</h3>
+        <select id="gameModeSelect">
+          <option value="cricket">🏏 Cricket</option>
+          <option value="501" disabled>🎯 501 (Bientôt)</option>
+        </select>
+        
+        <button id="startGameBtn" class="primary btn-block" style="margin-top: 20px;">▶️ Lancer la partie</button>
+      </div>
+    </section>
+
+    <div id="popup"></div>
+
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Config de ton Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCQKK5pD8_h_Pg1-48spGBGzxZm1fgiHzs",
+      authDomain: "joue-ma-vie.firebaseapp.com",
+      projectId: "joue-ma-vie",
+      storageBucket: "joue-ma-vie.firebasestorage.app",
+      messagingSenderId: "351248369885",
+      appId: "1:351248369885:web:7a2191fab089c60304b334"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+  <script src="js/main.js"></script>
+</body>
+</html>
