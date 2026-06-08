@@ -1,6 +1,6 @@
 {
-  "name": "Dart Quest",
-  "short_name": "Dart Quest",
+  "name": "Dart Legends",
+  "short_name": "Dart Legends",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#08090C",
@@ -18,7 +18,15 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
+  "background_color": "#F5F5ED",
+  "theme_color": "#F5F5ED",
   "scope": "./"
 }
