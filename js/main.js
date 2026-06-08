@@ -31,6 +31,9 @@ document.getElementById("backHomeBtn").addEventListener("click", () => showScree
   document.getElementById(id).addEventListener("click", () => { showPopup("Arrive dans la prochaine mise à jour !"); });
 });
 
+// Liaison du bouton 0 de la ligne 1
+document.getElementById("btnKeyZero").onclick = () => taperChiffre(0);
+
 // ================== CONFIGURATION FIREBASE ==================
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -238,27 +241,39 @@ let cricketState = {
 
 let modificateurEnCours = 1;
 
-// Modificateurs tactiles avec désactivation dynamique de la Bulle
-document.querySelectorAll("#cricketModifierPicker button").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll("#cricketModifierPicker button").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    modificateurEnCours = parseInt(btn.dataset.mod, 10);
-    
-    // ✅ Vérification immédiate du bouton Bull
-    gererEtatBoutonBull();
-  });
+// Modificateurs tactiles en Ligne 1
+document.getElementById("btnModDouble").addEventListener("click", () => {
+  alternerModificateur(2, document.getElementById("btnModDouble"));
 });
 
-function resetModifierUI() {
-  modificateurEnCours = 1;
-  document.querySelectorAll("#cricketModifierPicker button").forEach(b => b.classList.remove("active"));
-  document.querySelector('#cricketModifierPicker button[data-mod="1"]').classList.add("active");
-  // ✅ Remet le bouton Bull à son état normal
+document.getElementById("btnModTriple").addEventListener("click", () => {
+  alternerModificateur(3, document.getElementById("btnModTriple"));
+});
+
+function alternerModificateur(valeur, boutonClique) {
+  const etaitDejaActif = boutonClique.classList.contains("active");
+  
+  // On nettoie l'état de tous les modificateurs
+  document.getElementById("btnModDouble").classList.remove("active");
+  document.getElementById("btnModTriple").classList.remove("active");
+  
+  if (etaitDejaActif) {
+    modificateurEnCours = 1; // On repasse en mode simple si on reclique dessus
+  } else {
+    boutonClique.classList.add("active");
+    modificateurEnCours = valeur;
+  }
+  
   gererEtatBoutonBull();
 }
 
-// ✅ Fonction pour griser/désactiver le bouton Bull si Triple est sélectionné
+function resetModifierUI() {
+  modificateurEnCours = 1;
+  document.getElementById("btnModDouble").classList.remove("active");
+  document.getElementById("btnModTriple").classList.remove("active");
+  gererEtatBoutonBull();
+}
+
 function gererEtatBoutonBull() {
   const btnBull = document.getElementById("btnKeyBull");
   if (!btnBull) return;
@@ -266,15 +281,13 @@ function gererEtatBoutonBull() {
   if (modificateurEnCours === 3) {
     btnBull.disabled = true;
     btnBull.style.opacity = "0.2";
-    btnBull.style.background = "rgba(255,255,255,0.02)";
-    btnBull.style.borderColor = "rgba(255,255,255,0.05)";
-    btnBull.innerText = "🚫 No Triple Bull";
+    btnBull.style.background = "rgba(255,255,255,0.01)";
+    btnBull.innerText = "B";
   } else {
     btnBull.disabled = false;
     btnBull.style.opacity = "1";
     btnBull.style.background = "rgba(255,255,255,0.06)";
-    btnBull.style.borderColor = "rgba(242,214,179,0.12)";
-    btnBull.innerText = "🎯 Bull";
+    btnBull.innerText = "🎯 B";
   }
 }
 
@@ -431,32 +444,43 @@ function renderGrid() {
 }
 
 // Rendu du Clavier Tactile (Boutons horizontaux plus larges)
+// ✅ RENDU DU CLAVIER SUR LA LIGNE 2 UNIQUE
 function renderKeyboard() {
-  const container = document.getElementById("cricketKeysContainer");
-  container.innerHTML = "";
+  const rowContainer = document.getElementById("cricketNumbersRow");
+  rowContainer.innerHTML = "";
 
-  // Affichage ordonné de 15 à 20
   const boutonsAAfficher = [15, 16, 17, 18, 19, 20];
 
+  // 1. Ajout des chiffres 15 à 20
   boutonsAAfficher.forEach(num => {
     const btn = document.createElement("button");
     btn.className = "ghost";
-    btn.style.padding = "14px 10px";
-    btn.style.fontSize = "16px";
+    btn.style.padding = "14px 2px";
+    btn.style.fontSize = "15px";
+    btn.style.fontWeight = "bold";
     btn.innerText = num;
     btn.onclick = () => taperChiffre(num);
-    container.appendChild(btn);
+    rowContainer.appendChild(btn);
   });
+
+  // 2. Création dynamique du bouton Bull inséré en bout de ligne
+  const btnBull = document.createElement("button");
+  btnBull.className = "ghost";
+  btnBull.id = "shadowBtnBull"; // ID temporaire pour le cibler dans le dom
+  btnBull.style.padding = "14px 2px";
+  btnBull.style.fontSize = "15px";
+  btnBull.style.fontWeight = "bold";
+  btnBull.innerText = "🎯 B";
+  btnBull.onclick = () => {
+    taperChiffre(25);
+  };
+  rowContainer.appendChild(btnBull);
+  
+  // On synchronise le nouvel élément créé avec notre script de vérification
+  document.getElementById("shadowBtnBull").id = "btnKeyBull";
+  gererEtatBoutonBull();
 }
 
-// Actions sur boutons fixes du bas
-document.getElementById("btnKeyZero").onclick = () => taperChiffre(0);
-
-// ✅ SÉCURITÉ ANTI-TRIPLE BULL AU CLIC
-// Enregistrement de la bulle (la sécurité est déjà gérée visuellement en amont)
-document.getElementById("btnKeyBull").onclick = () => {
-  taperChiffre(25);
-};
 
 // Enregistrement d'un tir
 function taperChiffre(valeurBouton) {
