@@ -97,29 +97,103 @@
     <section id="newGameScreen" class="hidden stack">
       <header class="topbar">
         <button id="backHomeBtn" class="icon-btn">←</button>
-        <h2>Paramètres</h2>
+        <h2>Nouvelle Partie</h2>
         <div style="width:40px;"></div>
       </header>
 
-      <div class="tabs">
-        <button class="tab-btn active" id="tabBtnPlayers" data-tab="panePlayers">👥 Joueurs</button>
-        <button class="tab-btn" id="tabBtnGames" data-tab="paneGames">🎲 Jeux</button>
-      </div>
+      <div class="card form-card">
+        <h3>👥 Joueurs</h3>
+        <div class="actions" style="margin-top: 0;">
+          <button id="btnOpenSearchPlayer" class="ghost">🔍 Ajouter un joueur</button>
+          <button id="btnOpenCreatePlayer" class="ghost">➕ Créer un joueur</button>
+        </div>
 
-      <div id="panePlayers" class="tab-panel card form-card">
-        <h3>Sélectionne les participants</h3>
-        <div id="playersCheckboxList">
+        <div id="zoneSearchPlayer" class="hidden card subtle form-card" style="padding: 10px;">
+          <input type="text" id="searchPlayerInput" placeholder="Taper le nom du joueur...">
+          <div id="searchResultsList" style="max-height: 120px; overflow-y: auto; margin-top: 5px;"></div>
+        </div>
+
+        <div id="zoneCreatePlayer" class="hidden card subtle form-card" style="padding: 10px;">
+          <input type="text" id="createPlayerName" placeholder="Nom du joueur">
+          <input type="email" id="createPlayerEmail" placeholder="Adresse email (optionnel)">
+          <button id="btnValidateCreatePlayer" class="primary btn-block">Enregistrer dans la base</button>
+        </div>
+
+        <h4 style="margin-top: 10px; opacity: 0.8; font-size: 14px; text-align: left !important;">Joueurs sur la ligne de tir :</h4>
+        <div id="selectedPlayersMatchList">
           </div>
       </div>
 
-      <div id="paneGames" class="tab-panel card form-card hidden">
-        <h3>Choix du mode de jeu</h3>
+      <div class="card form-card">
+        <h3>⚙️ Paramètres du jeu</h3>
+        
+        <label>Mode de jeu</label>
         <select id="gameModeSelect">
           <option value="cricket">🏏 Cricket</option>
-          <option value="501" disabled>🎯 501 (Bientôt)</option>
         </select>
-        
-        <button id="startGameBtn" class="primary btn-block" style="margin-top: 20px;">▶️ Lancer la partie</button>
+
+        <label>Nombre de tours</label>
+        <select id="gameTurnsSelect">
+          <option value="20">20 tours (Défaut)</option>
+          <option value="10">10 tours</option>
+          <option value="12">12 tours</option>
+          <option value="14">14 tours</option>
+          <option value="16">16 tours</option>
+          <option value="18">18 tours</option>
+          <option value="22">22 tours</option>
+          <option value="24">24 tours</option>
+          <option value="26">26 tours</option>
+          <option value="28">28 tours</option>
+          <option value="30">30 tours</option>
+          <option value="999">Sans limite</option>
+        </select>
+
+        <div class="stat-row" style="border: none; padding: 5px 0;">
+          <span class="stat-label"><strong>Activer le mode à l'aveugle</strong></span>
+          <input type="checkbox" id="blindModeCheckbox" style="width: auto; margin-top: 0;">
+        </div>
+        <p class="hint" style="margin-top: -6px;">Les numéros sont masqués et se révèlent au premier impact.</p>
+      </div>
+
+      <button id="startGameBtn" class="primary btn-block" style="margin-top: 10px; margin-bottom: 20px; font-size: 18px;">🎯 DÉMARRER LA PARTIE</button>
+    </section>
+
+    <section id="cricketScreen" class="hidden stack" style="max-width: 600px; margin: auto;">
+      <header class="topbar">
+        <button id="btnLeaveGame" class="icon-btn">❌</button>
+        <div class="topbar-center">
+          <span id="gameTimerDisplay" style="font-family: 'Space Grotesk', sans-serif; font-weight: bold; font-size: 20px; color: var(--accent);">00:00</span>
+          <button id="btnPauseGame" class="icon-btn" style="background: transparent; border: none; font-size: 16px; margin-left: 5px;">⏸️</button>
+        </div>
+        <div id="gameTurnIndicator" class="badge" style="background: rgba(255,255,255,0.08);">Tour 1/20</div>
+      </header>
+
+      <div class="card" style="text-align: center; padding: 12px;">
+        <p class="hint" style="justify-content: center; margin-bottom: 2px;">Tireur actuel</p>
+        <h2 id="cricketCurrentPlayerName" style="color: var(--primary-strong); margin: 0; font-size: 24px;">—</h2>
+        <div id="dartsCountIcons" style="font-size: 18px; margin-top: 4px;">🎯 🎯 🎯</div>
+      </div>
+
+      <div class="card" style="padding: 10px; overflow-x: auto;">
+        <table id="cricketGridTable" style="width: 100%; border-collapse: collapse; text-align: center; font-size: 13px;">
+          </table>
+      </div>
+
+      <div class="card form-card" id="cricketKeyboardZone" style="padding: 12px; gap: 8px;">
+        <div class="segmented" id="cricketModifierPicker">
+          <button data-mod="1" class="active">Simple</button>
+          <button data-mod="2">Double (x2)</button>
+          <button data-mod="3">Triple (x3)</button>
+        </div>
+
+        <div id="cricketKeysContainer" class="worlds-grid" style="grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 0;">
+          </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+          <button class="ghost" id="btnKeyZero" data-val="0">0</button>
+          <button class="ghost" id="btnKeyBull" data-val="25">🎯 Bull</button>
+          <button class="danger-btn" id="btnKeyUndo" style="background: var(--danger);">↩️ Effacer</button>
+        </div>
       </div>
     </section>
 
@@ -132,7 +206,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <script>
-    // Config de ton Firebase
+    // Config de ton Firebase (Reste inchangé)
     const firebaseConfig = {
       apiKey: "AIzaSyCstR2h9HHPhOf2uORC2vuZWbET-KQaZrc",
       authDomain: "dart-quest.firebaseapp.com",
