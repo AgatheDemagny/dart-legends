@@ -19,31 +19,38 @@
     <div id="loadingScreen" class="loading">
       <div class="loading-card">
         <div class="spinner"></div>
-        <div class="loading-text">Chargement du pas de tir…</div>
+        <div class="loading-text">Chargement…</div>
       </div>
     </div>
 
     <div id="loginScreen" class="hidden">
-      <div class="card form-card">
-        <h2>🎯 DART LEGENDS</h2>
-        <p class="hint" style="text-align: center;">Connecte-toi pour enregistrer tes lancers</p>
-        
-        <label>Email</label>
-        <input type="email" id="authEmail" placeholder="Ex: joueur@mail.com">
-        
-        <label>Mot de passe</label>
-        <input type="password" id="authPassword" placeholder="••••••••">
+      <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
+      <div class="card">
+        <h2>Connexion</h2>
+
+        <input type="email" id="authEmail" placeholder="Email">
+        <input type="password" id="authPassword" placeholder="Mot de passe">
 
         <div class="actions">
           <button id="btnLogin" class="primary">Se connecter</button>
           <button id="btnSignup" class="ghost">Créer un compte</button>
         </div>
+        <p class="hint" id=""authStatus">Il faut être connecté à un compte pour pouvoir utiliser l'app </p>
       </div>
     </div>
 
+    <section id="onboardingScreen" class="hidden">
+      <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
+      <div class="card">
+        <h2>Choisis ton nom</h2>
+        <input id="playerNameInput" type="text" placeholder="Ex : Bob" maxlength="24" />
+        <button id="startBtn" class="primary btn-block">Commencer</button>
+      </div>
+    </section>
+
     <section id="homeScreen" class="hidden stack">
       <header class="topbar">
-        <h2>🎯 Dart Legends</h2>
+        <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
         <button id="btnLogout" class="icon-btn" title="Déconnexion">🚪</button>
       </header>
 
