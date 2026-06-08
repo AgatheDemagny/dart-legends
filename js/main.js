@@ -4,7 +4,9 @@ const screens = {
   login: document.getElementById("loginScreen"),
   home: document.getElementById("homeScreen"),
   newGame: document.getElementById("newGameScreen"),
-  cricket: document.getElementById("cricketScreen")
+  cricket: document.getElementById("cricketScreen"),
+  gameOver: document.getElementById("gameOverScreen"),
+  matchStats: document.getElementById("statsMatchScreen")
 };
 
 function showScreen(activeScreen) {
@@ -78,7 +80,6 @@ let joueursSelectionnesMatch = [];
 
 function initPageNouvellePartie() {
   joueursSelectionnesMatch = [];
-  // Par défaut, on ajoute le joueur connecté
   if (auth.currentUser) {
     joueursSelectionnesMatch.push({
       id: auth.currentUser.uid,
@@ -89,16 +90,12 @@ function initPageNouvellePartie() {
   chargerTousLesJoueurs();
 }
 
-// Ouvrir les sous-sections d'ajout
-// ÉCOUTEUR CORRIGÉ : Ouvrir la recherche et afficher les joueurs disponibles
 document.getElementById("btnOpenSearchPlayer").addEventListener("click", () => {
   const zoneSearch = document.getElementById("zoneSearchPlayer");
   zoneSearch.classList.toggle("hidden");
   document.getElementById("zoneCreatePlayer").classList.add("hidden");
-  
-  // Si on vient d'ouvrir la zone, on affiche la liste complète par défaut
   if (!zoneSearch.classList.contains("hidden")) {
-    filtrerEtAfficherJoueurs(""); // Chaîne vide = affiche tout
+    filtrerEtAfficherJoueurs(""); 
     document.getElementById("searchPlayerInput").focus();
   }
 });
@@ -107,7 +104,6 @@ document.getElementById("btnOpenCreatePlayer").addEventListener("click", () => {
   document.getElementById("zoneSearchPlayer").classList.add("hidden");
 });
 
-// Charger la liste globale pour la recherche locale
 async function chargerTousLesJoueurs() {
   tousLesJoueursBase = [];
   try {
@@ -118,18 +114,14 @@ async function chargerTousLesJoueurs() {
   } catch(e) { console.error(e); }
 }
 
-// Recherche de joueur en temps réel
-// Fonction isolée pour filtrer et afficher les résultats
 function filtrerEtAfficherJoueurs(query) {
   const resultContainer = document.getElementById("searchResultsList");
   resultContainer.innerHTML = "";
 
-  // Si la requête est vide, on affiche TOUS les joueurs de la base (sauf ceux déjà sélectionnés)
-  // Sinon, on filtre par le nom tapé
   const filtres = tousLesJoueursBase.filter(p => {
     const correspondNom = p.name.toLowerCase().includes(query.toLowerCase().trim());
-    const pas_deja_selectionne = !joueursSelectionnesMatch.some(sel => sel.id === p.id);
-    return correspondNom && pas_deja_selectionne;
+    const pasDejaSelectionne = !joueursSelectionnesMatch.some(sel => sel.id === p.id);
+    return correspondNom && pasDejaSelectionne;
   });
 
   if (filtres.length === 0) {
@@ -157,28 +149,21 @@ function filtrerEtAfficherJoueurs(query) {
   });
 }
 
-// Écouteur sur l'input pour filtrer pendant la saisie
 document.getElementById("searchPlayerInput").addEventListener("input", (e) => {
   filtrerEtAfficherJoueurs(e.target.value);
 });
 
-// Créer un joueur dans la base
 document.getElementById("btnValidateCreatePlayer").addEventListener("click", async () => {
   const name = document.getElementById("createPlayerName").value.trim();
   const email = document.getElementById("createPlayerEmail").value.trim().toLowerCase();
-
   if(!name) return showPopup("Le nom est obligatoire.");
-
   try {
     const docId = "guest-" + Date.now();
     const nouveauJoueur = { name: name, email: email || null, createdAt: Date.now() };
-    
     await db.collection("players").doc(docId).set(nouveauJoueur);
     joueursSelectionnesMatch.push({ id: docId, name: name });
-    
     renderSelectedPlayers();
     chargerTousLesJoueurs();
-    
     document.getElementById("createPlayerName").value = "";
     document.getElementById("createPlayerEmail").value = "";
     document.getElementById("zoneCreatePlayer").classList.add("hidden");
@@ -186,16 +171,13 @@ document.getElementById("btnValidateCreatePlayer").addEventListener("click", asy
   } catch(e) { showPopup(e.message); }
 });
 
-// Affichage des participants choisis
 function renderSelectedPlayers() {
   const container = document.getElementById("selectedPlayersMatchList");
   container.innerHTML = "";
-  
   if(joueursSelectionnesMatch.length === 0) {
     container.innerHTML = "<p class='hint'>Aucun tireur sélectionné.</p>";
     return;
   }
-
   joueursSelectionnesMatch.forEach((p, index) => {
     const badge = document.createElement("div");
     badge.className = "stat-row";
@@ -218,19 +200,22 @@ function retirerJoueurMatch(idx) {
 
 // ================== MOTEUR DE CRICKET COMPLET ==================
 let cricketState = {
-  players: [],        // [{id, name}]
+  players: [],        
   maxTurns: 20,       
   isBlind: false,     
-  targets: [],        // Ordre d'affichage demandé : 15, 16, 17, 18, 19, 20, 25
+  targets: [],        
   blindMap: {},       
   revealedTargets: [],
   scores: {},         
   marks: {},          
   history: [],        
-  currentTurnDartsText: [], // Stocke les chaînes de caractères des 3 lancers (ex: ["0", "T15"])
+  currentTurnDartsText: [], 
+  
+  // Structure pour stocker les statistiques fines du match
+  statsDetails: {}, // { playerId: { fléchettesLançées: X, touchesNum: {15:x, 16:x...}, pointsDonnes: {15:y, 16:y...} } }
   
   currentPlayerIdx: 0,
-  currentDart: 1,     // Fléchette 1, 2 ou 3
+  currentDart: 1,     
   currentTurn: 1,
   
   startTime: 0,
@@ -241,44 +226,25 @@ let cricketState = {
 
 let modificateurEnCours = 1;
 
-// Modificateurs tactiles en Ligne 1
-document.getElementById("btnModDouble").addEventListener("click", () => {
-  alternerModificateur(2, document.getElementById("btnModDouble"));
+document.querySelectorAll("#cricketModifierPicker button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#cricketModifierPicker button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    modificateurEnCours = parseInt(btn.dataset.mod, 10);
+    gererEtatBoutonBull();
+  });
 });
-
-document.getElementById("btnModTriple").addEventListener("click", () => {
-  alternerModificateur(3, document.getElementById("btnModTriple"));
-});
-
-function alternerModificateur(valeur, boutonClique) {
-  const etaitDejaActif = boutonClique.classList.contains("active");
-  
-  // On nettoie l'état de tous les modificateurs
-  document.getElementById("btnModDouble").classList.remove("active");
-  document.getElementById("btnModTriple").classList.remove("active");
-  
-  if (etaitDejaActif) {
-    modificateurEnCours = 1; // On repasse en mode simple si on reclique dessus
-  } else {
-    boutonClique.classList.add("active");
-    modificateurEnCours = valeur;
-  }
-  
-  gererEtatBoutonBull();
-}
 
 function resetModifierUI() {
   modificateurEnCours = 1;
-  document.getElementById("btnModDouble").classList.remove("active");
-  document.getElementById("btnModTriple").classList.remove("active");
+  document.querySelectorAll("#cricketModifierPicker button").forEach(b => b.classList.remove("active"));
+  document.querySelector('#cricketModifierPicker button[data-mod="1"]').classList.add("active");
   gererEtatBoutonBull();
 }
 
 function gererEtatBoutonBull() {
   const btnBull = document.getElementById("btnKeyBull");
-  // Si le bouton n'est pas encore injecté dans le DOM, on quitte proprement sans faire planter le script !
-  if (!btnBull) return; 
-  
+  if (!btnBull) return;
   if (modificateurEnCours === 3) {
     btnBull.disabled = true;
     btnBull.style.opacity = "0.2";
@@ -294,13 +260,18 @@ function gererEtatBoutonBull() {
 
 // Lancement du match
 document.getElementById("startGameBtn").addEventListener("click", () => {
-  if (joueursSelectionnesMatch.length === 0) return showPopup("Ajoute au moins 1 joueur pour jouer !");
+  // ✅ RÈGLE : Minimum 2 joueurs requis pour pouvoir démarrer
+  if (joueursSelectionnesMatch.length < 2) {
+    return showPopup("⚠️ Il faut au moins 2 joueurs sur la ligne de tir pour démarrer !");
+  }
+  demarrerMatchCricket(joueursSelectionnesMatch);
+});
 
-  cricketState.players = [...joueursSelectionnesMatch];
+function demarrerMatchCricket(listeJoueurs) {
+  cricketState.players = [...listeJoueurs];
   cricketState.maxTurns = parseInt(document.getElementById("gameTurnsSelect").value, 10);
   cricketState.isBlind = document.getElementById("blindModeCheckbox").checked;
   
-  // ✅ Ordre demandé pour les colonnes du tableau : 15 à 20 puis Bulle
   cricketState.targets = [15, 16, 17, 18, 19, 20, 25];
   cricketState.revealedTargets = cricketState.isBlind ? [] : [...cricketState.targets];
   cricketState.history = [];
@@ -311,6 +282,7 @@ document.getElementById("startGameBtn").addEventListener("click", () => {
   cricketState.currentTurn = 1;
   cricketState.scores = {};
   cricketState.marks = {};
+  cricketState.statsDetails = {};
 
   if (cricketState.isBlind) {
     let valeursReelles = [15, 16, 17, 18, 19, 20, 25];
@@ -319,14 +291,19 @@ document.getElementById("startGameBtn").addEventListener("click", () => {
       [valeursReelles[i], valeursReelles[j]] = [valeursReelles[j], valeursReelles[i]];
     }
     cricketState.blindMap = {};
-    cricketState.targets.forEach((t, index) => {
-      cricketState.blindMap[t] = valeursReelles[index];
-    });
+    cricketState.targets.forEach((t, index) => { cricketState.blindMap[t] = valeursReelles[index]; });
   }
 
   cricketState.players.forEach(p => {
     cricketState.scores[p.id] = 0;
     cricketState.marks[p.id] = { 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 25: 0 };
+    
+    // Initialisation du tracker de stats de fin
+    cricketState.statsDetails[p.id] = {
+      dartsThrown: 0,
+      touchesNum: { 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 25: 0 },
+      pointsGiv: { 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 25: 0 }
+    };
   });
 
   resetModifierUI();
@@ -342,8 +319,9 @@ document.getElementById("startGameBtn").addEventListener("click", () => {
   renderKeyboard();
   renderGrid();
   updateTurnHeader();
-});
+}
 
+// Chronomètre & Pause
 function updateTimer() {
   if (cricketState.isPaused) return;
   cricketState.elapsedTime = Math.floor((Date.now() - cricketState.startTime) / 1000);
@@ -352,14 +330,12 @@ function updateTimer() {
   document.getElementById("gameTimerDisplay").innerText = `${m}:${s}`;
 }
 
-// Gestion Pause
 document.getElementById("btnPauseGame").addEventListener("click", () => {
   cricketState.isPaused = !cricketState.isPaused;
   if (cricketState.isPaused) {
     document.getElementById("btnPauseGame").innerText = "▶️";
     document.getElementById("cricketKeyboardZone").style.pointerEvents = "none";
     document.getElementById("cricketKeyboardZone").style.opacity = "0.4";
-    showPopup("Partie en pause");
   } else {
     document.getElementById("btnPauseGame").innerText = "⏸️";
     document.getElementById("cricketKeyboardZone").style.pointerEvents = "auto";
@@ -368,154 +344,100 @@ document.getElementById("btnPauseGame").addEventListener("click", () => {
   }
 });
 
-// En-tête Tour, Nom et affichage textuel des lancers (ex: 0 / T15 / D20)
 function updateTurnHeader() {
   const p = cricketState.players[cricketState.currentPlayerIdx];
   document.getElementById("cricketCurrentPlayerName").innerText = p.name;
-  
-  // Génération de la ligne d'historique textuelle demandée
   const chaineLancers = cricketState.currentTurnDartsText.join(" / ");
   document.getElementById("dartsHistoryText").innerText = chaineLancers || "En attente...";
-
   const tText = cricketState.maxTurns === 999 ? "∞" : cricketState.maxTurns;
   document.getElementById("gameTurnIndicator").innerText = `Tour ${cricketState.currentTurn}/${tText}`;
 }
 
-// ✅ RENDU DU GRAND TABLEAU HORIZONTAL AVEC LARGEURS STRICTEMENT FIXES
 function renderGrid() {
   const table = document.getElementById("cricketGridTable");
   table.innerHTML = "";
 
-  // 1. Ligne d'en-tête (Largeurs fixes en % pour bloquer le redimensionnement)
   const headerRow = document.createElement("tr");
   headerRow.style.background = "rgba(255,255,255,0.02)";
-  
   let headerHtml = `<th style="text-align:left; padding: 10px 4px; border-bottom: 2px solid var(--divider); width: 23%;">Joueurs</th>`;
   cricketState.targets.forEach(t => {
     let libelle = t === 25 ? "B" : t;
-    if (cricketState.isBlind && !cricketState.revealedTargets.includes(t)) {
-      libelle = "❓";
-    }
-    // ✅ Largeur fixe à 11% par colonne de chiffre
+    if (cricketState.isBlind && !cricketState.revealedTargets.includes(t)) libelle = "❓";
     headerHtml += `<th style="font-weight:bold; padding: 10px 2px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); width: 11%;">${libelle}</th>`;
   });
-  // ✅ Largeur fixe à 12% pour le Score
   headerHtml += `<th style="padding: 10px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 12%;">Score</th>`;
   headerRow.innerHTML = headerHtml;
   table.appendChild(headerRow);
 
-  // 2. Lignes des joueurs
   cricketState.players.forEach(p => {
     const row = document.createElement("tr");
     row.style.borderBottom = "1px solid var(--divider)";
-    
-    // Highlight du joueur actif
     if(p.id === cricketState.players[cricketState.currentPlayerIdx].id) {
       row.style.backgroundColor = "rgba(192,101,42,0.15)";
     }
-
-    // ✅ Limiter le nom affiché à 8 caractères maximum
-    let nomTronque = p.name;
-    if (nomTronque.length > 8) {
-      nomTronque = nomTronque.substring(0, 8) + ".";
-    }
-
-    let cellsHtml = `<td style="text-align:left; padding: 12px 4px; font-weight:700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 23%;" title="${p.name}">${nomTronque}</td>`;
+    let nomTronque = p.name.length > 8 ? p.name.substring(0, 8) + "." : p.name;
+    let cellsHtml = `<td style="text-align:left; padding: 12px 4px; font-weight:700; width: 23%;">${nomTronque}</td>`;
     
     cricketState.targets.forEach(t => {
       const touches = cricketState.marks[p.id][t];
       let symbole = ""; 
-
-      if (touches === 1) {
-        symbole = `<span style="font-size: 18px; font-weight:900; color:var(--text-main); font-family: monospace;">\\</span>`;
-      } else if (touches === 2) {
-        symbole = `<span style="font-size: 18px; font-weight:900; color:var(--text-main); font-family: monospace;">X</span>`;
-      } else if (touches >= 3) {
-        // Un chouïa plus petit (22px) pour être certain que ça ne déborde jamais des 11% de la colonne sur petit écran
+      if (touches === 1) symbole = `<span style="font-size: 18px; font-weight:900; color:var(--text-main); font-family: monospace;">\\</span>`;
+      else if (touches === 2) symbole = `<span style="font-size: 18px; font-weight:900; color:var(--text-main); font-family: monospace;">X</span>`;
+      else if (touches >= 3) {
         symbole = `<span style="display:inline-block; border: 2px solid #ff3838; border-radius: 50%; width: 22px; height: 22px; line-height: 18px; font-weight: 900; color: #ff3838; text-align:center; font-family: monospace; font-size: 13px; background: rgba(255,56,56,0.05);">X</span>`;
       }
-
       cellsHtml += `<td style="padding: 6px 2px; border-left: 1px solid var(--divider); width: 11%;">${symbole}</td>`;
     });
-
     cellsHtml += `<td style="font-weight:800; padding: 12px 2px; border-left: 1px solid var(--divider); color: var(--primary-strong); font-size: 14px; width: 12%;">${cricketState.scores[p.id]}</td>`;
     row.innerHTML = cellsHtml;
     table.appendChild(row);
   });
 }
 
-// Rendu du Clavier Tactile (Boutons horizontaux plus larges)
-// ✅ RENDU DU CLAVIER SUR LA LIGNE 2 UNIQUE
 function renderKeyboard() {
   const rowContainer = document.getElementById("cricketNumbersRow");
   if (!rowContainer) return;
   rowContainer.innerHTML = "";
-
-  const boutonsAAfficher = [15, 16, 17, 18, 19, 20];
-
-  // 1. Ajout des chiffres 15 à 20
-  boutonsAAfficher.forEach(num => {
+  [15, 16, 17, 18, 19, 20].forEach(num => {
     const btn = document.createElement("button");
-    btn.className = "ghost";
-    btn.style.padding = "14px 2px";
-    btn.style.fontSize = "15px";
-    btn.style.fontWeight = "bold";
-    btn.innerText = num;
-    btn.onclick = () => taperChiffre(num);
+    btn.className = "ghost"; btn.style.padding = "14px 2px"; btn.style.fontSize = "15px"; btn.style.fontWeight = "bold";
+    btn.innerText = num; btn.onclick = () => taperChiffre(num);
     rowContainer.appendChild(btn);
   });
-
-  // 2. Création immédiate du bouton Bull en bout de ligne
   const btnBull = document.createElement("button");
-  btnBull.className = "ghost";
-  btnBull.id = "btnKeyBull"; // Fixé directement ici !
-  btnBull.style.padding = "14px 2px";
-  btnBull.style.fontSize = "15px";
-  btnBull.style.fontWeight = "bold";
-  btnBull.innerText = "🎯 B";
-  btnBull.onclick = () => taperChiffre(25);
-  
+  btnBull.className = "ghost"; btnBull.id = "btnKeyBull"; btnBull.style.padding = "14px 2px"; btnBull.style.fontSize = "15px"; btnBull.style.fontWeight = "bold";
+  btnBull.innerText = "🎯 B"; btnBull.onclick = () => taperChiffre(25);
   rowContainer.appendChild(btnBull);
-  
-  // Met à jour son aspect visuel selon le modificateur sélectionné
   gererEtatBoutonBull();
 }
 
+document.getElementById("btnKeyBull").onclick = () => taperChiffre(25);
 
-// Enregistrement d'un tir
 function taperChiffre(valeurBouton) {
   if (cricketState.isPaused) return;
-
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
   
-  // Sauvegarde pour action annuler
   cricketState.history.push({
     scores: JSON.parse(JSON.stringify(cricketState.scores)),
     marks: JSON.parse(JSON.stringify(cricketState.marks)),
     revealedTargets: [...cricketState.revealedTargets],
     currentTurnDartsText: [...cricketState.currentTurnDartsText],
+    statsDetails: JSON.parse(JSON.stringify(cricketState.statsDetails)),
     currentPlayerIdx: cricketState.currentPlayerIdx,
     currentDart: cricketState.currentDart,
     currentTurn: cricketState.currentTurn
   });
 
-  // Construction du libellé textuel demandé (ex: T15, D20, 0)
-  let prefixeText = "";
-  if (modificateurEnCours === 2) prefixeText = "D";
-  if (modificateurEnCours === 3) prefixeText = "T";
-  
-  if (valeurBouton === 0) {
-    cricketState.currentTurnDartsText.push("0");
-  } else if (valeurBouton === 25) {
-    cricketState.currentTurnDartsText.push(prefixeText + "Bull");
-  } else {
-    cricketState.currentTurnDartsText.push(prefixeText + valeurBouton);
-  }
+  let prefixeText = modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "";
+  if (valeurBouton === 0) cricketState.currentTurnDartsText.push("0");
+  else if (valeurBouton === 25) cricketState.currentTurnDartsText.push(prefixeText + "Bull");
+  else cricketState.currentTurnDartsText.push(prefixeText + valeurBouton);
 
-  // Traitement mathématique du score
+  // Compter le lancer brut dans les stats globales
+  cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
+
   if (valeurBouton !== 0) {
     let cibleReelle = valeurBouton;
-    
     if (cricketState.isBlind) {
       cibleReelle = cricketState.blindMap[valeurBouton];
       if (!cricketState.revealedTargets.includes(valeurBouton)) {
@@ -524,36 +446,35 @@ function taperChiffre(valeurBouton) {
       }
     }
 
+    // Ajout statistique brute de touches
+    cricketState.statsDetails[joueurActuel.id].touchesNum[cibleReelle] += modificateurEnCours;
+
     let touchesPrecedentes = cricketState.marks[joueurActuel.id][cibleReelle];
     let touchesRestantes = 3 - touchesPrecedentes;
-
     let touchesAppliquees = Math.min(modificateurEnCours, touchesRestantes);
     cricketState.marks[joueurActuel.id][cibleReelle] += touchesAppliquees;
 
     let surplus = modificateurEnCours - touchesAppliquees;
-
-    // Règle Cut-Throat
     if (surplus > 0) {
       cricketState.players.forEach(adversaire => {
         if (adversaire.id !== joueurActuel.id) {
           const advFerme = cricketState.marks[adversaire.id][cibleReelle] >= 3;
           if (!advFerme) {
-            cricketState.scores[adversaire.id] -= (cibleReelle * surplus);
+            let penalite = cibleReelle * surplus;
+            cricketState.scores[adversaire.id] -= penalite;
+            // Assigner les points distribués aux stats
+            cricketState.statsDetails[joueurActuel.id].pointsGiv[cibleReelle] += penalite;
           }
         }
       });
     }
   }
 
-  // Rotation des lancers (3 fléchettes par joueur)
   cricketState.currentDart += 1;
   if (cricketState.currentDart > 3) {
     cricketState.currentDart = 1;
     cricketState.currentPlayerIdx += 1;
-    
-    // Fin de manche : on vide l'historique textuel du joueur qui vient de finir
     cricketState.currentTurnDartsText = [];
-    
     if (cricketState.currentPlayerIdx >= cricketState.players.length) {
       cricketState.currentPlayerIdx = 0;
       cricketState.currentTurn += 1;
@@ -566,68 +487,172 @@ function taperChiffre(valeurBouton) {
   verifierConditionsFinMatch();
 }
 
-// Action Annuler / Effacer le coup précédent
 document.getElementById("btnKeyUndo").onclick = () => {
+  annulerDernierCoup();
+};
+
+function annulerDernierCoup() {
   if (cricketState.history.length === 0) return showPopup("Aucun coup à effacer.");
-  
   const precedentState = cricketState.history.pop();
   cricketState.scores = precedentState.scores;
   cricketState.marks = precedentState.marks;
   cricketState.revealedTargets = precedentState.revealedTargets;
   cricketState.currentTurnDartsText = precedentState.currentTurnDartsText;
+  cricketState.statsDetails = precedentState.statsDetails;
   cricketState.currentPlayerIdx = precedentState.currentPlayerIdx;
   cricketState.currentDart = precedentState.currentDart;
   cricketState.currentTurn = precedentState.currentTurn;
-
   resetModifierUI();
   renderGrid();
   updateTurnHeader();
-  showPopup("Dernier lancer annulé !");
-};
+}
 
+// ✅ SYSTÈME D'ARBITRAGE DE SÉCURITÉ DE FIN DE MATCH
 function verifierConditionsFinMatch() {
-  let gagnant = null;
+  let gagnantVirtuel = null;
 
-  // Victoire par fermeture complète + Score leader (le plus proche de zéro ou positif)
   for (let p of cricketState.players) {
     let aToutFerme = cricketState.targets.every(t => cricketState.marks[p.id][t] >= 3);
     if (aToutFerme) {
       let scoreCourant = cricketState.scores[p.id];
       let estLeader = cricketState.players.every(autre => scoreCourant >= cricketState.scores[autre.id]);
-      
-      if (estLeader) {
-        gagnant = p;
-        break;
-      }
+      if (estLeader) { gagnantVirtuel = p; break; }
     }
   }
 
-  // Fin par limite de tours
-  if (!gagnant && cricketState.currentTurn > cricketState.maxTurns && cricketState.maxTurns !== 999) {
+  if (!gagnantVirtuel && cricketState.currentTurn > cricketState.maxTurns && cricketState.maxTurns !== 999) {
     let meilleurScore = -Infinity;
     cricketState.players.forEach(p => {
-      if (cricketState.scores[p.id] > meilleurScore) {
-        meilleurScore = cricketState.scores[p.id];
-        gagnant = p;
-      }
+      if (cricketState.scores[p.id] > meilleurScore) { meilleurScore = cricketState.scores[p.id]; gagnantVirtuel = p; }
     });
   }
 
-  if (gagnant) {
+  // Si un joueur remplit les conditions, on ouvre le panneau de confirmation exigé avant de valider
+  if (gagnantVirtuel) {
     clearInterval(cricketState.timerInterval);
-    alert(`🏆 MATCH TERMINÉ !\nVictoire de ${gagnant.name.toUpperCase()} avec ${cricketState.scores[gagnant.id]} points !`);
-    
-    db.collection("games_history").add({
-      type: "cricket",
-      winner: gagnant.name,
-      durationSeconds: cricketState.elapsedTime,
-      blindMode: cricketState.isBlind,
-      turnsPlayed: Math.min(cricketState.currentTurn, cricketState.maxTurns),
-      createdAt: Date.now()
-    }).catch(e => console.error(e));
-
-    showScreen(screens.home);
+    setTimeout(() => {
+      const confirmation = confirm(`🎯 ${gagnantVirtuel.name} a-t-il vraiment gagné la partie ?`);
+      if (confirmation) {
+        // Option "Oui, confirmer" -> On bascule sur la page Victoire
+        lancerPageVictoire(gagnantVirtuel);
+      } else {
+        // Option "Non" -> On revient sur le match avec le dernier chiffre saisi supprimé
+        annulerDernierCoup();
+        cricketState.timerInterval = setInterval(updateTimer, 1000); // Relancer le timer
+      }
+    }, 100);
   }
+}
+
+// ✅ AFFICHAGE DU BLOC VICTOIRE ET DU CLASSEMENT CROISSANT
+function lancerPageVictoire(vainqueur) {
+  document.getElementById("victoryTitle").innerText = `${vainqueur.name} gagne la partie !`;
+  document.getElementById("victorySubtitle").innerText = `Match bouclé en ${document.getElementById("gameTimerDisplay").innerText}`;
+
+  // Génération du classement croissant exigé (du plus fort score au moins fort)
+  const classementTrie = [...cricketState.players].sort((a, b) => cricketState.scores[b.id] - cricketState.scores[a.id]);
+  const containerRanking = document.getElementById("finalRankingList");
+  containerRanking.innerHTML = "";
+
+  classementTrie.forEach((p, idx) => {
+    const row = document.createElement("div");
+    row.className = "stat-row";
+    row.style.padding = "10px";
+    row.style.background = idx === 0 ? "rgba(192,101,42,0.15)" : "rgba(255,255,255,0.02)";
+    row.style.borderRadius = "12px";
+    row.innerHTML = `
+      <span><strong>#${idx + 1}</strong> — 👤 ${p.name}</span>
+      <span style="color:var(--primary-strong); font-weight:800;">${cricketState.scores[p.id]} pts</span>
+    `;
+    containerRanking.appendChild(row);
+  });
+
+  // Sauvegarde Firebase
+  db.collection("games_history").add({
+    type: "cricket", winner: vainqueur.name, duration: cricketState.elapsedTime, createdAt: Date.now()
+  }).catch(e => console.error(e));
+
+  showScreen(screens.gameOver);
+}
+
+// LIENS DES BOUTONS DE L'ÉCRAN DE VICTOIRE
+document.getElementById("btnGoHomeAfterMatch").onclick = () => showScreen(screens.home);
+document.getElementById("btnGoHomeAfterStats").onclick = () => showScreen(screens.home);
+document.getElementById("btnGoHomeAfterStats").onclick = () => showScreen(screens.home);
+
+// ✅ BOUTON REVANCHE : Relance instantanément avec le même groupe trié aléatoirement
+document.getElementById("btnRematch").onclick = () => {
+  let joueursRematch = [...cricketState.players];
+  // Mélange de l'ordre de passage
+  for (let i = joueursRematch.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [joueursRematch[i], joueursRematch[j]] = [joueursRematch[j], joueursRematch[i]];
+  }
+  showPopup("🎲 Ordre des joueurs mélangé !");
+  demarrerMatchCricket(joueursRematch);
+};
+
+// BOUTON STATISTIQUES : Génère l'écran analytique par colonne joueur
+document.getElementById("btnGoToStats").onclick = () => {
+  genererTableauStatistiques();
+  showScreen(screens.matchStats);
+};
+document.getElementById("btnBackToPodium").onclick = () => showScreen(screens.gameOver);
+
+// ✅ RENDU DU TABLEAU DE STATS COMPLET (1 Colonne par Joueur, défilement horizontal)
+function genererTableauStatistiques() {
+  const table = document.getElementById("matchStatsTable");
+  table.innerHTML = "";
+
+  // 1. Ligne En-tête : "Stats" | Joueur 1 | Joueur 2...
+  const rowHeader = document.createElement("tr");
+  rowHeader.style.background = "rgba(255,255,255,0.03)";
+  let html = `<th style="text-align:left; padding:10px 8px; border-bottom:2px solid var(--divider);">Critères</th>`;
+  cricketState.players.forEach(p => {
+    html += `<th style="font-weight:bold; padding:10px 6px; border-bottom:2px solid var(--divider); border-left:1px solid var(--divider);">${p.name}</th>`;
+  });
+  rowHeader.innerHTML = html;
+  table.appendChild(rowHeader);
+
+  // 2. Ligne MPR (Marks Per Round / moyenne de touches par volée de 3 fléchettes)
+  const rowMpr = document.createElement("tr");
+  rowMpr.style.borderBottom = "1px solid var(--divider)";
+  let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:bold; color:var(--accent);">MPR (Moyenne)</td>`;
+  cricketState.players.forEach(p => {
+    const totalTouches = Object.values(cricketState.statsDetails[p.id].touchesNum).reduce((a,b)=>a+b, 0);
+    const totalDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
+    const mpr = ((totalTouches / totalDarts) * 3).toFixed(2); // Ramené sur une volée de 3 fléchettes
+    mprHtml += `<td style="font-weight:700; border-left:1px solid var(--divider); color:var(--primary-strong);">${mpr}</td>`;
+  });
+  rowMpr.innerHTML = mprHtml;
+  table.appendChild(rowMpr);
+
+  // 3. Doubles lignes pour chaque cible (15, 16, 17, 18, 19, 20, Bulle)
+  const ciblesNum = [15, 16, 17, 18, 19, 20, 25];
+  ciblesNum.forEach(cible => {
+    const libelleCible = cible === 25 ? "🎯 Bull" : `🎯 Zone ${cible}`;
+
+    // Ligne A : Nombre de touches
+    const rowTouches = document.createElement("tr");
+    let touchesHtml = `<td style="text-align:left; padding:6px 8px; font-size:12px; opacity:0.8;">${libelleCible} (Touches)</td>`;
+    cricketState.players.forEach(p => {
+      const count = cricketState.statsDetails[p.id].touchesNum[cible];
+      touchesHtml += `<td style="border-left:1px solid var(--divider); font-size:12px;">${count}</td>`;
+    });
+    rowTouches.innerHTML = touchesHtml;
+    table.appendChild(rowTouches);
+
+    // Ligne B : Points infligés
+    const rowPoints = document.createElement("tr");
+    rowPoints.style.borderBottom = "1px solid var(--divider)";
+    let pointsHtml = `<td style="text-align:left; padding:6px 8px; font-size:12px; color:var(--text-soft);">└ Points donnés</td>`;
+    cricketState.players.forEach(p => {
+      const pts = cricketState.statsDetails[p.id].pointsGiv[cible];
+      pointsHtml += `<td style="border-left:1px solid var(--divider); font-size:12px; color:var(--danger); font-weight:bold;">${pts > 0 ? '-' + pts : '0'}</td>`;
+    });
+    rowPoints.innerHTML = pointsHtml;
+    table.appendChild(rowPoints);
+  });
 }
 
 document.getElementById("btnLeaveGame").addEventListener("click", () => {

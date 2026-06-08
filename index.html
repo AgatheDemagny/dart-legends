@@ -134,7 +134,7 @@
 
         <label>Nombre de tours</label>
         <select id="gameTurnsSelect">
-          <option value="20">20 tours (Défaut)</option>
+          <option value="20">20 tours</option>
           <option value="10">10 tours</option>
           <option value="12">12 tours</option>
           <option value="14">14 tours</option>
@@ -193,6 +193,42 @@
         <div style="display: grid; grid-template-columns: repeat(6, 1fr) 1.2fr; gap: 5px; width: 100%;" id="cricketNumbersRow">
           </div>
 
+      </div>
+    </section>
+<section id="gameOverScreen" class="hidden stack" style="width: 100%; padding: 10px 6px;">
+      <div class="card" style="text-align: center; border-color: var(--primary);">
+        <h1 style="font-size: 36px; margin: 0;">👑</h1>
+        <h2 style="color: var(--primary-strong); margin: 0 0 10px;" id="victoryTitle">Victoire !</h2>
+        <p class="hint" id="victorySubtitle" style="justify-content: center;">Le match est terminé.</p>
+      </div>
+
+      <div class="card form-card">
+        <h3>🏆 Classement Final</h3>
+        <div id="finalRankingList" class="stack" style="gap: 8px;">
+          </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button id="btnGoToStats" class="ghost" style="padding: 14px 2px;">📊 Statistiques</button>
+        <button id="btnRematch" class="primary" style="padding: 14px 2px;">🔄 Revanche</button>
+      </div>
+      <button id="btnGoHomeAfterMatch" class="ghost btn-block" style="margin-top: 4px;">🎯 Retour à l'accueil</button>
+    </section>
+
+    <section id="statsMatchScreen" class="hidden stack" style="width: 100%; padding: 10px 0px;">
+      <header class="topbar" style="padding: 10px 8px;">
+        <button id="btnBackToPodium" class="icon-btn">←</button>
+        <h2>📊 Statistiques Match</h2>
+        <div style="width:40px;"></div>
+      </header>
+
+      <div style="width: 100%; overflow-x: auto; background: var(--card-bg); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); padding: 8px 0px;">
+        <table id="matchStatsTable" style="min-width: 480px; width: 100%; border-collapse: collapse; text-align: center; font-size: 13px;">
+          </table>
+      </div>
+
+      <div style="padding: 0 8px;">
+        <button id="btnGoHomeAfterStats" class="ghost btn-block">🎯 Retour à l'accueil</button>
       </div>
     </section>
 
