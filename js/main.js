@@ -276,13 +276,14 @@ function resetModifierUI() {
 
 function gererEtatBoutonBull() {
   const btnBull = document.getElementById("btnKeyBull");
-  if (!btnBull) return;
+  // Si le bouton n'est pas encore injecté dans le DOM, on quitte proprement sans faire planter le script !
+  if (!btnBull) return; 
   
   if (modificateurEnCours === 3) {
     btnBull.disabled = true;
     btnBull.style.opacity = "0.2";
     btnBull.style.background = "rgba(255,255,255,0.01)";
-    btnBull.innerText = "B";
+    btnBull.innerText = "🚫";
   } else {
     btnBull.disabled = false;
     btnBull.style.opacity = "1";
@@ -447,6 +448,7 @@ function renderGrid() {
 // ✅ RENDU DU CLAVIER SUR LA LIGNE 2 UNIQUE
 function renderKeyboard() {
   const rowContainer = document.getElementById("cricketNumbersRow");
+  if (!rowContainer) return;
   rowContainer.innerHTML = "";
 
   const boutonsAAfficher = [15, 16, 17, 18, 19, 20];
@@ -463,21 +465,19 @@ function renderKeyboard() {
     rowContainer.appendChild(btn);
   });
 
-  // 2. Création dynamique du bouton Bull inséré en bout de ligne
+  // 2. Création immédiate du bouton Bull en bout de ligne
   const btnBull = document.createElement("button");
   btnBull.className = "ghost";
-  btnBull.id = "shadowBtnBull"; // ID temporaire pour le cibler dans le dom
+  btnBull.id = "btnKeyBull"; // Fixé directement ici !
   btnBull.style.padding = "14px 2px";
   btnBull.style.fontSize = "15px";
   btnBull.style.fontWeight = "bold";
   btnBull.innerText = "🎯 B";
-  btnBull.onclick = () => {
-    taperChiffre(25);
-  };
+  btnBull.onclick = () => taperChiffre(25);
+  
   rowContainer.appendChild(btnBull);
   
-  // On synchronise le nouvel élément créé avec notre script de vérification
-  document.getElementById("shadowBtnBull").id = "btnKeyBull";
+  // Met à jour son aspect visuel selon le modificateur sélectionné
   gererEtatBoutonBull();
 }
 
