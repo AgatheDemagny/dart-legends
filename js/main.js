@@ -238,12 +238,15 @@ let cricketState = {
 
 let modificateurEnCours = 1;
 
-// Modificateurs tactiles avec vérification pour la Bulle
+// Modificateurs tactiles avec désactivation dynamique de la Bulle
 document.querySelectorAll("#cricketModifierPicker button").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("#cricketModifierPicker button").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     modificateurEnCours = parseInt(btn.dataset.mod, 10);
+    
+    // ✅ Vérification immédiate du bouton Bull
+    gererEtatBoutonBull();
   });
 });
 
@@ -251,6 +254,28 @@ function resetModifierUI() {
   modificateurEnCours = 1;
   document.querySelectorAll("#cricketModifierPicker button").forEach(b => b.classList.remove("active"));
   document.querySelector('#cricketModifierPicker button[data-mod="1"]').classList.add("active");
+  // ✅ Remet le bouton Bull à son état normal
+  gererEtatBoutonBull();
+}
+
+// ✅ Fonction pour griser/désactiver le bouton Bull si Triple est sélectionné
+function gererEtatBoutonBull() {
+  const btnBull = document.getElementById("btnKeyBull");
+  if (!btnBull) return;
+  
+  if (modificateurEnCours === 3) {
+    btnBull.disabled = true;
+    btnBull.style.opacity = "0.2";
+    btnBull.style.background = "rgba(255,255,255,0.02)";
+    btnBull.style.borderColor = "rgba(255,255,255,0.05)";
+    btnBull.innerText = "🚫 No Triple Bull";
+  } else {
+    btnBull.disabled = false;
+    btnBull.style.opacity = "1";
+    btnBull.style.background = "rgba(255,255,255,0.06)";
+    btnBull.style.borderColor = "rgba(242,214,179,0.12)";
+    btnBull.innerText = "🎯 Bull";
+  }
 }
 
 // Lancement du match
@@ -342,24 +367,26 @@ function updateTurnHeader() {
   document.getElementById("gameTurnIndicator").innerText = `Tour ${cricketState.currentTurn}/${tText}`;
 }
 
-// ✅ RENDU DU GRAND TABLEAU HORIZONTAL PROPRE ET TEXTURÉ
+// ✅ RENDU DU GRAND TABLEAU HORIZONTAL AVEC LARGEURS STRICTEMENT FIXES
 function renderGrid() {
   const table = document.getElementById("cricketGridTable");
   table.innerHTML = "";
 
-  // 1. Ligne d'en-tête
+  // 1. Ligne d'en-tête (Largeurs fixes en % pour bloquer le redimensionnement)
   const headerRow = document.createElement("tr");
   headerRow.style.background = "rgba(255,255,255,0.02)";
   
-  let headerHtml = `<th style="text-align:left; padding: 10px 6px; border-bottom: 2px solid var(--divider); width: 25%;">Joueurs</th>`;
+  let headerHtml = `<th style="text-align:left; padding: 10px 4px; border-bottom: 2px solid var(--divider); width: 23%;">Joueurs</th>`;
   cricketState.targets.forEach(t => {
     let libelle = t === 25 ? "B" : t;
     if (cricketState.isBlind && !cricketState.revealedTargets.includes(t)) {
       libelle = "❓";
     }
-    headerHtml += `<th style="font-weight:bold; padding: 10px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider);">${libelle}</th>`;
+    // ✅ Largeur fixe à 11% par colonne de chiffre
+    headerHtml += `<th style="font-weight:bold; padding: 10px 2px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); width: 11%;">${libelle}</th>`;
   });
-  headerHtml += `<th style="padding: 10px 6px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 18%;">Score</th>`;
+  // ✅ Largeur fixe à 12% pour le Score
+  headerHtml += `<th style="padding: 10px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 12%;">Score</th>`;
   headerRow.innerHTML = headerHtml;
   table.appendChild(headerRow);
 
@@ -373,25 +400,31 @@ function renderGrid() {
       row.style.backgroundColor = "rgba(192,101,42,0.15)";
     }
 
-    let cellsHtml = `<td style="text-align:left; padding: 12px 6px; font-weight:700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.name}</td>`;
+    // ✅ Limiter le nom affiché à 8 caractères maximum
+    let nomTronque = p.name;
+    if (nomTronque.length > 8) {
+      nomTronque = nomTronque.substring(0, 8) + ".";
+    }
+
+    let cellsHtml = `<td style="text-align:left; padding: 12px 4px; font-weight:700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 23%;" title="${p.name}">${nomTronque}</td>`;
     
     cricketState.targets.forEach(t => {
       const touches = cricketState.marks[p.id][t];
-      let symbole = ""; // Vide si pas touché
+      let symbole = ""; 
 
-      // Style demandé : \ puis X puis X dans un cercle rouge gras
       if (touches === 1) {
         symbole = `<span style="font-size: 18px; font-weight:900; color:var(--text-main); font-family: monospace;">\\</span>`;
       } else if (touches === 2) {
         symbole = `<span style="font-size: 18px; font-weight:900; color:var(--text-main); font-family: monospace;">X</span>`;
       } else if (touches >= 3) {
-        symbole = `<span style="display:inline-block; border: 2.5px solid #ff3838; border-radius: 50%; width: 26px; height: 26px; line-height: 21px; font-weight: 900; color: #ff3838; text-align:center; font-family: monospace; font-size: 15px; background: rgba(255,56,56,0.05);">X</span>`;
+        // Un chouïa plus petit (22px) pour être certain que ça ne déborde jamais des 11% de la colonne sur petit écran
+        symbole = `<span style="display:inline-block; border: 2px solid #ff3838; border-radius: 50%; width: 22px; height: 22px; line-height: 18px; font-weight: 900; color: #ff3838; text-align:center; font-family: monospace; font-size: 13px; background: rgba(255,56,56,0.05);">X</span>`;
       }
 
-      cellsHtml += `<td style="padding: 6px 2px; border-left: 1px solid var(--divider);">${symbole}</td>`;
+      cellsHtml += `<td style="padding: 6px 2px; border-left: 1px solid var(--divider); width: 11%;">${symbole}</td>`;
     });
 
-    cellsHtml += `<td style="font-weight:800; padding: 12px 4px; border-left: 1px solid var(--divider); color: var(--primary-strong); font-size: 15px;">${cricketState.scores[p.id]}</td>`;
+    cellsHtml += `<td style="font-weight:800; padding: 12px 2px; border-left: 1px solid var(--divider); color: var(--primary-strong); font-size: 14px; width: 12%;">${cricketState.scores[p.id]}</td>`;
     row.innerHTML = cellsHtml;
     table.appendChild(row);
   });
@@ -420,11 +453,8 @@ function renderKeyboard() {
 document.getElementById("btnKeyZero").onclick = () => taperChiffre(0);
 
 // ✅ SÉCURITÉ ANTI-TRIPLE BULL AU CLIC
+// Enregistrement de la bulle (la sécurité est déjà gérée visuellement en amont)
 document.getElementById("btnKeyBull").onclick = () => {
-  if (modificateurEnCours === 3) {
-    showPopup("🚫 Le Triple Bull n'existe pas aux fléchettes !");
-    return;
-  }
   taperChiffre(25);
 };
 
