@@ -1,0 +1,1058 @@
+/* ================== LIFE QUEST — STYLE FINAL (CLEAN) ================== */
+
+/* ================== PALETTE ET TYPO ================== */
+:root{
+  /* Background */
+  --bg-main: #08090C;
+  --bg-secondary: #0D0E12;
+
+  /* Surfaces */
+  --card-bg: rgba(255,255,255,0.045);
+  --card-bg-strong: rgba(255,255,255,0.06);
+  --card-border: rgba(242,214,179,0.12);
+
+  /* Brand */
+  --primary: #C0652A;
+  --primary-strong: #E07A36;
+
+  /* Accent */
+  --accent: #F2D6B3;
+  --accent-glow: rgba(242,214,179,0.30);
+
+  /* Text */
+  --text-main: #F4EFEA;
+  --text-soft: rgba(244,239,234,0.68);
+
+  /* Dividers + misc */
+  --divider: rgba(255,255,255,0.06);
+
+  /* Progress */
+  --progress-bg: rgba(255,255,255,0.06);
+  --progress-fill: linear-gradient(90deg, #C0652A, #F2D6B3);
+
+  /* Danger / gold (utilisés dans ton code) */
+  --danger: #6b362a;
+  --gold: var(--accent);
+  --card-border-strong: rgba(255,120,90,0.30);
+
+  /* Radius */
+  --r-1: 14px;
+  --r-2: 18px;
+  --r-3: 22px;
+}
+
+/* ================== RESET + BASE ================== */
+*{ box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body{ height: 100%; }
+
+body{
+  color: var(--text-main);
+  background:
+    radial-gradient(900px 520px at 20% 10%, rgba(192,101,42,0.10), transparent 70%),
+    radial-gradient(900px 520px at 85% 85%, rgba(242,214,179,0.04), transparent 72%),
+    linear-gradient(180deg, #08090C, #0D0E12);
+}
+
+/* ================== TITRES ================== */
+h1, h2, h3{
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: -0.5px;
+  width: 100%;
+  text-align: center !important; /* ✅ force */
+}
+
+h1{ font-size: 30px; line-height: 1.1; margin: 6px 0 10px; }
+h2{ font-size: 22px; line-height: 1.15; margin: 4px 0 8px; }
+h3{ font-size: 18px; margin: 0 0 10px; }
+
+/* sous-titres internes */
+.subsection h4{
+  margin: 6px 0 4px;
+  text-align: left;
+  font-size: 14px;
+  opacity: .9;
+}
+
+/* ================== CARDS ================== */
+.card{
+  background:
+    radial-gradient(800px 240px at 30% 0%, rgba(242,214,179,0.08), transparent 60%),
+    radial-gradient(700px 240px at 70% 100%, rgba(192,101,42,0.08), transparent 60%),
+    var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--r-3);
+  padding: 18px;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.32);
+  backdrop-filter: blur(10px);
+  margin: 0;
+}
+
+.card:hover{ transform: translateY(-2px); }
+
+/* ✅ subtil = même couleur que les autres (plus d’incohérence bloc Objectifs) */
+.card.subtle{
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: none;
+  opacity: 0.96;
+}
+
+/* lignes internes */
+.card p{
+  display:flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  margin: 0;
+  border-bottom: 1px solid var(--divider);
+}
+.card p:last-child{
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+.card strong{ color: rgba(255,255,255,0.85); font-weight: 800; }
+.card p span{ color: rgba(255,255,255,0.92); }
+
+/* ================== BOUTONS ================== */
+/* ✅ base neutre (pour que les boutons ressortent des cards) */
+button{
+  font-size: 15px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-main);
+  border: 1px solid rgba(242,214,179,0.14);
+  border-radius: var(--r-1);
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform .08s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+}
+
+button:hover{
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(242,214,179,0.22);
+  box-shadow: 0 0 18px rgba(242,214,179,0.12);
+}
+
+button:active{ transform: translateY(1px); filter: brightness(0.98); }
+
+.btn-block{
+  width: 100%;
+  display: block;
+  margin-top: 12px;
+}
+
+/* ✅ bouton principal (à mettre sur Déconnexion, Valider, Créer, etc.) */
+button.primary, .btn-primary{
+  background: linear-gradient(180deg, var(--primary-strong), var(--primary));
+  border-color: rgba(242,214,179,0.22);
+  color: #fff;
+  box-shadow: 0 0 22px rgba(192,101,42,0.18);
+}
+button.primary:hover, .btn-primary:hover{
+  box-shadow: 0 0 26px rgba(192,101,42,0.22), 0 14px 34px rgba(0,0,0,0.28);
+}
+
+/* Ghost */
+.ghost{
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid rgba(242,214,179,0.12);
+}
+.ghost:hover{ background: rgba(255,255,255,0.08); }
+
+/* Icon buttons */
+.icon-btn{
+  width:42px;
+  height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:14px;
+}
+
+/* ================== INPUTS ================== */
+input, select{
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(242,214,179,0.12);
+  font-size: 14px;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-main);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.22);
+  outline: none;
+}
+
+input:focus, select:focus{
+  box-shadow: 0 0 0 3px rgba(192,101,42,0.18), 0 12px 24px rgba(0,0,0,0.26);
+  border-color: rgba(242,214,179,0.28);
+}
+
+::placeholder{ color: rgba(255,255,255,0.55); }
+
+.input-hint {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-bottom: 8px;
+  margin-top: -4px;
+}
+
+/* ================== TOPBAR + BANNIÈRE ================== */
+.topbar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+}
+
+.topbar-center{
+  flex: 1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width: 0;
+}
+
+#openSettingsBtn.icon-btn{
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(6px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.app-banner{
+  width: 85%;
+  max-width: 420px;
+  height: auto;
+  display: block;
+  margin: 10px auto 18px auto;
+  border-radius: 16px;
+  border: 1px solid rgba(242,214,179,0.12);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+}
+
+/* ================== GRID MONDES ================== */
+.worlds-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+/* ✅ style “carte monde” sans chevron/arrow */
+.world-btn{
+  padding: 14px;
+  border-radius: 18px;
+  background:
+    radial-gradient(600px 180px at 20% 20%, rgba(242,214,179,0.08), transparent 60%),
+    rgba(255,255,255,0.05);
+  text-align: left;
+  color: var(--text-main);
+  font-weight: 850;
+  border: 1px solid rgba(242,214,179,0.12);
+  box-shadow: 0 12px 26px rgba(0,0,0,0.26);
+  position: relative;
+  overflow: hidden;
+}
+
+.world-btn:hover{
+  background:
+    radial-gradient(600px 180px at 20% 20%, rgba(242,214,179,0.10), transparent 60%),
+    rgba(255,255,255,0.07);
+  border-color: rgba(242,214,179,0.20);
+}
+
+.world-btn.active{
+  background: rgba(192,101,42,0.20);
+  border-color: rgba(242,214,179,0.22);
+  box-shadow: 0 14px 30px rgba(192,101,42,0.18);
+}
+.world-btn::before,
+.world-btn::after{
+  content: none !important;
+}
+
+.world-title-row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+}
+
+.world-title{
+  font-size:16px;
+  font-weight:900;
+}
+
+.world-meta{
+  margin-top:6px;
+  font-size:12px;
+  color: rgba(244,239,234,0.70);
+  font-weight:750;
+}
+
+
+/* ================== BARRES DE PROGRESSION ================== */
+.progress-line{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin: 6px 0 10px 0;
+}
+
+.progress-bar{
+  flex: 1;                 /* ✅ plus large */
+  background: var(--progress-bg);
+  border-radius: 999px;
+  border: 1px solid rgba(242,214,179,0.10);
+  height: 22px;            /* ✅ plus épais */
+  overflow: hidden;
+  width: 100%;
+}
+
+.progress-fill{
+  height: 100%;
+  background: var(--progress-fill);
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+  padding: 0 10px;
+  min-width: 46px;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+  position: relative;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progress-fill::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0));
+  opacity: .22;
+  pointer-events:none;
+}
+
+.progress-values{
+  min-width: 104px;
+  text-align: right;       /* ✅ valeurs à droite */
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+/* ================== TABS ================== */
+.tabs{
+  display:flex;
+  gap:8px;
+  margin:10px 0 12px;
+}
+
+.tab-btn{
+  flex:1;
+  border-radius:14px;
+  padding: 10px 10px;
+  background: rgba(255,255,255,0.08);
+  color: var(--text-main);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.20);
+}
+
+.tab-btn:hover{ background: rgba(255,255,255,0.12); }
+
+.tab-btn.active{
+  background: rgba(192,101,42,0.22);
+  border-color: rgba(242,214,179,0.22);
+  color: var(--text-main);
+  box-shadow: 0 12px 26px rgba(192,101,42,0.16);
+}
+
+.tab-panel{
+  display:flex;
+  flex-direction:column;
+  gap: 18px;
+}
+
+/* ================== SEGMENTED (Objectif hebdo) ================== */
+.segmented{
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(242,214,179,0.10);
+  border-radius: 16px;
+  padding: 6px;
+  display: flex;
+  gap: 6px;
+}
+
+.segmented button{
+  flex: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-soft);
+  border-radius: 12px;
+  padding: 10px 10px;
+  font-weight: 850;
+}
+
+.segmented button:hover{
+  background: rgba(255,255,255,0.08);
+}
+
+/* ✅ actif terracotta (plus gaming, plus lisible) */
+.segmented button.active{
+  background: rgba(192,101,42,0.22);
+  border-color: rgba(242,214,179,0.22);
+  color: var(--text-main);
+  box-shadow: 0 0 20px rgba(192,101,42,0.18);
+}
+
+.segmented button:active{ transform: translateY(1px); }
+
+/* ================== POPUP (toast centré, jamais coupé) ================== */
+#popup{
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  width: min(520px, calc(100% - 24px));
+  background: rgba(192,101,42,0.92);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(242,214,179,0.22);
+  font-weight: 850;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+  display: none;
+  z-index: 2000;
+  animation: popupShow 0.22s ease forwards;
+}
+
+@keyframes popupShow{
+  from{ opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to{ opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ================== MODALS ================== */
+.modal{
+  position:fixed;
+  inset:0;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(4px);
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding:0;
+  z-index:1500;
+}
+
+.modal-content{
+  width:100%;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-content label {
+  font-weight: 600;
+}
+
+.modal-content input {
+  width: 100%;
+}
+
+/* ✅ modals moins sombres, cohérentes avec les cards */
+.modal-content.card{
+  background: rgba(26,26,30,0.96);
+  border: 1px solid rgba(242,214,179,0.14);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+}
+
+.inline{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.inline input{ flex:1; }
+
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+}
+.actions button{ flex:1; }
+
+.hint{
+  font-size: 13px;
+  color: var(--text-soft);
+  margin-top:8px;
+}
+
+/* ================== SETTINGS GRID ================== */
+.grid-3{
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap:8px;
+  margin:6px 0 10px;
+}
+
+/* ================== OBJECTIVE ROWS ================== */
+.objective-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:14px;
+}
+
+.objective-row .label{
+  flex:1;
+  font-weight: 800;
+}
+
+.step-pill {
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.step-pill.active {
+  border: 2px solid #f97316; /* orange doux */
+  background: rgba(249, 115, 22, 0.15);
+  transform: scale(1.05);
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.6);
+}
+/* badges/pills */
+.badge, .step-pill{
+  font-size:12px;
+  padding:4px 8px;
+  border-radius:999px;
+  background: rgba(255,255,255,0.10);
+  color: var(--text-main);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+.steps-preview{
+  margin-top:8px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+/* Objectifs - liste */
+.obj-section-title{
+  margin-top: 12px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  opacity: .92;
+  font-weight: 850;
+  text-align: left; /* section title = pas forcément centré */
+}
+
+.obj-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding: 12px 12px;
+  margin-top: 10px;
+  border-radius: 18px;
+  background:
+    radial-gradient(600px 180px at 20% 0%, rgba(242,214,179,0.08), transparent 65%),
+    rgba(255,255,255,0.04);
+  border: 1px solid rgba(242,214,179,0.10);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.30);
+}
+
+.obj-left{
+  display:flex;
+  flex-direction: column;
+  align-items:flex-start;
+  gap:2px;
+  min-width:0;
+}
+
+.obj-title{
+  font-weight: 900;
+  font-size: 14.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.obj-meta{
+  font-size: 12px;
+  color: rgba(244,239,234,0.70);
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.obj-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.obj-icon{
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: rgba(255,255,255,0.08);
+  color: var(--text-main);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.20);
+}
+
+.obj-icon:hover{ background: rgba(255,255,255,0.12); }
+
+.obj-icon:active{
+  transform: translateY(1px);
+  filter: brightness(0.98);
+}
+
+.obj-icon:disabled{
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.obj-icon-inline{
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 4px;
+  font-size: 18px;
+  cursor: pointer;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  transition: transform .08s ease, opacity .15s ease;
+}
+
+.obj-icon-inline:hover{
+  background: rgba(255,255,255,0.06);
+}
+
+.obj-icon-inline:active{
+  transform: translateY(1px);
+}
+
+.obj-icon-inline:disabled{
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ================== DANGER ================== */
+.card.danger{
+  border: 1px solid var(--card-border-strong);
+  box-shadow:
+    0 0 0 1px rgba(255,120,90,0.25),
+    0 12px 40px rgba(0,0,0,0.35),
+    0 0 25px rgba(255,90,60,0.35);
+}
+
+.danger-btn{
+  background: var(--danger);
+  color:#fff;
+  border-color: rgba(255,255,255,0.10);
+}
+.danger-btn:hover{ background: #5f2f24; }
+
+/* ================== LOADING ================== */
+.loading{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 24px;
+
+  background:
+    radial-gradient(1000px 600px at 35% 20%, rgba(192,101,42,0.18), transparent 60%),
+    radial-gradient(900px 520px at 80% 70%, rgba(242,214,179,0.10), transparent 62%),
+    #0F0F11;
+}
+
+.spinner{
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 4px solid rgba(255,255,255,0.14);
+  border-top-color: rgba(242,214,179,0.95);
+  margin: 0 auto 10px auto;
+  animation: spin 0.9s linear infinite;
+}
+
+.loading::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+  opacity: .18;
+  mix-blend-mode: overlay;
+  pointer-events:none;
+}
+
+.loading-card{
+  position: relative;
+  width: min(420px, 100%);
+  padding: 22px 18px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(242,214,179,0.18);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+  text-align:center;
+  backdrop-filter: blur(12px);
+}
+
+.loading-text{ font-weight: 700; opacity: .9; }
+
+@keyframes spin{ to { transform: rotate(360deg); } }
+
+/* ================== RESPONSIVE MOBILE ================== */
+@media (max-width: 420px){
+  .worlds-grid { grid-template-columns: 1fr; }
+  .card { padding: 14px; }
+  input, select, button { font-size: 16px; padding: 10px; }
+  .grid-3{ grid-template-columns: 1fr; }
+}
+
+.mode-label{
+  margin-top: 6px;
+  margin-bottom: 10px; /* ✅ espace sous "Mode" */
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+/* ================== LAYOUT GLOBAL ================== */
+.game{
+  padding: 22px 18px;
+  max-width: 420px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* espace vertical entre blocs */
+}
+
+.hidden{ display:none !important; }
+
+.stack{
+  display:flex;
+  flex-direction:column;
+  gap: 18px;
+}
+
+/* === HOME TOPBAR : bannière à gauche, settings à droite === */
+.home-topbar{
+  align-items:center;
+}
+
+.banner-inline{
+  width: auto;
+  max-width: calc(100% - 60px);
+  height: 44px;           /* même hauteur que le bouton */
+  object-fit: contain;
+  margin: 0;              /* annule le centrage auto */
+  border-radius: 12px;
+}
+
+/* BANNIÈRE: 2 comportements */
+#onboardingScreen .app-banner{
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  margin: 10px auto 18px;
+}
+
+#homeScreen .topbar.home-topbar{
+  align-items:center;
+  gap: 12px;
+}
+
+#homeScreen .topbar .app-banner.banner-inline{
+  width: auto !important;
+  height: 46px !important;
+  max-width: calc(100% - 56px) !important; /* laisse la place au bouton */
+  margin: 0 !important;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+/* === HOME TOPBAR : bannière grande à gauche, bouton à droite === */
+#homeScreen .topbar.home-topbar{
+  align-items:center;
+  gap: 12px;
+}
+
+/* IMPORTANT : empêcher l'image d'être compressée par flex */
+#homeScreen .topbar.home-topbar .app-banner.banner-inline{
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-shrink: 0;
+
+  height: 64px !important;       /* <-- plus grand */
+  width: auto !important;
+  max-width: calc(100% - 56px) !important;
+  margin: 0 !important;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+/* sur petits écrans, un poil plus petit */
+@media (max-width: 420px){
+  #homeScreen .topbar.home-topbar .app-banner.banner-inline{
+    height: 56px !important;
+  }
+}
+
+.stat-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--divider);
+}
+.stat-row:last-child{ border-bottom:none; padding-bottom:2px; }
+
+.stat-value{
+  margin-left:auto;
+  text-align:right;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+/* OBJECTIFS: respirations */
+#homeObjectives .subsection{
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--divider);
+}
+#homeObjectives .subsection:first-of-type{
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+/* Ligne XP compacte */
+.stat-row.compact{
+  padding: 6px 0 10px;
+  border-bottom: none;
+}
+.stat-row.compact .stat-label{
+  display:none; /* on garde "Hebdo/Mensuel" en h4 au-dessus */
+}
+
+/* h4 + valeurs pas collés */
+#homeObjectives h4{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+#homeObjectives h4::after{
+  content: "";
+}
+
+/* Titres Hebdo/Mensuel plus lisibles */
+#homeObjectives h4,
+#settingsScreen h4{
+  font-size: 16px !important;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  margin-bottom: 8px;
+}
+
+/* HOME > Objectifs : rendre les sous-sections plus visibles */
+#homeObjectives .subsection h4{
+  align-items: center;          /* au lieu de baseline */
+}
+
+/* Petit "badge" à droite dans les h4 */
+#homeObjectives .subsection h4 .badge-right{
+  margin-left: auto;
+  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(242,214,179,0.12);
+  color: var(--text-soft);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+#homeObjectives .mode-label{
+  margin-top: 6px;
+  margin-bottom: 10px; /* ✅ espace sous Mode */
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+/* SETTINGS > Objectifs : respirations */
+#settingsScreen .card label{
+  display:block;
+  margin-top: 12px;
+}
+
+#settingsScreen .card #monthGoalInput{
+  margin-bottom: 14px; /* espace AVANT la section hebdo */
+}
+
+#settingsScreen .card .grid-3{
+  margin-top: 10px;
+}
+
+/* MODAL : uniformiser label -> input */
+.modal-content input,
+.modal-content select{
+  margin-top: 0; /* ✅ on enlève le 6px en modal */
+}
+
+.modal-content label{
+  margin-bottom: 6px; /* ✅ petit espace constant */
+  font-weight: 600;
+}
+
+/* ================== FORMS : espacements réguliers (seulement où on met .form-card) ================== */
+.form-card{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;               /* ✅ rythme vertical constant */
+}
+
+/* label -> champ : régulier */
+.form-card label{
+  margin: 0;
+  font-weight: 650;
+}
+
+/* on enlève le margin-top global des inputs DANS les forms */
+.form-card input,
+.form-card select{
+  margin-top: 0;
+}
+
+/* les textes d’aide doivent être collés au champ qu’ils expliquent */
+.form-card .hint,
+.form-card .input-hint{
+  margin: -8px 0 0;        /* ✅ rapproche du label sans faire un trou */
+}
+
+/* groupes en ligne (Minutes = XP / 2 inputs) */
+.form-card .inline{
+  margin-top: -6px;        /* ✅ compense le gap, rend le groupe plus “attaché” au label */
+}
+
+/* si tu as une sous-card (palier), on évite qu'elle fasse double-espacement */
+.form-card .card.subtle{
+  margin: 0;
+}
+
+/* ================== FORMS : sous-blocs (Objectifs) ================== */
+
+/* Les sous-blocs de champs doivent avoir leur propre rythme vertical */
+.form-card #objectiveFieldsRepeatable,
+.form-card #objectiveFieldsUnique,
+.form-card #objectiveFieldsMilestone,
+.form-card #editObjectiveFieldsRepeatable,
+.form-card #editObjectiveFieldsUnique,
+.form-card #editObjectiveFieldsMilestone{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;           /* ✅ régulier */
+  margin-top: 2px;
+}
+
+/* Dans ces sous-blocs, on neutralise encore le margin-top global des inputs */
+.form-card #objectiveFieldsRepeatable input,
+.form-card #objectiveFieldsUnique input,
+.form-card #objectiveFieldsMilestone input,
+.form-card #objectiveFieldsRepeatable select,
+.form-card #objectiveFieldsUnique select,
+.form-card #objectiveFieldsMilestone select,
+.form-card #editObjectiveFieldsRepeatable input,
+.form-card #editObjectiveFieldsUnique input,
+.form-card #editObjectiveFieldsMilestone input,
+.form-card #editObjectiveFieldsRepeatable select,
+.form-card #editObjectiveFieldsUnique select,
+.form-card #editObjectiveFieldsMilestone select{
+  margin-top: 0;
+}
+
+/* Les hints (tes p.hint) : ne pas empiler des trous */
+.form-card p.hint{
+  margin: -6px 0 0;
+}
+
+/* Inline dans les forms : pas de trou au-dessus */
+.form-card .inline{
+  margin-top: 0;
+}
+
+#pastTimeBox{
+  margin-top: 12px;
+}
+
+.world-btn.dragging{
+  opacity: 0.65;
+  transform: scale(0.99);
+}
+.world-btn.drag-over{
+  outline: 2px dashed rgba(255,255,255,0.30);
+  outline-offset: 6px;
+}
+
+.world-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+}
+
+.world-icon-big{
+  font-size: 34px;          /* + gros emoji */
+  line-height: 1;
+  flex: 0 0 auto;
+  width: 44px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.world-right{
+  flex: 1;
+  text-align: right;         /* ✅ tout à droite */
+}
+
+.world-name{
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.world-stats{
+  opacity: 0.8;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
