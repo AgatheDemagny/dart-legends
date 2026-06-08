@@ -87,9 +87,17 @@ function initPageNouvellePartie() {
 }
 
 // Ouvrir les sous-sections d'ajout
+// ÉCOUTEUR CORRIGÉ : Ouvrir la recherche et afficher les joueurs disponibles
 document.getElementById("btnOpenSearchPlayer").addEventListener("click", () => {
-  document.getElementById("zoneSearchPlayer").classList.toggle("hidden");
+  const zoneSearch = document.getElementById("zoneSearchPlayer");
+  zoneSearch.classList.toggle("hidden");
   document.getElementById("zoneCreatePlayer").classList.add("hidden");
+  
+  // Si on vient d'ouvrir la zone, on affiche la liste complète par défaut
+  if (!zoneSearch.classList.contains("hidden")) {
+    filtrerEtAfficherJoueurs(""); // Chaîne vide = affiche tout
+    document.getElementById("searchPlayerInput").focus();
+  }
 });
 document.getElementById("btnOpenCreatePlayer").addEventListener("click", () => {
   document.getElementById("zoneCreatePlayer").classList.toggle("hidden");
@@ -108,30 +116,47 @@ async function chargerTousLesJoueurs() {
 }
 
 // Recherche de joueur en temps réel
-document.getElementById("searchPlayerInput").addEventListener("input", (e) => {
-  const query = e.target.value.toLowerCase().trim();
+// Fonction isolée pour filtrer et afficher les résultats
+function filtrerEtAfficherJoueurs(query) {
   const resultContainer = document.getElementById("searchResultsList");
   resultContainer.innerHTML = "";
-  
-  if(!query) return;
 
-  const filtres = tousLesJoueursBase.filter(p => p.name.toLowerCase().includes(query) && !joueursSelectionnesMatch.some(sel => sel.id === p.id));
-  
+  // Si la requête est vide, on affiche TOUS les joueurs de la base (sauf ceux déjà sélectionnés)
+  // Sinon, on filtre par le nom tapé
+  const filtres = tousLesJoueursBase.filter(p => {
+    const correspondNom = p.name.toLowerCase().includes(query.toLowerCase().trim());
+    const pas_deja_selectionne = !joueursSelectionnesMatch.some(sel => sel.id === p.id);
+    return correspondNom && pas_deja_selectionne;
+  });
+
+  if (filtres.length === 0) {
+    resultContainer.innerHTML = "<p class='hint' style='padding:6px;'>Aucun joueur disponible</p>";
+    return;
+  }
+
   filtres.forEach(p => {
     const d = document.createElement("div");
     d.className = "stat-row";
     d.style.cursor = "pointer";
-    d.style.padding = "6px";
+    d.style.padding = "8px 6px";
+    d.style.borderBottom = "1px solid var(--divider)";
     d.innerHTML = `<span>👤 <strong>${p.name}</strong></span>`;
+    
     d.onclick = () => {
       joueursSelectionnesMatch.push({ id: p.id, name: p.name });
       renderSelectedPlayers();
       document.getElementById("searchPlayerInput").value = "";
       resultContainer.innerHTML = "";
       document.getElementById("zoneSearchPlayer").classList.add("hidden");
+      showPopup(`${p.name} ajouté au match !`);
     };
     resultContainer.appendChild(d);
   });
+}
+
+// Écouteur sur l'input pour filtrer pendant la saisie
+document.getElementById("searchPlayerInput").addEventListener("input", (e) => {
+  filtrerEtAfficherJoueurs(e.target.value);
 });
 
 // Créer un joueur dans la base
