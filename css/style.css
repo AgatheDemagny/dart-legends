@@ -1,28 +1,27 @@
-/* ================== DART LEGENDS — STYLE LIGHT & MODERNE ================== */
+/* ================== DART LEGENDS — PALETTE HARMONISÉE BANNIÈRE ================== */
 
-/* ================== PALETTE ET TYPO ================== */
 :root {
   /* Backgrounds */
-  --bg-main: #F4F6F9;
-  --bg-secondary: #E9ECEF;
+  --bg-main: #F8F9F0;         /* Ton crème/parchemin de la bannière */
+  --bg-secondary: #E3D4AE;    /* Teinte sable/doré doux pour les séparations */
 
   /* Surfaces */
   --card-bg: #FFFFFF;
-  --card-border: rgba(15, 76, 129, 0.08);
-  --card-border-strong: #0F4C81;
+  --card-border: rgba(227, 212, 174, 0.4); /* Bordure dorée très douce */
+  --card-border-strong: #0F4C81;          /* Bleu nuit de la cible et des armures */
 
-  /* Brand : Bleu Championnat & Or Legends */
+  /* Brand : Bleu Royal Cible & Vieil Or Legends */
   --primary: #0F4C81;
-  --primary-strong: #1D63B8;
-  --accent: #C5A02B; /* Or */
-  --accent-glow: rgba(197, 160, 43, 0.15);
+  --primary-strong: #0A355C;
+  --accent: #9A7B1C;          /* Doré/Bronze de l'illustration, plus sobre et lisible */
+  --accent-glow: rgba(154, 123, 28, 0.1);
 
   /* Textes */
-  --text-main: #1C1E21;
-  --text-soft: #5C6370;
+  --text-main: #24292E;       /* Presque noir mais plus doux pour les yeux */
+  --text-soft: #6A737D;
 
   /* Divers */
-  --divider: rgba(0, 0, 0, 0.06);
+  --divider: rgba(227, 212, 174, 0.3);
   --danger: #D9383A;
 
   /* Radius */
@@ -61,18 +60,18 @@ h3 { font-size: 18px; margin: 0 0 12px; color: var(--text-main); }
   border: 1px solid var(--card-border);
   border-radius: var(--r-2);
   padding: 20px;
-  box-shadow: 0 8px 24px rgba(15, 76, 129, 0.04);
-  margin: 0 12px; /* Ajout d'air sur les côtés */
+  box-shadow: 0 8px 24px rgba(227, 212, 174, 0.12); /* Ombre chaude */
+  margin: 0 12px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover { 
   transform: translateY(-1px); 
-  box-shadow: 0 12px 32px rgba(15, 76, 129, 0.08);
+  box-shadow: 0 12px 32px rgba(227, 212, 174, 0.2);
 }
 
 .card.subtle {
-  background: #F8F9FA;
+  background: #FDFDFB;
   border: 1px solid var(--divider);
   box-shadow: none;
   margin: 0;
@@ -134,10 +133,10 @@ button.primary:hover, .btn-primary:hover {
 .ghost {
   background: transparent;
   color: var(--text-soft);
-  border: 1px solid #CED4DA;
+  border: 1px solid #E3D4AE;
 }
 .ghost:hover { 
-  background: #F8F9FA; 
+  background: #FFFFFF; 
   color: var(--primary);
   border-color: var(--primary);
 }
@@ -152,7 +151,7 @@ button.primary:hover, .btn-primary:hover {
   background: #FFFFFF;
   border: 1px solid var(--divider);
 }
-.icon-btn:hover { background: #F8F9FA; }
+.icon-btn:hover { background: #FFFFFF; border-color: var(--accent); }
 
 /* ================== INPUTS ================== */
 input, select {
@@ -160,7 +159,7 @@ input, select {
   padding: 12px;
   margin-top: 6px;
   border-radius: 10px;
-  border: 1px solid #CED4DA;
+  border: 1px solid #E3D4AE;
   font-size: 14px;
   background: #FFFFFF;
   color: var(--text-main);
@@ -173,7 +172,7 @@ input:focus, select:focus {
   box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.15);
 }
 
-::placeholder { color: #ADB5BD; }
+::placeholder { color: #C4C4B5; }
 
 .hint {
   font-size: 13px;
@@ -186,7 +185,7 @@ input:focus, select:focus {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin: 0 12px 15px 12px; /* Marges ajustées */
+  margin: 0 12px 15px 12px;
 }
 
 .world-btn {
@@ -197,13 +196,16 @@ input:focus, select:focus {
   color: var(--text-main);
   font-weight: 700;
   border: 1px solid var(--card-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 4px 12px rgba(227, 212, 174, 0.05);
   cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
 }
 .world-btn:hover {
-  border-color: var(--primary);
-  background: rgba(15, 76, 129, 0.01);
+  border-color: var(--accent);
+  background: rgba(227, 212, 174, 0.05);
 }
+
+/* Version active modifiée pour coller au thème or/bleu */
 .world-btn.active {
   background: rgba(15, 76, 129, 0.05);
   border-color: var(--primary);
@@ -212,7 +214,7 @@ input:focus, select:focus {
 .world-row { display: flex; align-items: center; gap: 12px; width: 100%; }
 .world-icon-big { font-size: 28px; }
 .world-right { flex: 1; }
-.world-name { font-weight: 700; font-size: 15px; }
+.world-name { font-weight: 700; font-size: 15px; color: var(--primary); }
 
 /* ================== TABS ================== */
 .tabs { display: flex; gap: 8px; margin: 12px 0; }
@@ -220,39 +222,15 @@ input:focus, select:focus {
   flex: 1;
   border-radius: 10px;
   padding: 10px;
-  background: #E9ECEF;
-  color: var(--text-soft);
+  background: #E3D4AE;
+  color: var(--text-main);
   border: 1px solid transparent;
 }
-.tab-btn:hover { background: #DEE2E6; }
+.tab-btn:hover { background: #D0C099; }
 .tab-btn.active {
   background: var(--primary);
   color: #FFFFFF;
   border-color: var(--primary);
-}
-.tab-panel { display: flex; flex-direction: column; gap: 16px; }
-
-/* ================== SEGMENTED ================== */
-.segmented {
-  background: #E9ECEF;
-  border-radius: 12px;
-  padding: 4px;
-  display: flex;
-  gap: 4px;
-}
-.segmented button {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--text-soft);
-  border-radius: 8px;
-  padding: 8px;
-}
-.segmented button:hover { background: rgba(0,0,0,0.02); }
-.segmented button.active {
-  background: #FFFFFF;
-  color: var(--primary);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
 /* ================== STRUCTURE BANNIÈRE UNIQUE ================== */
@@ -270,7 +248,7 @@ input:focus, select:focus {
 tr.active-row { background: rgba(15, 76, 129, 0.06); }
 #cricketGridTable th { color: var(--primary); font-weight: 700; }
 #cricketGridTable td, #cricketGridTable th {
-  border-color: rgba(0, 0, 0, 0.08) !important;
+  border-color: var(--divider) !important;
 }
 
 /* Formulaire vertical gap */
@@ -278,7 +256,7 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
 
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; }
 .topbar-center { flex: 1; display: flex; align-items: center; justify-content: center; }
-.badge { font-size: 12px; padding: 4px 8px; border-radius: 20px; color: var(--text-soft); background: #E9ECEF; font-weight: 600; }
+.badge { font-size: 12px; padding: 4px 8px; border-radius: 20px; color: var(--text-main); background: #E3D4AE; font-weight: 600; }
 
 .hidden { display: none !important; }
 .stack { display: flex; flex-direction: column; gap: 16px; }
@@ -286,6 +264,11 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
 
 .danger-btn { background: #FFF5F5; color: var(--danger); border: 1px solid #FACDCD; }
 .danger-btn:hover { background: #FFE3E3; border-color: var(--danger); }
+
+/* Ligne active en jeu (Fond ambré subtil) */
+#cricketGridTable tr[style*="background-color"] {
+  background-color: rgba(227, 212, 174, 0.25) !important;
+}
 
 /* Toast Popup */
 #popup {
