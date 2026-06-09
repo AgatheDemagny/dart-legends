@@ -4,7 +4,7 @@ const screens = {
   login: document.getElementById("loginScreen"),
   home: document.getElementById("homeScreen"),
   newGame: document.getElementById("newGameScreen"),
-  account: document.getElementById("accountScreen"), // Écran Mon Compte ajouté
+  account: document.getElementById("accountScreen"),
   cricket: document.getElementById("cricketScreen"),
   gameOver: document.getElementById("gameOverScreen"),
   matchStats: document.getElementById("statsMatchScreen")
@@ -50,21 +50,16 @@ document.getElementById("btnKeyZero").onclick = () => taperChiffre(0);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Écouteur de l'état de connexion de l'utilisateur
 auth.onAuthStateChanged(async (user) => {
   if (user) {
     try {
-      // On récupère le pseudo depuis la collection Firestore "players"
       const doc = await db.collection("players").doc(user.uid).get();
       if (doc.exists && doc.data().name) {
         document.getElementById("playerNameDisplay").innerText = doc.data().name;
         showScreen(screens.home);
       } else {
-        // Si aucun profil trouvé en base, on le redirige vers l'onboarding pour définir son pseudo
-        showScreen(screens.onboardingScreen || screens.home);
-        if(!screens.onboardingScreen) {
-          document.getElementById("playerNameDisplay").innerText = user.email.split('@')[0];
-        }
+        showScreen(screens.home);
+        document.getElementById("playerNameDisplay").innerText = user.email.split('@')[0];
       }
     } catch(e) {
       document.getElementById("playerNameDisplay").innerText = user.email.split('@')[0];
@@ -85,9 +80,7 @@ document.getElementById("btnSignup").addEventListener("click", async () => {
     const cred = await auth.createUserWithEmailAndPassword(email, password);
     const defaultName = email.split('@')[0];
     await db.collection("players").doc(cred.user.uid).set({
-      email: email, 
-      name: defaultName, 
-      createdAt: Date.now()
+      email: email, name: defaultName, createdAt: Date.now()
     });
     showPopup("Compte joueur enregistré !");
   } catch (e) { showPopup(e.message); }
@@ -145,23 +138,6 @@ document.getElementById("btnUpdateProfileName").addEventListener("click", async 
     showPopup("Erreur lors de la mise à jour : " + e.message);
   }
 });
-
-// Logique onboarding optionnelle si l'élément existe
-const startBtn = document.getElementById("startBtn");
-if(startBtn) {
-  startBtn.addEventListener("click", async () => {
-    const user = auth.currentUser;
-    const nameInput = document.getElementById("playerNameInput").value.trim();
-    if(!nameInput || !user) return showPopup("Nom obligatoire.");
-    try {
-      await db.collection("players").doc(user.uid).set({
-        email: user.email, name: nameInput, createdAt: Date.now()
-      }, { merge: true });
-      document.getElementById("playerNameDisplay").innerText = nameInput;
-      showScreen(screens.home);
-    } catch(e) { showPopup(e.message); }
-  });
-}
 
 // ================== LOGIQUE NOUVELLE PARTIE ==================
 let tousLesJoueursBase = [];
@@ -312,8 +288,12 @@ function alternerModificateur(valeur, boutonClique) {
   const etaitDejaActif = boutonClique.classList.contains("active");
   document.getElementById("btnModDouble").classList.remove("active");
   document.getElementById("btnModTriple").classList.remove("active");
-  if (etaitDejaActif) { modificateurEnCours = 1; } 
-  else { boutonClique.classList.add("active"); modificateurEnCours = valeur; }
+  if (etaitDejaActif) { 
+    modificateurEnCours = 1; 
+  } else { 
+    boutonClique.classList.add("active"); 
+    modificateurEnCours = valeur; 
+  }
   gererEtatBoutonBull();
 }
 
@@ -352,14 +332,11 @@ function demarrerMatchCricket(listeJoueurs) {
   cricketState.scores = {}; cricketState.marks = {}; cricketState.statsDetails = {};
 
   if (cricketState.isBlind) {
-    // 1. On mélange les 7 cibles réelles du cricket
     let valeursReelles = [15, 16, 17, 18, 19, 20, 25];
     for (let i = valeursReelles.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [valeursReelles[i], valeursReelles[j]] = [valeursReelles[j], valeursReelles[i]];
     }
-    
-    // 2. CORRECTION : On attribue ces cibles masquées UNIQUEMENT aux touches de 1 à 7
     cricketState.blindMap = {};
     for (let k = 1; k <= 7; k++) {
       cricketState.blindMap[k] = valeursReelles[k - 1];
@@ -457,73 +434,42 @@ function renderGrid() {
 }
 
 // ================== GESTION DYNAMIQUE DES CLAVIERS CRICKET ==================
-
 function renderKeyboard() {
   const container = document.getElementById("cricketDynamicRows");
   if (!container) return;
-  container.innerHTML = ""; // On vide l'ancienne configuration
+  container.innerHTML = "";
 
-  // Vérification : en mode aveugle, est-ce que toutes les cibles ont été découvertes ?
   const toutEstDecouvert = cricketState.revealedTargets.length >= cricketState.targets.length;
 
   if (cricketState.isBlind && !toutEstDecouvert) {
-    // MODE À L'AVEUGLE : 3 LIGNES DE TOUCHES INDÉPENDANTES
-    
-    // Ligne 1 : Boutons de 1 à 7
     const row1 = document.createElement("div");
-    row1.style.display = "grid";
-    row1.style.gridTemplateColumns = "repeat(7, 1fr)";
-    row1.style.gap = "5px";
-    for (let toucheA = 1; toucheA <= 7; toucheA++) {
-      row1.appendChild(creerBoutonClavier(toucheA, toucheA));
-    }
+    row1.style.display = "grid"; row1.style.gridTemplateColumns = "repeat(7, 1fr)"; row1.style.gap = "5px";
+    for (let tA = 1; tA <= 7; tA++) { row1.appendChild(creerBoutonClavier(tA, tA)); }
     container.appendChild(row1);
 
-    // Ligne 2 : Boutons de 8 à 14
     const row2 = document.createElement("div");
-    row2.style.display = "grid";
-    row2.style.gridTemplateColumns = "repeat(7, 1fr)";
-    row2.style.gap = "5px";
-    for (let toucheB = 8; toucheB <= 14; toucheB++) {
-      row2.appendChild(creerBoutonClavier(toucheB, toucheB));
-    }
+    row2.style.display = "grid"; row2.style.gridTemplateColumns = "repeat(7, 1fr)"; row2.style.gap = "5px";
+    for (let tB = 8; tB <= 14; tB++) { row2.appendChild(creerBoutonClavier(tB, tB)); }
     container.appendChild(row2);
 
-    // Ligne 3 : Boutons de 15 à Bull (25)
     const row3 = document.createElement("div");
-    row3.style.display = "grid";
-    row3.style.gridTemplateColumns = "repeat(6, 1fr) 1.2fr";
-    row3.style.gap = "5px";
-    [15, 16, 17, 18, 19, 20].forEach(num => {
-      row3.appendChild(creerBoutonClavier(num, num));
-    });
+    row3.style.display = "grid"; row3.style.gridTemplateColumns = "repeat(6, 1fr) 1.2fr"; row3.style.gap = "5px";
+    [15, 16, 17, 18, 19, 20].forEach(num => { row3.appendChild(creerBoutonClavier(num, num)); });
     row3.appendChild(creerBoutonClavier("🎯 B", 25));
     container.appendChild(row3);
-
   } else {
-    // CRICKET CLASSIQUE (OU AVEUGLE TERMINÉ -> 1 SEULE LIGNE)
     const rowClassique = document.createElement("div");
-    rowClassique.style.display = "grid";
-    rowClassique.style.gridTemplateColumns = "repeat(6, 1fr) 1.2fr";
-    rowClassique.style.gap = "5px";
-
-    [15, 16, 17, 18, 19, 20].forEach(num => {
-      rowClassique.appendChild(creerBoutonClavier(num, num));
-    });
+    rowClassique.style.display = "grid"; rowClassique.style.gridTemplateColumns = "repeat(6, 1fr) 1.2fr"; rowClassique.style.gap = "5px";
+    [15, 16, 17, 18, 19, 20].forEach(num => { rowClassique.appendChild(creerBoutonClavier(num, num)); });
     rowClassique.appendChild(creerBoutonClavier("🎯 B", 25));
     container.appendChild(rowClassique);
   }
 }
 
-// Fonction utilitaire pour générer un bouton de saisie proprement
 function creerBoutonClavier(libelle, valeur) {
   const btn = document.createElement("button");
-  btn.className = "ghost";
-  btn.style.padding = "14px 2px";
-  btn.style.fontSize = "14px";
-  btn.style.fontWeight = "bold";
-  btn.innerText = libelle;
-  btn.onclick = () => taperChiffre(valeur);
+  btn.className = "ghost"; btn.style.padding = "14px 2px"; btn.style.fontSize = "14px"; btn.style.fontWeight = "bold";
+  btn.innerText = libelle; btn.onclick = () => taperChiffre(valeur);
   return btn;
 }
 
@@ -531,7 +477,6 @@ function taperChiffre(valeurBouton) {
   if (cricketState.isPaused) return;
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
   
-  // Sauvegarde de l'historique pour le bouton Annuler
   cricketState.history.push({
     scores: JSON.parse(JSON.stringify(cricketState.scores)),
     marks: JSON.parse(JSON.stringify(cricketState.marks)),
@@ -543,45 +488,33 @@ function taperChiffre(valeurBouton) {
     currentTurn: cricketState.currentTurn
   });
 
-  // Gestion du texte d'affichage des lancers en cours
   let prefixeText = modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "";
-  if (valeurBouton === 0) {
-    cricketState.currentTurnDartsText.push("0");
-  } else if (valeurBouton === 25) {
-    cricketState.currentTurnDartsText.push(prefixeText + "Bull");
-  } else {
-    cricketState.currentTurnDartsText.push(prefixeText + valeurBouton);
-  }
+  if (valeurBouton === 0) { cricketState.currentTurnDartsText.push("0"); } 
+  else if (valeurBouton === 25) { cricketState.currentTurnDartsText.push(prefixeText + "Bull"); } 
+  else { cricketState.currentTurnDartsText.push(prefixeText + valeurBouton); }
 
   cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
-    if (valeurBouton !== 0) {
+
+  if (valeurBouton !== 0) {
     let cibleReelle = valeurBouton;
 
-    // Gestion de la logique à l'aveugle
     if (cricketState.isBlind) {
       const toutEstDecouvert = cricketState.revealedTargets.length >= cricketState.targets.length;
-
       if (!toutEstDecouvert) {
-        // Si on utilise le clavier temporaire (touches 1 à 7)
         if (valeurBouton >= 1 && valeurBouton <= 7) {
           cibleReelle = cricketState.blindMap[valeurBouton];
-          
-          // Si cette touche n'avait pas encore été découverte, on l'enregistre
           if (!cricketState.revealedTargets.includes(cibleReelle)) {
             cricketState.revealedTargets.push(cibleReelle);
             showPopup(`🎯 Zone découverte ! Touche ${valeurBouton} = ${cibleReelle === 25 ? 'Bull' : cibleReelle}`);
           }
         } else {
-          // Si le joueur clique sur une touche 8-20 ou Bull alors qu'il doit chercher les touches 1 à 7
           cibleReelle = null; 
         }
       } else {
-        // Si tout est découvert, on est repassé sur le clavier classique, la valeur du bouton est directe
         cibleReelle = valeurBouton;
       }
     }
 
-    // Si la cible touchée est valide et identifiée (15-20, Bull)
     if (cibleReelle !== null) {
       cricketState.statsDetails[joueurActuel.id].touchesNum[cibleReelle] += modificateurEnCours;
 
@@ -605,26 +538,16 @@ function taperChiffre(valeurBouton) {
       }
     }
   }
-  }
 
-  // Passage à la fléchette suivante / joueur suivant
   cricketState.currentDart += 1;
   if (cricketState.currentDart > 3) {
-    cricketState.currentDart = 1;
-    cricketState.currentPlayerIdx += 1;
-    cricketState.currentTurnDartsText = [];
+    cricketState.currentDart = 1; cricketState.currentPlayerIdx += 1; cricketState.currentTurnDartsText = [];
     if (cricketState.currentPlayerIdx >= cricketState.players.length) {
-      cricketState.currentPlayerIdx = 0;
-      cricketState.currentTurn += 1;
+      cricketState.currentPlayerIdx = 0; cricketState.currentTurn += 1;
     }
   }
 
-  // Actualisation complète de l'interface
-  resetModifierUI();
-  renderKeyboard(); // Re-génère le clavier (gère la transition si les 7 chiffres sont découverts)
-  renderGrid();
-  updateTurnHeader();
-  verifierConditionsFinMatch();
+  resetModifierUI(); renderKeyboard(); renderGrid(); updateTurnHeader(); verifierConditionsFinMatch();
 }
 
 document.getElementById("btnKeyUndo").onclick = () => { annulerDernierCoup(); };
@@ -632,19 +555,11 @@ document.getElementById("btnKeyUndo").onclick = () => { annulerDernierCoup(); };
 function annulerDernierCoup() {
   if (cricketState.history.length === 0) return showPopup("Aucun coup à effacer.");
   const precedentState = cricketState.history.pop();
-  cricketState.scores = precedentState.scores;
-  cricketState.marks = precedentState.marks;
-  cricketState.revealedTargets = precedentState.revealedTargets;
-  cricketState.currentTurnDartsText = precedentState.currentTurnDartsText;
-  cricketState.statsDetails = precedentState.statsDetails;
-  cricketState.currentPlayerIdx = precedentState.currentPlayerIdx;
-  cricketState.currentDart = precedentState.currentDart;
-  cricketState.currentTurn = precedentState.currentTurn;
-  
-  resetModifierUI();
-  renderKeyboard(); 
-  renderGrid();
-  updateTurnHeader();
+  cricketState.scores = precedentState.scores; cricketState.marks = precedentState.marks;
+  cricketState.revealedTargets = precedentState.revealedTargets; cricketState.currentTurnDartsText = precedentState.currentTurnDartsText;
+  cricketState.statsDetails = precedentState.statsDetails; cricketState.currentPlayerIdx = precedentState.currentPlayerIdx;
+  cricketState.currentDart = precedentState.currentDart; cricketState.currentTurn = precedentState.currentTurn;
+  resetModifierUI(); renderKeyboard(); renderGrid(); updateTurnHeader();
 }
 
 function verifierConditionsFinMatch() {
