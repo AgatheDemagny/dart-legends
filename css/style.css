@@ -153,6 +153,13 @@ button.primary:hover, .btn-primary:hover {
 }
 .icon-btn:hover { background: #FFFFFF; border-color: var(--accent); }
 
+/* État actif pour les modificateurs Double et Triple */
+button.mod-btn.active {
+  background: var(--primary) !important;
+  color: #FFFFFF !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 4px 12px rgba(15, 76, 129, 0.2);
+}
 /* ================== INPUTS ================== */
 input, select {
   width: 100%;
@@ -260,8 +267,33 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
 
 .hidden { display: none !important; }
 .stack { display: flex; flex-direction: column; gap: 16px; }
-.game { max-width: 480px; margin: auto; display: flex; flex-direction: column; gap: 16px; background-color: var(--bg-main); min-height: 100vh; padding-bottom: 30px; }
+.game { 
+  max-width: 480px; 
+  margin: auto; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 16px; 
+  background-color: var(--bg-main); 
+  height: 100vh;          /* Fixe la hauteur à l'écran exact */
+  height: 100dvh;         /* S'adapte parfaitement sur mobile sans la barre de navigation */
+  overflow: hidden;       /* Bloque le défilement général */
+  position: relative;
+}
 
+/* Force les écrans actifs à s'adapter sans déborder */
+.game > section {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;       /* Empêche le scroll global de la section */
+}
+
+/* Permet uniquement à la grille du tableau de défiler horizontalement si l'écran est minuscule */
+#cricketScreen > div:nth-of-type(2) {
+  overflow-x: auto;
+  max-width: 100%;
+}
 .danger-btn { background: #FFF5F5; color: var(--danger); border: 1px solid #FACDCD; }
 .danger-btn:hover { background: #FFE3E3; border-color: var(--danger); }
 

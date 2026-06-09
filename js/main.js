@@ -352,13 +352,18 @@ function demarrerMatchCricket(listeJoueurs) {
   cricketState.scores = {}; cricketState.marks = {}; cricketState.statsDetails = {};
 
   if (cricketState.isBlind) {
+    // 1. On mélange les 7 cibles réelles du cricket
     let valeursReelles = [15, 16, 17, 18, 19, 20, 25];
     for (let i = valeursReelles.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [valeursReelles[i], valeursReelles[j]] = [valeursReelles[j], valeursReelles[i]];
     }
+    
+    // 2. CORRECTION : On attribue ces cibles masquées UNIQUEMENT aux touches de 1 à 7
     cricketState.blindMap = {};
-    cricketState.targets.forEach((t, index) => { cricketState.blindMap[t] = valeursReelles[index]; });
+    for (let k = 1; k <= 7; k++) {
+      cricketState.blindMap[k] = valeursReelles[k - 1];
+    }
   }
 
   cricketState.players.forEach(p => {
@@ -549,29 +554,34 @@ function taperChiffre(valeurBouton) {
   }
 
   cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
-
-  if (valeurBouton !== 0) {
+    if (valeurBouton !== 0) {
     let cibleReelle = valeurBouton;
 
     // Gestion de la logique à l'aveugle
     if (cricketState.isBlind) {
-      // On regarde si la touche pressée possède une correspondance cachée
-      if (cricketState.blindMap[valeurBouton] !== undefined) {
-        cibleReelle = cricketState.blindMap[valeurBouton];
-        
-        // Si cette touche n'avait pas encore été découverte
-        if (!cricketState.revealedTargets.includes(valeurBouton)) {
-          cricketState.revealedTargets.push(valeurBouton);
-          showPopup(`🎯 Zone découverte ! Touche ${valeurBouton} = ${cibleReelle === 25 ? 'Bull' : cibleReelle}`);
+      const toutEstDecouvert = cricketState.revealedTargets.length >= cricketState.targets.length;
+
+      if (!toutEstDecouvert) {
+        // Si on utilise le clavier temporaire (touches 1 à 7)
+        if (valeurBouton >= 1 && valeurBouton <= 7) {
+          cibleReelle = cricketState.blindMap[valeurBouton];
+          
+          // Si cette touche n'avait pas encore été découverte, on l'enregistre
+          if (!cricketState.revealedTargets.includes(cibleReelle)) {
+            cricketState.revealedTargets.push(cibleReelle);
+            showPopup(`🎯 Zone découverte ! Touche ${valeurBouton} = ${cibleReelle === 25 ? 'Bull' : cibleReelle}`);
+          }
+        } else {
+          // Si le joueur clique sur une touche 8-20 ou Bull alors qu'il doit chercher les touches 1 à 7
+          cibleReelle = null; 
         }
       } else {
-        // La touche pressée (ex: 1, 2, 3...) n'est pas associée à une zone de Cricket
-        // C'est un manqué complet (un trou dans le décor !)
-        cibleReelle = null;
+        // Si tout est découvert, on est repassé sur le clavier classique, la valeur du bouton est directe
+        cibleReelle = valeurBouton;
       }
     }
 
-    // Si la cible touchée fait bien partie du Cricket (15-20, Bull)
+    // Si la cible touchée est valide et identifiée (15-20, Bull)
     if (cibleReelle !== null) {
       cricketState.statsDetails[joueurActuel.id].touchesNum[cibleReelle] += modificateurEnCours;
 
@@ -594,6 +604,7 @@ function taperChiffre(valeurBouton) {
         });
       }
     }
+  }
   }
 
   // Passage à la fléchette suivante / joueur suivant
