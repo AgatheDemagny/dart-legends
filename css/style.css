@@ -276,7 +276,6 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
   background-color: var(--bg-main); 
   height: 100vh;          /* Fixe la hauteur à l'écran exact */
   height: 100dvh;         /* S'adapte parfaitement sur mobile sans la barre de navigation */
-  overflow: hidden;       /* Bloque le défilement général */
   position: relative;
 }
 
@@ -286,10 +285,14 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
   width: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;       /* Empêche le scroll global de la section */
 }
 
 /* Permet uniquement à la grille du tableau de défiler horizontalement si l'écran est minuscule */
+#cricketScreen {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
 #cricketScreen > div:nth-of-type(2) {
   overflow-x: auto;
   max-width: 100%;
