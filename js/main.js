@@ -467,15 +467,15 @@ function renderKeyboard() {
   const toutEstDecouvert = cricketState.revealedTargets.length >= cricketState.targets.length;
 
   if (cricketState.isBlind && !toutEstDecouvert) {
-    // MODIFICATION : MODE À L'AVEUGLE (3 LIGNES DE TOUCHES)
+    // MODE À L'AVEUGLE : 3 LIGNES DE TOUCHES INDÉPENDANTES
     
     // Ligne 1 : Boutons de 1 à 7
     const row1 = document.createElement("div");
     row1.style.display = "grid";
     row1.style.gridTemplateColumns = "repeat(7, 1fr)";
     row1.style.gap = "5px";
-    for (let i = 1; i <= 7; i++) {
-      row1.appendChild(creerBoutonClavier(i, i));
+    for (let toucheA = 1; toucheA <= 7; toucheA++) {
+      row1.appendChild(creerBoutonClavier(toucheA, toucheA));
     }
     container.appendChild(row1);
 
@@ -484,8 +484,8 @@ function renderKeyboard() {
     row2.style.display = "grid";
     row2.style.gridTemplateColumns = "repeat(7, 1fr)";
     row2.style.gap = "5px";
-    for (let i = 8; i <= 14; i++) {
-      row2.appendChild(creerBoutonClavier(i, i));
+    for (let toucheB = 8; toucheB <= 14; toucheB++) {
+      row2.appendChild(creerBoutonClavier(toucheB, toucheB));
     }
     container.appendChild(row2);
 
@@ -501,7 +501,7 @@ function renderKeyboard() {
     container.appendChild(row3);
 
   } else {
-    // MODIFICATION : CRICKET CLASSIQUE (OU AVEUGLE TERMINÉ -> 1 SEULE LIGNE)
+    // CRICKET CLASSIQUE (OU AVEUGLE TERMINÉ -> 1 SEULE LIGNE)
     const rowClassique = document.createElement("div");
     rowClassique.style.display = "grid";
     rowClassique.style.gridTemplateColumns = "repeat(6, 1fr) 1.2fr";
