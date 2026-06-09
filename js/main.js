@@ -471,8 +471,11 @@ function renderKeyboard() {
   if (!container) return;
   container.innerHTML = "";
 
-  // Si on est en mode aveugle, on doit pouvoir saisir de 1 à 20 et Bull
-  if (cricketState.isBlind) {
+  // On vérifie si TOUTES les cibles secrètes du match ont été révélées
+  const toutEstDecouvert = cricketState.isBlind && (cricketState.revealedTargets.length >= cricketState.targets.length);
+
+  // Si on est en mode aveugle ET qu'il reste des numéros à trouver
+  if (cricketState.isBlind && !toutEstDecouvert) {
     // Ligne 1 : 1 à 7
     const row1 = document.createElement("div");
     row1.style.display = "grid"; row1.style.gridTemplateColumns = "repeat(7, 1fr)"; row1.style.gap = "5px";
@@ -492,11 +495,22 @@ function renderKeyboard() {
     row3.appendChild(creerBoutonClavier("🎯 B", 25));
     container.appendChild(row3);
   } else {
-    // Clavier Standard Cricket : 15 à 20 + Bull
+    // Si Cricket Standard OU si le mode aveugle est terminé (les 7 chiffres ont été découverts)
+    // On affiche uniquement la ligne simplifiée du Cricket avec ses cibles réelles
     const rowClassique = document.createElement("div");
-    rowClassique.style.display = "grid"; rowClassique.style.gridTemplateColumns = "repeat(6, 1fr) 1.2fr"; rowClassique.style.gap = "5px";
-    [15, 16, 17, 18, 19, 20].forEach(num => { rowClassique.appendChild(creerBoutonClavier(num, num)); });
-    rowClassique.appendChild(creerBoutonClavier("🎯 B", 25));
+    rowClassique.style.display = "grid"; 
+    
+    // Si c'était à l'aveugle, les cibles réelles ne sont pas forcément 15-20, ce sont les 'cricketState.targets'
+    const ciblesAAfficher = cricketState.targets;
+    
+    rowClassique.style.gridTemplateColumns = `repeat(${ciblesAAfficher.length}, 1fr)`;
+    rowClassique.style.gap = "5px";
+    
+    ciblesAAfficher.forEach(num => {
+      let libelle = num === 25 ? "🎯 B" : num;
+      rowClassique.appendChild(creerBoutonClavier(libelle, num));
+    });
+    
     container.appendChild(rowClassique);
   }
 }
