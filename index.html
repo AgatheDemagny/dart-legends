@@ -27,15 +27,13 @@
       <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
       <div class="card">
         <h2>Connexion</h2>
-
         <input type="email" id="authEmail" placeholder="Email">
         <input type="password" id="authPassword" placeholder="Mot de passe">
-
-        <div class="actions">
-          <button id="btnLogin" class="primary">Se connecter</button>
-          <button id="btnSignup" class="ghost">Créer un compte</button>
+        <div class="actions" style="display: flex; gap: 10px; margin-top: 12px;">
+          <button id="btnLogin" class="primary" style="flex: 1;">Se connecter</button>
+          <button id="btnSignup" class="ghost" style="flex: 1;">Créer un compte</button>
         </div>
-        <p class="hint" id=""authStatus">Il faut être connecté à un compte pour pouvoir utiliser l'app </p>
+        <p class="hint" id="authStatus" style="margin-top: 12px; text-align: center;">Il faut être connecté à un compte pour pouvoir utiliser l'app</p>
       </div>
     </div>
 
@@ -49,11 +47,8 @@
     </section>
 
     <section id="homeScreen" class="hidden stack">
-      <header class="topbar">
-        <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
-        <button id="btnLogout" class="icon-btn" title="Déconnexion">🚪</button>
-      </header>
-
+      <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
+      
       <div class="card">
         <h3>Bienvenue, <span id="playerNameDisplay" style="color: var(--primary-strong);">Joueur</span> !</h3>
       </div>
@@ -100,10 +95,47 @@
             <div class="world-right"><div class="world-name">Tournoi</div></div>
           </div>
         </button>
+
+        <button class="world-btn" id="menuAccount" style="grid-column: span 2;">
+          <div class="world-row">
+            <div class="world-icon-big">👤</div>
+            <div class="world-right"><div class="world-name">Mon Compte</div></div>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <section id="accountScreen" class="hidden stack">
+      <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
+      <header class="topbar">
+        <button id="backHomeFromAccountBtn" class="icon-btn">←</button>
+        <h2>Mon Compte</h2>
+        <div style="width:40px;"></div>
+      </header>
+
+      <div class="card form-card">
+        <h3>Informations</h3>
+        
+        <label><strong>Pseudo</strong></label>
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+          <input type="text" id="accountProfileName" placeholder="Ton pseudo" maxlength="24" style="margin-top: 0;">
+          <button id="btnUpdateProfileName" class="primary" style="padding: 11px 16px;">Modifier</button>
+        </div>
+
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider);">
+          <label><strong>Email</strong></label>
+          <p id="accountProfileEmail" style="font-size: 15px; color: var(--text-soft); padding: 8px 0; border: none; justify-content: flex-start;"></p>
+        </div>
+      </div>
+
+      <div class="card form-card">
+        <h3>Session</h3>
+        <button id="btnLogout" class="danger-btn btn-block" style="margin-top: 4px;">🚪 Se déconnecter</button>
       </div>
     </section>
 
     <section id="newGameScreen" class="hidden stack">
+      <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
       <header class="topbar">
         <button id="backHomeBtn" class="icon-btn">←</button>
         <h2>Nouvelle Partie</h2>
@@ -112,9 +144,9 @@
 
       <div class="card form-card">
         <h3>👥 Joueurs</h3>
-        <div class="actions" style="margin-top: 0;">
-          <button id="btnOpenSearchPlayer" class="ghost">🔍 Ajouter un joueur</button>
-          <button id="btnOpenCreatePlayer" class="ghost">➕ Créer un joueur</button>
+        <div class="actions" style="margin-top: 0; display: flex; gap: 8px;">
+          <button id="btnOpenSearchPlayer" class="ghost" style="flex:1;">🔍 Ajouter</button>
+          <button id="btnOpenCreatePlayer" class="ghost" style="flex:1;">➕ Créer</button>
         </div>
 
         <div id="zoneSearchPlayer" class="hidden card subtle form-card" style="padding: 10px;">
@@ -129,13 +161,11 @@
         </div>
 
         <h4 style="margin-top: 10px; opacity: 0.8; font-size: 14px; text-align: left !important;">Joueurs sur la ligne de tir :</h4>
-        <div id="selectedPlayersMatchList">
-          </div>
+        <div id="selectedPlayersMatchList"></div>
       </div>
 
       <div class="card form-card">
         <h3>⚙️ Paramètres du jeu</h3>
-        
         <label>Mode de jeu</label>
         <select id="gameModeSelect">
           <option value="cricket">🏏 Cricket</option>
@@ -157,7 +187,7 @@
           <option value="999">Sans limite</option>
         </select>
 
-        <div class="stat-row" style="border: none; padding: 5px 0;">
+        <div class="stat-row" style="border: none; padding: 5px 0; display: flex; justify-content: space-between; align-items: center;">
           <span class="stat-label"><strong>Activer le mode à l'aveugle</strong></span>
           <input type="checkbox" id="blindModeCheckbox" style="width: auto; margin-top: 0;">
         </div>
@@ -186,25 +216,21 @@
       </div>
 
       <div style="width: 100%; background: var(--card-bg); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); padding: 6px 0px;">
-        <table id="cricketGridTable" style="width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 13px;">
-          </table>
+        <table id="cricketGridTable" style="width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 13px;"></table>
       </div>
 
       <div id="cricketKeyboardZone" style="padding: 10px 6px; display: flex; flex-direction: column; gap: 8px; width: 100%; background: rgba(0,0,0,0.2); border-top: 1px solid var(--divider);">
-        
         <div style="display: grid; grid-template-columns: 0.8fr 1.1fr 1.1fr 1fr; gap: 6px; width: 100%;">
           <button class="ghost" id="btnKeyZero" style="padding: 12px 2px; font-size: 15px;">0</button>
           <button class="ghost mod-btn" id="btnModDouble" style="padding: 12px 2px; font-size: 14px;">Double</button>
           <button class="ghost mod-btn" id="btnModTriple" style="padding: 12px 2px; font-size: 14px;">Triple</button>
           <button class="danger-btn" id="btnKeyUndo" style="background: var(--danger); padding: 12px 2px; font-size: 14px;">↩️</button>
         </div>
-
-        <div style="display: grid; grid-template-columns: repeat(6, 1fr) 1.2fr; gap: 5px; width: 100%;" id="cricketNumbersRow">
-          </div>
-
+        <div style="display: grid; grid-template-columns: repeat(6, 1fr) 1.2fr; gap: 5px; width: 100%; id="cricketNumbersRow"></div>
       </div>
     </section>
-<section id="gameOverScreen" class="hidden stack" style="width: 100%; padding: 10px 6px;">
+
+    <section id="gameOverScreen" class="hidden stack" style="width: 100%; padding: 10px 6px;">
       <div class="card" style="text-align: center; border-color: var(--primary);">
         <h1 style="font-size: 36px; margin: 0;">👑</h1>
         <h2 style="color: var(--primary-strong); margin: 0 0 10px;" id="victoryTitle">Victoire !</h2>
@@ -213,8 +239,7 @@
 
       <div class="card form-card">
         <h3>🏆 Classement Final</h3>
-        <div id="finalRankingList" class="stack" style="gap: 8px;">
-          </div>
+        <div id="finalRankingList" class="stack" style="gap: 8px;"></div>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
@@ -232,8 +257,7 @@
       </header>
 
       <div style="width: 100%; overflow-x: auto; background: var(--card-bg); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); padding: 8px 0px;">
-        <table id="matchStatsTable" style="min-width: 480px; width: 100%; border-collapse: collapse; text-align: center; font-size: 13px;">
-          </table>
+        <table id="matchStatsTable" style="min-width: 480px; width: 100%; border-collapse: collapse; text-align: center; font-size: 13px;"></table>
       </div>
 
       <div style="padding: 0 8px;">
@@ -250,7 +274,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <script>
-    // Config de ton Firebase (Reste inchangé)
     const firebaseConfig = {
       apiKey: "AIzaSyCstR2h9HHPhOf2uORC2vuZWbET-KQaZrc",
       authDomain: "dart-quest.firebaseapp.com",
