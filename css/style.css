@@ -373,3 +373,18 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
   padding: 12px 16px; border-radius: 12px; font-weight: 600; font-size: 14px;
   text-align: center; display: none; z-index: 2000; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
+
+/* Forcer l'écran de jeu à ne jamais dépasser de la surface du téléphone */
+#cricketScreen {
+  max-height: 100vh !important;
+  max-height: 100dvh !important;
+  box-sizing: border-box !important;
+}
+
+/* Forcer le clavier à rester compact et soudé en bas */
+#cricketKeyboardZone {
+  margin-top: auto !important;
+  flex-shrink: 0 !important;
+  padding: 12px 8px !important;
+  box-sizing: border-box !important;
+}
