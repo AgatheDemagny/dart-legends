@@ -220,13 +220,16 @@
       </div>
 
       <div id="cricketKeyboardZone" style="padding: 10px 6px; display: flex; flex-direction: column; gap: 8px; width: 100%; background: rgba(0,0,0,0.2); border-top: 1px solid var(--divider);">
+        
+        <div id="cricketDynamicRows" class="stack" style="gap: 6px; width: 100%;"></div>
+
         <div style="display: grid; grid-template-columns: 0.8fr 1.1fr 1.1fr 1fr; gap: 6px; width: 100%;">
           <button class="ghost" id="btnKeyZero" style="padding: 12px 2px; font-size: 15px;">0</button>
           <button class="ghost mod-btn" id="btnModDouble" style="padding: 12px 2px; font-size: 14px;">Double</button>
           <button class="ghost mod-btn" id="btnModTriple" style="padding: 12px 2px; font-size: 14px;">Triple</button>
           <button class="danger-btn" id="btnKeyUndo" style="background: var(--danger); padding: 12px 2px; font-size: 14px;">↩️</button>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(6, 1fr) 1.2fr; gap: 5px; width: 100%; id="cricketNumbersRow"></div>
+
       </div>
     </section>
 

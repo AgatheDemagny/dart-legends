@@ -451,26 +451,82 @@ function renderGrid() {
   });
 }
 
+// ================== GESTION DYNAMIQUE DES CLAVIERS CRICKET ==================
+
 function renderKeyboard() {
-  const rowContainer = document.getElementById("cricketNumbersRow");
-  if (!rowContainer) return;
-  rowContainer.innerHTML = "";
-  [15, 16, 17, 18, 19, 20].forEach(num => {
-    const btn = document.createElement("button");
-    btn.className = "ghost"; btn.style.padding = "14px 2px"; btn.style.fontSize = "15px"; btn.style.fontWeight = "bold";
-    btn.innerText = num; btn.onclick = () => taperChiffre(num);
-    rowContainer.appendChild(btn);
-  });
-  const btnBull = document.createElement("button");
-  btnBull.className = "ghost"; btnBull.id = "btnKeyBull"; btnBull.style.padding = "14px 2px"; btnBull.style.fontSize = "15px"; btnBull.style.fontWeight = "bold";
-  btnBull.innerText = "🎯 B"; btnBull.onclick = () => taperChiffre(25);
-  rowContainer.appendChild(btnBull);
+  const container = document.getElementById("cricketDynamicRows");
+  if (!container) return;
+  container.innerHTML = ""; // On vide l'ancienne configuration
+
+  // Vérification : en mode aveugle, est-ce que toutes les cibles ont été découvertes ?
+  const toutEstDecouvert = cricketState.revealedTargets.length >= cricketState.targets.length;
+
+  if (cricketState.isBlind && !toutEstDecouvert) {
+    // MODIFICATION : MODE À L'AVEUGLE (3 LIGNES DE TOUCHES)
+    
+    // Ligne 1 : Boutons de 1 à 7
+    const row1 = document.createElement("div");
+    row1.style.display = "grid";
+    row1.style.gridTemplateColumns = "repeat(7, 1fr)";
+    row1.style.gap = "5px";
+    for (let i = 1; i <= 7; i++) {
+      row1.appendChild(creerBoutonClavier(i, i));
+    }
+    container.appendChild(row1);
+
+    // Ligne 2 : Boutons de 8 à 14
+    const row2 = document.createElement("div");
+    row2.style.display = "grid";
+    row2.style.gridTemplateColumns = "repeat(7, 1fr)";
+    row2.style.gap = "5px";
+    for (let i = 8; i <= 14; i++) {
+      row2.appendChild(creerBoutonClavier(i, i));
+    }
+    container.appendChild(row2);
+
+    // Ligne 3 : Boutons de 15 à Bull (25)
+    const row3 = document.createElement("div");
+    row3.style.display = "grid";
+    row3.style.gridTemplateColumns = "repeat(6, 1fr) 1.2fr";
+    row3.style.gap = "5px";
+    [15, 16, 17, 18, 19, 20].forEach(num => {
+      row3.appendChild(creerBoutonClavier(num, num));
+    });
+    row3.appendChild(creerBoutonClavier("🎯 B", 25));
+    container.appendChild(row3);
+
+  } else {
+    // MODIFICATION : CRICKET CLASSIQUE (OU AVEUGLE TERMINÉ -> 1 SEULE LIGNE)
+    const rowClassique = document.createElement("div");
+    rowClassique.style.display = "grid";
+    rowClassique.style.gridTemplateColumns = "repeat(6, 1fr) 1.2fr";
+    rowClassique.style.gap = "5px";
+
+    [15, 16, 17, 18, 19, 20].forEach(num => {
+      rowClassique.appendChild(creerBoutonClavier(num, num));
+    });
+    rowClassique.appendChild(creerBoutonClavier("🎯 B", 25));
+    container.appendChild(rowClassique);
+  }
+}
+
+// Fonction utilitaire pour générer un bouton de saisie proprement
+function creerBoutonClavier(libelle, valeur) {
+  const btn = document.createElement("button");
+  btn.className = "ghost";
+  btn.style.padding = "14px 2px";
+  btn.style.fontSize = "14px";
+  btn.style.fontWeight = "bold";
+  btn.innerText = libelle;
+  btn.onclick = () => taperChiffre(valeur);
+  return btn;
 }
 
 function taperChiffre(valeurBouton) {
   if (cricketState.isPaused) return;
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
   
+  // Sauvegarde de l'historique pour le bouton Annuler
   cricketState.history.push({
     scores: JSON.parse(JSON.stringify(cricketState.scores)),
     marks: JSON.parse(JSON.stringify(cricketState.marks)),
@@ -482,54 +538,82 @@ function taperChiffre(valeurBouton) {
     currentTurn: cricketState.currentTurn
   });
 
+  // Gestion du texte d'affichage des lancers en cours
   let prefixeText = modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "";
-  if (valeurBouton === 0) cricketState.currentTurnDartsText.push("0");
-  else if (valeurBouton === 25) cricketState.currentTurnDartsText.push(prefixeText + "Bull");
-  else cricketState.currentTurnDartsText.push(prefixeText + valeurBouton);
+  if (valeurBouton === 0) {
+    cricketState.currentTurnDartsText.push("0");
+  } else if (valeurBouton === 25) {
+    cricketState.currentTurnDartsText.push(prefixeText + "Bull");
+  } else {
+    cricketState.currentTurnDartsText.push(prefixeText + valeurBouton);
+  }
 
   cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
 
   if (valeurBouton !== 0) {
     let cibleReelle = valeurBouton;
+
+    // Gestion de la logique à l'aveugle
     if (cricketState.isBlind) {
-      cibleReelle = cricketState.blindMap[valeurBouton];
-      if (!cricketState.revealedTargets.includes(valeurBouton)) {
-        cricketState.revealedTargets.push(valeurBouton);
-        showPopup(`🎯 Zone découverte ! Bouton ${valeurBouton} = ${cibleReelle === 25 ? 'Bull' : cibleReelle}`);
+      // On regarde si la touche pressée possède une correspondance cachée
+      if (cricketState.blindMap[valeurBouton] !== undefined) {
+        cibleReelle = cricketState.blindMap[valeurBouton];
+        
+        // Si cette touche n'avait pas encore été découverte
+        if (!cricketState.revealedTargets.includes(valeurBouton)) {
+          cricketState.revealedTargets.push(valeurBouton);
+          showPopup(`🎯 Zone découverte ! Touche ${valeurBouton} = ${cibleReelle === 25 ? 'Bull' : cibleReelle}`);
+        }
+      } else {
+        // La touche pressée (ex: 1, 2, 3...) n'est pas associée à une zone de Cricket
+        // C'est un manqué complet (un trou dans le décor !)
+        cibleReelle = null;
       }
     }
 
-    cricketState.statsDetails[joueurActuel.id].touchesNum[cibleReelle] += modificateurEnCours;
+    // Si la cible touchée fait bien partie du Cricket (15-20, Bull)
+    if (cibleReelle !== null) {
+      cricketState.statsDetails[joueurActuel.id].touchesNum[cibleReelle] += modificateurEnCours;
 
-    let touchesPrecedentes = cricketState.marks[joueurActuel.id][cibleReelle];
-    let touchesRestantes = 3 - touchesPrecedentes;
-    let touchesAppliquees = Math.min(modificateurEnCours, touchesRestantes);
-    cricketState.marks[joueurActuel.id][cibleReelle] += touchesAppliquees;
+      let touchesPrecedentes = cricketState.marks[joueurActuel.id][cibleReelle];
+      let touchesRestantes = 3 - touchesPrecedentes;
+      let touchesAppliquees = Math.min(modificateurEnCours, touchesRestantes);
+      cricketState.marks[joueurActuel.id][cibleReelle] += touchesAppliquees;
 
-    let surplus = modificateurEnCours - touchesAppliquees;
-    if (surplus > 0) {
-      cricketState.players.forEach(adversaire => {
-        if (adversaire.id !== joueurActuel.id) {
-          const advFerme = cricketState.marks[adversaire.id][cibleReelle] >= 3;
-          if (!advFerme) {
-            let penalite = cibleReelle * surplus;
-            cricketState.scores[adversaire.id] -= penalite;
-            cricketState.statsDetails[joueurActuel.id].pointsGiv[cibleReelle] += penalite;
+      let surplus = modificateurEnCours - touchesAppliquees;
+      if (surplus > 0) {
+        cricketState.players.forEach(adversaire => {
+          if (adversaire.id !== joueurActuel.id) {
+            const advFerme = cricketState.marks[adversaire.id][cibleReelle] >= 3;
+            if (!advFerme) {
+              let penalite = cibleReelle * surplus;
+              cricketState.scores[adversaire.id] -= penalite;
+              cricketState.statsDetails[joueurActuel.id].pointsGiv[cibleReelle] += penalite;
+            }
           }
-        }
-      });
+        });
+      }
     }
   }
 
+  // Passage à la fléchette suivante / joueur suivant
   cricketState.currentDart += 1;
   if (cricketState.currentDart > 3) {
-    cricketState.currentDart = 1; cricketState.currentPlayerIdx += 1; cricketState.currentTurnDartsText = [];
+    cricketState.currentDart = 1;
+    cricketState.currentPlayerIdx += 1;
+    cricketState.currentTurnDartsText = [];
     if (cricketState.currentPlayerIdx >= cricketState.players.length) {
-      cricketState.currentPlayerIdx = 0; cricketState.currentTurn += 1;
+      cricketState.currentPlayerIdx = 0;
+      cricketState.currentTurn += 1;
     }
   }
 
-  resetModifierUI(); renderGrid(); updateTurnHeader(); verifierConditionsFinMatch();
+  // Actualisation complète de l'interface
+  resetModifierUI();
+  renderKeyboard(); // Re-génère le clavier (gère la transition si les 7 chiffres sont découverts)
+  renderGrid();
+  updateTurnHeader();
+  verifierConditionsFinMatch();
 }
 
 document.getElementById("btnKeyUndo").onclick = () => { annulerDernierCoup(); };
@@ -537,11 +621,19 @@ document.getElementById("btnKeyUndo").onclick = () => { annulerDernierCoup(); };
 function annulerDernierCoup() {
   if (cricketState.history.length === 0) return showPopup("Aucun coup à effacer.");
   const precedentState = cricketState.history.pop();
-  cricketState.scores = precedentState.scores; cricketState.marks = precedentState.marks;
-  cricketState.revealedTargets = precedentState.revealedTargets; cricketState.currentTurnDartsText = precedentState.currentTurnDartsText;
-  cricketState.statsDetails = precedentState.statsDetails; cricketState.currentPlayerIdx = precedentState.currentPlayerIdx;
-  cricketState.currentDart = precedentState.currentDart; cricketState.currentTurn = precedentState.currentTurn;
-  resetModifierUI(); renderGrid(); updateTurnHeader();
+  cricketState.scores = precedentState.scores;
+  cricketState.marks = precedentState.marks;
+  cricketState.revealedTargets = precedentState.revealedTargets;
+  cricketState.currentTurnDartsText = precedentState.currentTurnDartsText;
+  cricketState.statsDetails = precedentState.statsDetails;
+  cricketState.currentPlayerIdx = precedentState.currentPlayerIdx;
+  cricketState.currentDart = precedentState.currentDart;
+  cricketState.currentTurn = precedentState.currentTurn;
+  
+  resetModifierUI();
+  renderKeyboard(); 
+  renderGrid();
+  updateTurnHeader();
 }
 
 function verifierConditionsFinMatch() {
