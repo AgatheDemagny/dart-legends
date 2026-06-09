@@ -266,36 +266,48 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
 .badge { font-size: 12px; padding: 4px 8px; border-radius: 20px; color: var(--text-main); background: #E3D4AE; font-weight: 600; }
 
 .hidden { display: none !important; }
+
+/* ================== STRUCTURE DE L'APPLICATION ================== */
 .stack { display: flex; flex-direction: column; gap: 16px; }
+
 .game { 
   max-width: 480px; 
   margin: auto; 
   display: flex; 
   flex-direction: column; 
-  gap: 16px; 
   background-color: var(--bg-main); 
-  height: 100vh;          /* Fixe la hauteur à l'écran exact */
-  height: 100dvh;         /* S'adapte parfaitement sur mobile sans la barre de navigation */
+  min-height: 100vh;      /* Permet à l'application de grandir si le contenu est long */
+  min-height: 100dvh;     
   position: relative;
 }
 
-/* Force les écrans actifs à s'adapter sans déborder */
+/* Force les sections standards à s'adapter au contenu */
 .game > section {
-  height: 100%;
   width: 100%;
   display: flex;
   flex-direction: column;
 }
 
-/* Permet uniquement à la grille du tableau de défiler horizontalement si l'écran est minuscule */
+/* ================== CONFIGURATION STRICTE : CRICKET SCREEN ================== */
+/* Uniquement cet écran est figé à la taille exacte de l'appareil */
 #cricketScreen {
   height: 100vh;
   height: 100dvh;
-  overflow: hidden;
+  overflow: hidden;       /* Interdit tout scroll global (vertical et horizontal) */
+  display: flex;
+  flex-direction: column;
 }
+
+/* Permet à la table de score de scroller horizontalement SI l'écran mobile est trop étroit */
 #cricketScreen > div:nth-of-type(2) {
   overflow-x: auto;
   max-width: 100%;
+  -webkit-overflow-scrolling: touch; /* Défilement fluide sur iOS */
+}
+
+/* Zone du clavier fixée en bas si nécessaire */
+#cricketKeyboardZone {
+  margin-top: auto;       /* Pousse le clavier vers le bas de l'écran figé */
 }
 .danger-btn { background: #FFF5F5; color: var(--danger); border: 1px solid #FACDCD; }
 .danger-btn:hover { background: #FFE3E3; border-color: var(--danger); }
