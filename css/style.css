@@ -1,3 +1,271 @@
+/* ================== DART LEGENDS — STYLE LIGHT & MODERNE ================== */
+
+/* ================== PALETTE ET TYPO ================== */
+:root {
+  /* Backgrounds */
+  --bg-main: #F4F6F9;
+  --bg-secondary: #E9ECEF;
+
+  /* Surfaces */
+  --card-bg: #FFFFFF;
+  --card-border: rgba(15, 76, 129, 0.08);
+  --card-border-strong: #0F4C81;
+
+  /* Brand : Bleu Championnat & Or Legends */
+  --primary: #0F4C81;
+  --primary-strong: #1D63B8;
+  --accent: #C5A02B; /* Or */
+  --accent-glow: rgba(197, 160, 43, 0.15);
+
+  /* Textes */
+  --text-main: #1C1E21;
+  --text-soft: #5C6370;
+
+  /* Divers */
+  --divider: rgba(0, 0, 0, 0.06);
+  --danger: #D9383A;
+
+  /* Radius */
+  --r-1: 12px;
+  --r-2: 16px;
+  --r-3: 20px;
+}
+
+/* ================== RESET + BASE ================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  color: var(--text-main);
+  background-color: var(--bg-main);
+  font-family: 'Inter', sans-serif;
+}
+
+/* ================== TITRES ================== */
+h1, h2, h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: -0.5px;
+  width: 100%;
+  color: var(--primary);
+  text-align: center !important;
+}
+
+h1 { font-size: 32px; line-height: 1.1; margin: 10px 0; font-weight: 700; }
+h2 { font-size: 24px; line-height: 1.2; margin: 8px 0; }
+h3 { font-size: 18px; margin: 0 0 12px; color: var(--text-main); }
+
+/* ================== BLOCS ET CARDS ================== */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--r-2);
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(15, 76, 129, 0.04);
+  margin: 0 12px; /* Ajout d'air sur les côtés */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover { 
+  transform: translateY(-1px); 
+  box-shadow: 0 12px 32px rgba(15, 76, 129, 0.08);
+}
+
+.card.subtle {
+  background: #F8F9FA;
+  border: 1px solid var(--divider);
+  box-shadow: none;
+  margin: 0;
+}
+
+.card p {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  margin: 0;
+  border-bottom: 1px solid var(--divider);
+}
+.card p:last-child {
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+.card strong { color: var(--text-main); font-weight: 700; }
+.card p span { color: var(--text-soft); }
+
+/* ================== BOUTONS ================== */
+button {
+  font-size: 15px;
+  padding: 12px 16px;
+  background: #FFFFFF;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: var(--r-1);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+button:hover {
+  background: rgba(15, 76, 129, 0.04);
+  box-shadow: 0 4px 12px rgba(15, 76, 129, 0.1);
+}
+
+button:active { transform: translateY(1px); }
+
+.btn-block {
+  width: 100%;
+  display: block;
+  margin-top: 12px;
+}
+
+/* Bouton principal (Rempli) */
+button.primary, .btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #FFFFFF;
+}
+button.primary:hover, .btn-primary:hover {
+  background: var(--primary-strong);
+  border-color: var(--primary-strong);
+  box-shadow: 0 6px 16px rgba(15, 76, 129, 0.25);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--text-soft);
+  border: 1px solid #CED4DA;
+}
+.ghost:hover { 
+  background: #F8F9FA; 
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1px solid var(--divider);
+}
+.icon-btn:hover { background: #F8F9FA; }
+
+/* ================== INPUTS ================== */
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border: 1px solid #CED4DA;
+  font-size: 14px;
+  background: #FFFFFF;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.15);
+}
+
+::placeholder { color: #ADB5BD; }
+
+.hint {
+  font-size: 13px;
+  color: var(--text-soft);
+  margin-top: 6px;
+}
+
+/* ================== GRID & GRILLES ================== */
+.worlds-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 12px 15px 12px; /* Marges ajustées */
+}
+
+.world-btn {
+  padding: 16px;
+  border-radius: var(--r-2);
+  background: #FFFFFF;
+  text-align: left;
+  color: var(--text-main);
+  font-weight: 700;
+  border: 1px solid var(--card-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  cursor: pointer;
+}
+.world-btn:hover {
+  border-color: var(--primary);
+  background: rgba(15, 76, 129, 0.01);
+}
+.world-btn.active {
+  background: rgba(15, 76, 129, 0.05);
+  border-color: var(--primary);
+}
+
+.world-row { display: flex; align-items: center; gap: 12px; width: 100%; }
+.world-icon-big { font-size: 28px; }
+.world-right { flex: 1; }
+.world-name { font-weight: 700; font-size: 15px; }
+
+/* ================== TABS ================== */
+.tabs { display: flex; gap: 8px; margin: 12px 0; }
+.tab-btn {
+  flex: 1;
+  border-radius: 10px;
+  padding: 10px;
+  background: #E9ECEF;
+  color: var(--text-soft);
+  border: 1px solid transparent;
+}
+.tab-btn:hover { background: #DEE2E6; }
+.tab-btn.active {
+  background: var(--primary);
+  color: #FFFFFF;
+  border-color: var(--primary);
+}
+.tab-panel { display: flex; flex-direction: column; gap: 16px; }
+
+/* ================== SEGMENTED ================== */
+.segmented {
+  background: #E9ECEF;
+  border-radius: 12px;
+  padding: 4px;
+  display: flex;
+  gap: 4px;
+}
+.segmented button {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-soft);
+  border-radius: 8px;
+  padding: 8px;
+}
+.segmented button:hover { background: rgba(0,0,0,0.02); }
+.segmented button.active {
+  background: #FFFFFF;
+  color: var(--primary);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* ================== STRUCTURE BANNIÈRE UNIQUE ================== */
+.app-banner {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto;
+  display: block;
+  margin: 0 0 10px 0;
+  border: none;
+  object-fit: cover;
+}
+
 /* ================== JEU / LIGNES DU TABLEAU ================== */
 tr.active-row { background: rgba(15, 76, 129, 0.06); }
 #cricketGridTable th { color: var(--primary); font-weight: 700; }
@@ -25,30 +293,4 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
   width: min(400px, calc(100% - 24px)); background: #1C1E21; color: #FFFFFF;
   padding: 12px 16px; border-radius: 12px; font-weight: 600; font-size: 14px;
   text-align: center; display: none; z-index: 2000; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-}
-
-/* BANNIÈRE : Pleine largeur sur tous les écrans sans bandes blanches */
-.app-banner {
-  width: 100% !important;
-  max-width: 100% !important;
-  height: auto;
-  display: block;
-  margin: 0 0 4px 0;
-  border: none;
-  object-fit: cover;
-}
-
-/* Ajustement des paddings globaux pour compenser les bannières collées aux bords */
-section, #loginScreen {
-  display: flex;
-  flex-direction: column;
-}
-.card {
-  margin: 0 12px; /* Donne de l'air sur les côtés pour les contenus */
-}
-.worlds-grid {
-  margin: 0 12px 15px 12px;
-}
-.topbar {
-  padding: 10px 14px;
 }
