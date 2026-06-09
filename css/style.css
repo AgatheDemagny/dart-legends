@@ -328,7 +328,7 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
   flex-direction: column;
   gap: 8px;
   width: 100%;
-  background-color: var(--bg-main) !important; /* Même couleur que le fond */
+  background-color: var(--bg-main) !important;
   border-top: 1px solid var(--divider);
   padding: 10px 8px;
   flex-shrink: 0;

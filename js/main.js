@@ -19,6 +19,7 @@ function showScreen(activeScreen) {
 
 function showPopup(text) {
   const popup = document.getElementById("popup");
+  if (!popup) return;
   popup.innerText = text;
   popup.style.display = "block";
   clearTimeout(window.popupTimeout);
@@ -322,7 +323,6 @@ document.getElementById("startGameBtn").addEventListener("click", () => {
 });
 
 function demarrerMatchCricket(listeJoueurs) {
-  // Mélange des joueurs
   let joueursMelanges = [...listeJoueurs];
   for (let i = joueursMelanges.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -343,12 +343,10 @@ function demarrerMatchCricket(listeJoueurs) {
   cricketState.statsDetails = {};
 
   if (cricketState.isBlind) {
-    // 1. Générer TOUTES les cibles possibles d'une cible de fléchettes (1 à 20 + 25)
     let toutesLesCiblesPossibles = [];
     for (let i = 1; i <= 20; i++) toutesLesCiblesPossibles.push(i);
-    toutesLesCiblesPossibles.push(25); // Bull
+    toutesLesCiblesPossibles.push(25);
 
-    // 2. Sélectionner 7 cibles aléatoires parmi les 21 existantes
     let ciblesMysteres = [];
     while (ciblesMysteres.length < 7) {
       let indexAlea = Math.floor(Math.random() * toutesLesCiblesPossibles.length);
@@ -356,18 +354,14 @@ function demarrerMatchCricket(listeJoueurs) {
       ciblesMysteres.push(cibleChoisie);
     }
 
-    // On trie les cibles sélectionnées pour avoir un tableau propre (ex: 3, 7, 15, 18...)
     ciblesMysteres.sort((a, b) => a - b);
-    
     cricketState.targets = ciblesMysteres;
-    cricketState.revealedTargets = []; // Aucune n'est découverte au début
+    cricketState.revealedTargets = [];
   } else {
-    // Cricket Standard
     cricketState.targets = [15, 16, 17, 18, 19, 20, 25];
     cricketState.revealedTargets = [...cricketState.targets];
   }
 
-  // Initialisation des structures pour chaque joueur en fonction des targets choisies
   cricketState.players.forEach(p => {
     cricketState.scores[p.id] = 0;
     cricketState.marks[p.id] = {};
@@ -471,38 +465,29 @@ function renderKeyboard() {
   if (!container) return;
   container.innerHTML = "";
 
-  // On vérifie si TOUTES les cibles secrètes du match ont été révélées
   const toutEstDecouvert = cricketState.isBlind && (cricketState.revealedTargets.length >= cricketState.targets.length);
 
-  // Si on est en mode aveugle ET qu'il reste des numéros à trouver
   if (cricketState.isBlind && !toutEstDecouvert) {
-    // Ligne 1 : 1 à 7
     const row1 = document.createElement("div");
     row1.style.display = "grid"; row1.style.gridTemplateColumns = "repeat(7, 1fr)"; row1.style.gap = "5px";
     for (let i = 1; i <= 7; i++) row1.appendChild(creerBoutonClavier(i, i));
     container.appendChild(row1);
 
-    // Ligne 2 : 8 à 14
     const row2 = document.createElement("div");
     row2.style.display = "grid"; row2.style.gridTemplateColumns = "repeat(7, 1fr)"; row2.style.gap = "5px";
     for (let i = 8; i <= 14; i++) row2.appendChild(creerBoutonClavier(i, i));
     container.appendChild(row2);
 
-    // Ligne 3 : 15 à 20 + Bull
     const row3 = document.createElement("div");
     row3.style.display = "grid"; row3.style.gridTemplateColumns = "repeat(6, 1fr) 1.2fr"; row3.style.gap = "5px";
     for (let i = 15; i <= 20; i++) row3.appendChild(creerBoutonClavier(i, i));
     row3.appendChild(creerBoutonClavier("🎯 B", 25));
     container.appendChild(row3);
   } else {
-    // Si Cricket Standard OU si le mode aveugle est terminé (les 7 chiffres ont été découverts)
-    // On affiche uniquement la ligne simplifiée du Cricket avec ses cibles réelles
     const rowClassique = document.createElement("div");
     rowClassique.style.display = "grid"; 
     
-    // Si c'était à l'aveugle, les cibles réelles ne sont pas forcément 15-20, ce sont les 'cricketState.targets'
     const ciblesAAfficher = cricketState.targets;
-    
     rowClassique.style.gridTemplateColumns = `repeat(${ciblesAAfficher.length}, 1fr)`;
     rowClassique.style.gap = "5px";
     
@@ -549,16 +534,12 @@ function taperChiffre(valeurBouton) {
   cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
 
   if (valeurBouton !== 0) {
-    // Si la valeur saisie fait partie des 7 cibles sélectionnées par l'application
     if (cricketState.targets.includes(valeurBouton)) {
-      
-      // Si elle n'était pas encore révélée, on la découvre !
       if (!cricketState.revealedTargets.includes(valeurBouton)) {
         cricketState.revealedTargets.push(valeurBouton);
-        showPopup(`🎉 Zone Mystère découverte : ${valeurBouton === 25 ? 'Bull' : valeurBouton} !`);
+        // Popup supprimé ici comme demandé
       }
 
-      // Application des points et marques sur cette cible
       cricketState.statsDetails[joueurActuel.id].touchesNum[valeurBouton] += modificateurEnCours;
 
       let touchesPrecedentes = cricketState.marks[joueurActuel.id][valeurBouton];
@@ -579,15 +560,10 @@ function taperChiffre(valeurBouton) {
           }
         });
       }
-    } else {
-      // Le chiffre tapé n'est PAS dans les 7 chiffres secrets : Équivalent à un coup dans le vide (0)
-      if(cricketState.isBlind) {
-        showPopup("💨 Manqué... Ce chiffre ne fait pas partie du mystère !");
-      }
     }
+    // Popup d'échec ("Manqué... ce chiffre ne fait pas partie du mystère") supprimé également
   }
 
-  // Passage à la fléchette suivante
   cricketState.currentDart += 1;
   if (cricketState.currentDart > 3) {
     cricketState.currentDart = 1; 
