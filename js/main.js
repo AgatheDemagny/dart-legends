@@ -322,44 +322,76 @@ document.getElementById("startGameBtn").addEventListener("click", () => {
 });
 
 function demarrerMatchCricket(listeJoueurs) {
-  cricketState.players = [...listeJoueurs];
+  // Mélange des joueurs
+  let joueursMelanges = [...listeJoueurs];
+  for (let i = joueursMelanges.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [joueursMelanges[i], joueursMelanges[j]] = [joueursMelanges[j], joueursMelanges[i]];
+  }
+  cricketState.players = joueursMelanges;
+
   cricketState.maxTurns = parseInt(document.getElementById("gameTurnsSelect").value, 10);
   cricketState.isBlind = document.getElementById("blindModeCheckbox").checked;
-  cricketState.targets = [15, 16, 17, 18, 19, 20, 25];
-  cricketState.revealedTargets = cricketState.isBlind ? [] : [...cricketState.targets];
-  cricketState.history = []; cricketState.currentTurnDartsText = [];
-  cricketState.currentPlayerIdx = 0; cricketState.currentDart = 1; cricketState.currentTurn = 1;
-  cricketState.scores = {}; cricketState.marks = {}; cricketState.statsDetails = {};
+  
+  cricketState.history = []; 
+  cricketState.currentTurnDartsText = [];
+  cricketState.currentPlayerIdx = 0; 
+  cricketState.currentDart = 1; 
+  cricketState.currentTurn = 1;
+  cricketState.scores = {}; 
+  cricketState.marks = {}; 
+  cricketState.statsDetails = {};
 
   if (cricketState.isBlind) {
-    let valeursReelles = [15, 16, 17, 18, 19, 20, 25];
-    for (let i = valeursReelles.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [valeursReelles[i], valeursReelles[j]] = [valeursReelles[j], valeursReelles[i]];
+    // 1. Générer TOUTES les cibles possibles d'une cible de fléchettes (1 à 20 + 25)
+    let toutesLesCiblesPossibles = [];
+    for (let i = 1; i <= 20; i++) toutesLesCiblesPossibles.push(i);
+    toutesLesCiblesPossibles.push(25); // Bull
+
+    // 2. Sélectionner 7 cibles aléatoires parmi les 21 existantes
+    let ciblesMysteres = [];
+    while (ciblesMysteres.length < 7) {
+      let indexAlea = Math.floor(Math.random() * toutesLesCiblesPossibles.length);
+      let cibleChoisie = toutesLesCiblesPossibles.splice(indexAlea, 1)[0];
+      ciblesMysteres.push(cibleChoisie);
     }
-    cricketState.blindMap = {};
-    for (let k = 1; k <= 7; k++) {
-      cricketState.blindMap[k] = valeursReelles[k - 1];
-    }
+
+    // On trie les cibles sélectionnées pour avoir un tableau propre (ex: 3, 7, 15, 18...)
+    ciblesMysteres.sort((a, b) => a - b);
+    
+    cricketState.targets = ciblesMysteres;
+    cricketState.revealedTargets = []; // Aucune n'est découverte au début
+  } else {
+    // Cricket Standard
+    cricketState.targets = [15, 16, 17, 18, 19, 20, 25];
+    cricketState.revealedTargets = [...cricketState.targets];
   }
 
+  // Initialisation des structures pour chaque joueur en fonction des targets choisies
   cricketState.players.forEach(p => {
     cricketState.scores[p.id] = 0;
-    cricketState.marks[p.id] = { 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 25: 0 };
-    cricketState.statsDetails[p.id] = {
-      dartsThrown: 0,
-      touchesNum: { 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 25: 0 },
-      pointsGiv: { 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 25: 0 }
-    };
+    cricketState.marks[p.id] = {};
+    cricketState.statsDetails[p.id] = { dartsThrown: 0, touchesNum: {}, pointsGiv: {} };
+    
+    cricketState.targets.forEach(t => {
+      cricketState.marks[p.id][t] = 0;
+      cricketState.statsDetails[p.id].touchesNum[t] = 0;
+      cricketState.statsDetails[p.id].pointsGiv[t] = 0;
+    });
   });
 
   showScreen(screens.cricket);
-  cricketState.startTime = Date.now(); cricketState.elapsedTime = 0; cricketState.isPaused = false;
+  cricketState.startTime = Date.now(); 
+  cricketState.elapsedTime = 0; 
+  cricketState.isPaused = false;
   document.getElementById("btnPauseGame").innerText = "⏸️";
   clearInterval(cricketState.timerInterval);
   cricketState.timerInterval = setInterval(updateTimer, 1000);
 
-  renderKeyboard(); resetModifierUI(); renderGrid(); updateTurnHeader();
+  renderKeyboard(); 
+  resetModifierUI(); 
+  renderGrid(); 
+  updateTurnHeader();
 }
 
 function updateTimer() {
@@ -439,25 +471,28 @@ function renderKeyboard() {
   if (!container) return;
   container.innerHTML = "";
 
-  const toutEstDecouvert = cricketState.revealedTargets.length >= cricketState.targets.length;
-
-  if (cricketState.isBlind && !toutEstDecouvert) {
+  // Si on est en mode aveugle, on doit pouvoir saisir de 1 à 20 et Bull
+  if (cricketState.isBlind) {
+    // Ligne 1 : 1 à 7
     const row1 = document.createElement("div");
     row1.style.display = "grid"; row1.style.gridTemplateColumns = "repeat(7, 1fr)"; row1.style.gap = "5px";
-    for (let tA = 1; tA <= 7; tA++) { row1.appendChild(creerBoutonClavier(tA, tA)); }
+    for (let i = 1; i <= 7; i++) row1.appendChild(creerBoutonClavier(i, i));
     container.appendChild(row1);
 
+    // Ligne 2 : 8 à 14
     const row2 = document.createElement("div");
     row2.style.display = "grid"; row2.style.gridTemplateColumns = "repeat(7, 1fr)"; row2.style.gap = "5px";
-    for (let tB = 8; tB <= 14; tB++) { row2.appendChild(creerBoutonClavier(tB, tB)); }
+    for (let i = 8; i <= 14; i++) row2.appendChild(creerBoutonClavier(i, i));
     container.appendChild(row2);
 
+    // Ligne 3 : 15 à 20 + Bull
     const row3 = document.createElement("div");
     row3.style.display = "grid"; row3.style.gridTemplateColumns = "repeat(6, 1fr) 1.2fr"; row3.style.gap = "5px";
-    [15, 16, 17, 18, 19, 20].forEach(num => { row3.appendChild(creerBoutonClavier(num, num)); });
+    for (let i = 15; i <= 20; i++) row3.appendChild(creerBoutonClavier(i, i));
     row3.appendChild(creerBoutonClavier("🎯 B", 25));
     container.appendChild(row3);
   } else {
+    // Clavier Standard Cricket : 15 à 20 + Bull
     const rowClassique = document.createElement("div");
     rowClassique.style.display = "grid"; rowClassique.style.gridTemplateColumns = "repeat(6, 1fr) 1.2fr"; rowClassique.style.gap = "5px";
     [15, 16, 17, 18, 19, 20].forEach(num => { rowClassique.appendChild(creerBoutonClavier(num, num)); });
@@ -489,65 +524,72 @@ function taperChiffre(valeurBouton) {
   });
 
   let prefixeText = modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "";
-  if (valeurBouton === 0) { cricketState.currentTurnDartsText.push("0"); } 
-  else if (valeurBouton === 25) { cricketState.currentTurnDartsText.push(prefixeText + "Bull"); } 
-  else { cricketState.currentTurnDartsText.push(prefixeText + valeurBouton); }
+  if (valeurBouton === 0) { 
+    cricketState.currentTurnDartsText.push("0"); 
+  } else if (valeurBouton === 25) { 
+    cricketState.currentTurnDartsText.push(prefixeText + "Bull"); 
+  } else { 
+    cricketState.currentTurnDartsText.push(prefixeText + valeurBouton); 
+  }
 
   cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
 
   if (valeurBouton !== 0) {
-    let cibleReelle = valeurBouton;
-
-    if (cricketState.isBlind) {
-      const toutEstDecouvert = cricketState.revealedTargets.length >= cricketState.targets.length;
-      if (!toutEstDecouvert) {
-        if (valeurBouton >= 1 && valeurBouton <= 7) {
-          cibleReelle = cricketState.blindMap[valeurBouton];
-          if (!cricketState.revealedTargets.includes(cibleReelle)) {
-            cricketState.revealedTargets.push(cibleReelle);
-            showPopup(`🎯 Zone découverte ! Touche ${valeurBouton} = ${cibleReelle === 25 ? 'Bull' : cibleReelle}`);
-          }
-        } else {
-          cibleReelle = null; 
-        }
-      } else {
-        cibleReelle = valeurBouton;
+    // Si la valeur saisie fait partie des 7 cibles sélectionnées par l'application
+    if (cricketState.targets.includes(valeurBouton)) {
+      
+      // Si elle n'était pas encore révélée, on la découvre !
+      if (!cricketState.revealedTargets.includes(valeurBouton)) {
+        cricketState.revealedTargets.push(valeurBouton);
+        showPopup(`🎉 Zone Mystère découverte : ${valeurBouton === 25 ? 'Bull' : valeurBouton} !`);
       }
-    }
 
-    if (cibleReelle !== null) {
-      cricketState.statsDetails[joueurActuel.id].touchesNum[cibleReelle] += modificateurEnCours;
+      // Application des points et marques sur cette cible
+      cricketState.statsDetails[joueurActuel.id].touchesNum[valeurBouton] += modificateurEnCours;
 
-      let touchesPrecedentes = cricketState.marks[joueurActuel.id][cibleReelle];
+      let touchesPrecedentes = cricketState.marks[joueurActuel.id][valeurBouton];
       let touchesRestantes = 3 - touchesPrecedentes;
       let touchesAppliquees = Math.min(modificateurEnCours, touchesRestantes);
-      cricketState.marks[joueurActuel.id][cibleReelle] += touchesAppliquees;
+      cricketState.marks[joueurActuel.id][valeurBouton] += touchesAppliquees;
 
       let surplus = modificateurEnCours - touchesAppliquees;
       if (surplus > 0) {
         cricketState.players.forEach(adversaire => {
           if (adversaire.id !== joueurActuel.id) {
-            const advFerme = cricketState.marks[adversaire.id][cibleReelle] >= 3;
+            const advFerme = cricketState.marks[adversaire.id][valeurBouton] >= 3;
             if (!advFerme) {
-              let penalite = cibleReelle * surplus;
+              let penalite = valeurBouton * surplus;
               cricketState.scores[adversaire.id] -= penalite;
-              cricketState.statsDetails[joueurActuel.id].pointsGiv[cibleReelle] += penalite;
+              cricketState.statsDetails[joueurActuel.id].pointsGiv[valeurBouton] += penalite;
             }
           }
         });
       }
+    } else {
+      // Le chiffre tapé n'est PAS dans les 7 chiffres secrets : Équivalent à un coup dans le vide (0)
+      if(cricketState.isBlind) {
+        showPopup("💨 Manqué... Ce chiffre ne fait pas partie du mystère !");
+      }
     }
   }
 
+  // Passage à la fléchette suivante
   cricketState.currentDart += 1;
   if (cricketState.currentDart > 3) {
-    cricketState.currentDart = 1; cricketState.currentPlayerIdx += 1; cricketState.currentTurnDartsText = [];
+    cricketState.currentDart = 1; 
+    cricketState.currentPlayerIdx += 1; 
+    cricketState.currentTurnDartsText = [];
     if (cricketState.currentPlayerIdx >= cricketState.players.length) {
-      cricketState.currentPlayerIdx = 0; cricketState.currentTurn += 1;
+      cricketState.currentPlayerIdx = 0; 
+      cricketState.currentTurn += 1;
     }
   }
 
-  resetModifierUI(); renderKeyboard(); renderGrid(); updateTurnHeader(); verifierConditionsFinMatch();
+  resetModifierUI(); 
+  renderKeyboard(); 
+  renderGrid(); 
+  updateTurnHeader(); 
+  verifierConditionsFinMatch();
 }
 
 document.getElementById("btnKeyUndo").onclick = () => { annulerDernierCoup(); };
@@ -617,7 +659,6 @@ document.getElementById("btnRematch").onclick = () => {
     const j = Math.floor(Math.random() * (i + 1));
     [joueursRematch[i], joueursRematch[j]] = [joueursRematch[j], joueursRematch[i]];
   }
-  showPopup("🎲 Ordre des joueurs mélangé !");
   demarrerMatchCricket(joueursRematch);
 };
 document.getElementById("btnGoToStats").onclick = () => { genererTableauStatistiques(); showScreen(screens.matchStats); };

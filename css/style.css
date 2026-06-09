@@ -321,15 +321,53 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
   flex-direction: column;
   gap: 8px;
   width: 100%;
-  background: rgba(0,0,0,0.2);
-  border-top: 1px solid var(--divider);
-  padding: 10px 6px;
+  background: #E3D4AE;
+  border-top: 2px solid var(--primary);
+  padding: 12px 8px;
   flex-shrink: 0; /* Garde sa taille fixe sans s'écraser */
   margin-top: 0;  /* Rejoint le flux normal pour remonter au maximum */
 }
-.danger-btn { background: #FFF5F5; color: var(--danger); border: 1px solid #FACDCD; }
-.danger-btn:hover { background: #FFE3E3; border-color: var(--danger); }
+#cricketKeyboardZone button.ghost {
+  background-color: #FFFFFF !important;
+  color: var(--primary) !important;
+  border: 1px solid rgba(15, 76, 129, 0.2) !important;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.05s ease, background-color 0.1s ease;
+}
 
+#cricketKeyboardZone button.ghost:hover {
+  background-color: #F8F9F0 !important;
+}
+
+#cricketKeyboardZone button.ghost:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+/* Boutons Multiplicateurs (Double/Triple) */
+#cricketKeyboardZone button.mod-btn {
+  background-color: #FFFFFF !important;
+  color: var(--primary) !important;
+}
+
+/* État actif sélectionné : Devient Bleu Royal */
+#cricketKeyboardZone button.mod-btn.active {
+  background-color: var(--primary) !important;
+  color: #FFFFFF !important;
+  border-color: var(--primary) !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Bouton Annuler (Flèche) */
+#cricketKeyboardZone button.danger-btn {
+  background-color: var(--danger) !important;
+  color: #FFFFFF !important;
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 /* Ligne active en jeu (Fond ambré subtil) */
 #cricketGridTable tr[style*="background-color"] {
   background-color: rgba(227, 212, 174, 0.25) !important;
