@@ -2,7 +2,7 @@
 
 :root {
   /* Backgrounds */
-  --bg-main: #F8F9F0;         /* Ton crème/parchemin de la bannière */
+  --bg-main: #F5F1E7;         /* Ton crème/parchemin de la bannière */
   --bg-secondary: #E3D4AE;    /* Teinte sable/doré doux pour les séparations */
 
   /* Surfaces */
@@ -18,7 +18,7 @@
 
   /* Textes */
   --text-main: #24292E;       /* Presque noir mais plus doux pour les yeux */
-  --text-soft: #6A737D;
+  --text-soft: #2A5A85;
 
   /* Divers */
   --divider: rgba(227, 212, 174, 0.3);

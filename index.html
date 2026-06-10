@@ -42,16 +42,12 @@
       <div class="card">
         <h2>Choisis ton nom</h2>
         <input id="playerNameInput" type="text" placeholder="Ex : Bob" maxlength="24" />
-        <button id="startBtn" class="primary btn-block">Commencer</button>
+        <button id="startBtn" class="primary btn-block">🎯​ Commencer</button>
       </div>
     </section>
 
     <section id="homeScreen" class="hidden stack">
       <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
-      
-      <div class="card">
-        <h3>Bienvenue, <span id="playerNameDisplay" style="color: var(--primary-strong);">Joueur</span> !</h3>
-      </div>
 
       <div class="worlds-grid">
         <button class="world-btn" id="menuNewGame">
@@ -98,7 +94,7 @@
 
         <button class="world-btn" id="menuAccount" style="grid-column: span 2;">
           <div class="world-row">
-            <div class="world-icon-big">👸🏼</div>
+            <div class="world-icon-big">⚙️</div>
             <div class="world-right"><div class="world-name">Mon Compte</div></div>
           </div>
         </button>
@@ -113,10 +109,8 @@
         <div style="width:40px;"></div>
       </header>
 
-      <div class="card form-card">
-        <h3>Informations</h3>
-        
-        <label><strong>Pseudo</strong></label>
+      <div class="card form-card">       
+        <label><strong>Nom</strong></label>
         <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
           <input type="text" id="accountProfileName" placeholder="Ton pseudo" maxlength="24" style="margin-top: 0;">
           <button id="btnUpdateProfileName" class="primary" style="padding: 11px 16px;">Modifier</button>
@@ -126,38 +120,37 @@
           <label><strong>Email</strong></label>
           <p id="accountProfileEmail" style="font-size: 15px; color: var(--text-soft); padding: 8px 0; border: none; justify-content: flex-start;"></p>
         </div>
-      </div>
 
-      <div class="card form-card">
-        <h3>Session</h3>
-        <button id="btnLogout" class="danger-btn btn-block" style="margin-top: 4px;">🚪 Se déconnecter</button>
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider);">
+          <button id="btnLogout" class="danger-btn btn-block" style="margin-top: 4px;">❌​ Déconnexion</button>
+        </div>
       </div>
     </section>
 
     <section id="newGameScreen" class="hidden stack">
       <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
       <header class="topbar">
-        <button id="backHomeBtn" class="icon-btn">←</button>
+        <button id="backHomeBtn" class="icon-btn">⬅️</button>
         <h2>Nouvelle Partie</h2>
         <div style="width:40px;"></div>
       </header>
 
       <div class="card form-card">
-        <h3>👥 Joueurs</h3>
+        <h3>🎮 Joueurs</h3>
         <div class="actions" style="margin-top: 0; display: flex; gap: 8px;">
           <button id="btnOpenSearchPlayer" class="ghost" style="flex:1;">🔍 Ajouter</button>
           <button id="btnOpenCreatePlayer" class="ghost" style="flex:1;">➕ Créer</button>
         </div>
 
         <div id="zoneSearchPlayer" class="hidden card subtle form-card" style="padding: 10px;">
-          <input type="text" id="searchPlayerInput" placeholder="Taper le nom du joueur...">
+          <input type="text" id="searchPlayerInput" placeholder="Joueur à ajouter...">
           <div id="searchResultsList" style="max-height: 120px; overflow-y: auto; margin-top: 5px;"></div>
         </div>
 
         <div id="zoneCreatePlayer" class="hidden card subtle form-card" style="padding: 10px;">
           <input type="text" id="createPlayerName" placeholder="Nom du joueur">
           <input type="email" id="createPlayerEmail" placeholder="Adresse email (optionnel)">
-          <button id="btnValidateCreatePlayer" class="primary btn-block">Enregistrer dans la base</button>
+          <button id="btnValidateCreatePlayer" class="primary btn-block">💾 Enregistrer</button>
         </div>
 
         <h4 style="margin-top: 10px; opacity: 0.8; font-size: 14px; text-align: left !important;">Joueurs sur la ligne de tir :</h4>
