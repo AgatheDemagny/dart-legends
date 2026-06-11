@@ -52,24 +52,33 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 auth.onAuthStateChanged(async (user) => {
+  // 1. On cache TOUJOURS le loader dès que Firebase a répondu
+  if (screens.loading) screens.loading.classList.add("hidden");
+
   if (user) {
     try {
       const doc = await db.collection("players").doc(user.uid).get();
+      let displayName = user.email ? user.email.split('@')[0] : "Joueur";
+      
       if (doc.exists && doc.data().name) {
-        document.getElementById("playerNameDisplay").innerText = doc.data().name;
-        showScreen(screens.home);
-      } else {
-        showScreen(screens.home);
-        document.getElementById("playerNameDisplay").innerText = user.email.split('@')[0];
+        displayName = doc.data().name;
       }
+      
+      // Sécurisation : On vérifie si l'élément existe avant de modifier le texte
+      const nameDisplay = document.getElementById("playerNameDisplay");
+      if (nameDisplay) {
+        nameDisplay.innerText = displayName;
+      }
+      
+      showScreen(screens.home);
     } catch(e) {
-      document.getElementById("playerNameDisplay").innerText = user.email.split('@')[0];
+      console.error("Erreur Firestore au démarrage:", e);
       showScreen(screens.home);
     }
   } else {
+    // Si pas connecté, on affiche l'écran de login
     showScreen(screens.login);
   }
-  if (screens.loading) screens.loading.classList.add("hidden");
 });
 
 // Inscription
