@@ -17,10 +17,12 @@ function showScreen(activeScreen) {
   if(activeScreen) activeScreen.classList.remove("hidden");
 }
 
-function showPopup(text) {
+// Amélioration du popup pour gérer la couleur rouge des erreurs demandée
+function showPopup(text, isError = false) {
   const popup = document.getElementById("popup");
   if (!popup) return;
   popup.innerText = text;
+  popup.style.backgroundColor = isError ? "#D9383A" : "#1C1E21"; // Message rouge si erreur de validation
   popup.style.display = "block";
   clearTimeout(window.popupTimeout);
   window.popupTimeout = setTimeout(() => { popup.style.display = "none"; }, 2500);
@@ -52,7 +54,6 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 auth.onAuthStateChanged(async (user) => {
-  // 1. On cache TOUJOURS le loader dès que Firebase a répondu
   if (screens.loading) screens.loading.classList.add("hidden");
 
   if (user) {
@@ -64,19 +65,19 @@ auth.onAuthStateChanged(async (user) => {
         displayName = doc.data().name;
       }
       
-      // Sécurisation : On vérifie si l'élément existe avant de modifier le texte
       const nameDisplay = document.getElementById("playerNameDisplay");
       if (nameDisplay) {
         nameDisplay.innerText = displayName;
       }
       
+      // Charger la liste globale immédiatement pour les vérifications d'unicité futures
+      await chargerTousLesJoueurs();
       showScreen(screens.home);
     } catch(e) {
       console.error("Erreur Firestore au démarrage:", e);
       showScreen(screens.home);
     }
   } else {
-    // Si pas connecté, on affiche l'écran de login
     showScreen(screens.login);
   }
 });
@@ -85,25 +86,31 @@ auth.onAuthStateChanged(async (user) => {
 document.getElementById("btnSignup").addEventListener("click", async () => {
   const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value.trim();
-  if (!email || !password) return showPopup("Champs obligatoires.");
+  if (!email || !password) return showPopup("Champs obligatoires.", true);
   try {
-    const cred = await auth.createUserWithEmailAndPassword(email, password);
     const defaultName = email.split('@')[0];
+    
+    // Vérification de l'unicité à l'inscription par défaut
+    const nomExiste = tousLesJoueursBase.some(p => p.name.toLowerCase() === defaultName.toLowerCase());
+    const finalName = nomExiste ? defaultName + Math.floor(Math.random() * 100) : defaultName;
+
+    const cred = await auth.createUserWithEmailAndPassword(email, password);
     await db.collection("players").doc(cred.user.uid).set({
-      email: email, name: defaultName, createdAt: Date.now()
+      email: email, name: finalName, createdAt: Date.now()
     });
+    await chargerTousLesJoueurs();
     showPopup("Compte joueur enregistré !");
-  } catch (e) { showPopup(e.message); }
+  } catch (e) { showPopup(e.message, true); }
 });
 
 // Connexion
 document.getElementById("btnLogin").addEventListener("click", async () => {
   const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value.trim();
-  if (!email || !password) return showPopup("Champs obligatoires.");
+  if (!email || !password) return showPopup("Champs obligatoires.", true);
   try { 
     await auth.signInWithEmailAndPassword(email, password); 
-  } catch (e) { showPopup(e.message); }
+  } catch (e) { showPopup(e.message, true); }
 });
 
 // Déconnexion
@@ -120,6 +127,7 @@ async function chargerInfosProfil() {
   document.getElementById("accountProfileName").value = "";
 
   try {
+    await chargerTousLesJoueurs(); // S'assurer d'avoir la liste à jour
     const doc = await db.collection("players").doc(user.uid).get();
     if(doc.exists && doc.data().name) {
       document.getElementById("accountProfileName").value = doc.data().name;
@@ -136,16 +144,24 @@ document.getElementById("btnUpdateProfileName").addEventListener("click", async 
   if (!user) return;
 
   const nouveauPseudo = document.getElementById("accountProfileName").value.trim();
-  if(!nouveauPseudo) return showPopup("Le pseudo ne peut pas être vide.");
+  if(!nouveauPseudo) return showPopup("Le pseudo ne peut pas être vide.", true);
+
+  // Verrou d'unicité : empêche de prendre le nom de quelqu'un d'autre
+  const doublon = tousLesJoueursBase.some(p => p.id !== user.uid && p.name.toLowerCase() === nouveauPseudo.toLowerCase());
+  if (doublon) {
+    return showPopup(`Le nom "${nouveauPseudo}" existe déjà !`, true); // Message rouge
+  }
 
   try {
     await db.collection("players").doc(user.uid).update({
       name: nouveauPseudo
     });
-    document.getElementById("playerNameDisplay").innerText = nouveauPseudo;
+    const nameDisplay = document.getElementById("playerNameDisplay");
+    if (nameDisplay) nameDisplay.innerText = nouveauPseudo;
+    await chargerTousLesJoueurs();
     showPopup("Pseudo mis à jour !");
   } catch(e) {
-    showPopup("Erreur lors de la mise à jour : " + e.message);
+    showPopup("Erreur lors de la mise à jour : " + e.message, true);
   }
 });
 
@@ -166,7 +182,7 @@ async function initPageNouvellePartie() {
     }
   }
   renderSelectedPlayers();
-  chargerTousLesJoueurs();
+  await chargerTousLesJoueurs();
 }
 
 document.getElementById("btnOpenSearchPlayer").addEventListener("click", () => {
@@ -235,19 +251,26 @@ document.getElementById("searchPlayerInput").addEventListener("input", (e) => {
 document.getElementById("btnValidateCreatePlayer").addEventListener("click", async () => {
   const name = document.getElementById("createPlayerName").value.trim();
   const email = document.getElementById("createPlayerEmail").value.trim().toLowerCase();
-  if(!name) return showPopup("Le nom est obligatoire.");
+  if(!name) return showPopup("Le nom est obligatoire.", true);
+
+  // Verrou d'unicité : empêche la création d'un invité portant un nom déjà existant
+  const existeDeja = tousLesJoueursBase.some(p => p.name.toLowerCase() === name.toLowerCase());
+  if (existeDeja) {
+    return showPopup(`Le nom "${name}" existe déjà !`, true); // Message rouge
+  }
+
   try {
     const docId = "guest-" + Date.now();
     const nouveauJoueur = { name: name, email: email || null, createdAt: Date.now() };
     await db.collection("players").doc(docId).set(nouveauJoueur);
     joueursSelectionnesMatch.push({ id: docId, name: name });
     renderSelectedPlayers();
-    chargerTousLesJoueurs();
+    await chargerTousLesJoueurs();
     document.getElementById("createPlayerName").value = "";
     document.getElementById("createPlayerEmail").value = "";
     document.getElementById("zoneCreatePlayer").classList.add("hidden");
     showPopup("Joueur créé avec succès !");
-  } catch(e) { showPopup(e.message); }
+  } catch(e) { showPopup(e.message, true); }
 });
 
 function renderSelectedPlayers() {
@@ -326,12 +349,13 @@ function gererEtatBoutonBull() {
 
 document.getElementById("startGameBtn").addEventListener("click", () => {
   if (joueursSelectionnesMatch.length < 2) {
-    return showPopup("⚠️ Il faut au moins 2 joueurs sur la ligne de tir pour démarrer !");
+    return showPopup("⚠️ Il faut au moins 2 joueurs sur la ligne de tir pour démarrer !", true);
   }
   demarrerMatchCricket(joueursSelectionnesMatch);
 });
 
 function demarrerMatchCricket(listeJoueurs) {
+  // L'ordre des joueurs est à chaque fois relancé en aléatoire complet
   let joueursMelanges = [...listeJoueurs];
   for (let i = joueursMelanges.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -363,7 +387,7 @@ function demarrerMatchCricket(listeJoueurs) {
       ciblesMysteres.push(cibleChoisie);
     }
 
-    ciblesMysteres.sort((a, b) => a - b);
+    // Suppression de la ligne .sort() pour que l'ordre reste totalement aléatoire dans le tableau (Suspense max)
     cricketState.targets = ciblesMysteres;
     cricketState.revealedTargets = [];
   } else {
@@ -546,7 +570,6 @@ function taperChiffre(valeurBouton) {
     if (cricketState.targets.includes(valeurBouton)) {
       if (!cricketState.revealedTargets.includes(valeurBouton)) {
         cricketState.revealedTargets.push(valeurBouton);
-        // Popup supprimé ici comme demandé
       }
 
       cricketState.statsDetails[joueurActuel.id].touchesNum[valeurBouton] += modificateurEnCours;
@@ -564,13 +587,13 @@ function taperChiffre(valeurBouton) {
             if (!advFerme) {
               let penalite = valeurBouton * surplus;
               cricketState.scores[adversaire.id] -= penalite;
+              // CORRECTION DES STATS : Seuls les points réellement infligés (quand l'adversaire est ouvert) sont incrémentés
               cricketState.statsDetails[joueurActuel.id].pointsGiv[valeurBouton] += penalite;
             }
           }
         });
       }
     }
-    // Popup d'échec ("Manqué... ce chiffre ne fait pas partie du mystère") supprimé également
   }
 
   cricketState.currentDart += 1;
@@ -594,7 +617,7 @@ function taperChiffre(valeurBouton) {
 document.getElementById("btnKeyUndo").onclick = () => { annulerDernierCoup(); };
 
 function annulerDernierCoup() {
-  if (cricketState.history.length === 0) return showPopup("Aucun coup à effacer.");
+  if (cricketState.history.length === 0) return showPopup("Aucun coup à effacer.", true);
   const precedentState = cricketState.history.pop();
   cricketState.scores = precedentState.scores; cricketState.marks = precedentState.marks;
   cricketState.revealedTargets = precedentState.revealedTargets; cricketState.currentTurnDartsText = precedentState.currentTurnDartsText;
@@ -652,14 +675,12 @@ function lancerPageVictoire(vainqueur) {
 
 document.getElementById("btnGoHomeAfterMatch").onclick = () => showScreen(screens.home);
 document.getElementById("btnGoHomeAfterStats").onclick = () => showScreen(screens.home);
+
+// Gestion de la Revanche : Brasse à nouveau de manière aléatoire
 document.getElementById("btnRematch").onclick = () => {
-  let joueursRematch = [...cricketState.players];
-  for (let i = joueursRematch.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [joueursRematch[i], joueursRematch[j]] = [joueursRematch[j], joueursRematch[i]];
-  }
-  demarrerMatchCricket(joueursRematch);
+  demarrerMatchCricket(cricketState.players);
 };
+
 document.getElementById("btnGoToStats").onclick = () => { genererTableauStatistiques(); showScreen(screens.matchStats); };
 document.getElementById("btnBackToPodium").onclick = () => showScreen(screens.gameOver);
 
@@ -680,8 +701,8 @@ function genererTableauStatistiques() {
   });
   rowMpr.innerHTML = mprHtml; table.appendChild(rowMpr);
 
-  const ciblesNum = [15, 16, 17, 18, 19, 20, 25];
-  ciblesNum.forEach(cible => {
+  // Utilisation des cibles de la partie courante (conserve l'ordre aléatoire de la partie)
+  cricketState.targets.forEach(cible => {
     const libelleCible = cible === 25 ? "🎯 Bull" : `🎯 Zone ${cible}`;
     const rowTouches = document.createElement("tr");
     let touchesHtml = `<td style="text-align:left; padding:6px 8px; font-size:12px; opacity:0.8;">${libelleCible} (Touches)</td>`;
