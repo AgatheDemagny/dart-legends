@@ -17,12 +17,11 @@ function showScreen(activeScreen) {
   if(activeScreen) activeScreen.classList.remove("hidden");
 }
 
-// Amélioration du popup pour gérer la couleur rouge des erreurs demandée
 function showPopup(text, isError = false) {
   const popup = document.getElementById("popup");
   if (!popup) return;
   popup.innerText = text;
-  popup.style.backgroundColor = isError ? "#D9383A" : "#1C1E21"; // Message rouge si erreur de validation
+  popup.style.backgroundColor = isError ? "#D9383A" : "#1C1E21";
   popup.style.display = "block";
   clearTimeout(window.popupTimeout);
   window.popupTimeout = setTimeout(() => { popup.style.display = "none"; }, 2500);
@@ -70,7 +69,6 @@ auth.onAuthStateChanged(async (user) => {
         nameDisplay.innerText = displayName;
       }
       
-      // Charger la liste globale immédiatement pour les vérifications d'unicité futures
       await chargerTousLesJoueurs();
       showScreen(screens.home);
     } catch(e) {
@@ -89,8 +87,6 @@ document.getElementById("btnSignup").addEventListener("click", async () => {
   if (!email || !password) return showPopup("Champs obligatoires.", true);
   try {
     const defaultName = email.split('@')[0];
-    
-    // Vérification de l'unicité à l'inscription par défaut
     const nomExiste = tousLesJoueursBase.some(p => p.name.toLowerCase() === defaultName.toLowerCase());
     const finalName = nomExiste ? defaultName + Math.floor(Math.random() * 100) : defaultName;
 
@@ -127,7 +123,7 @@ async function chargerInfosProfil() {
   document.getElementById("accountProfileName").value = "";
 
   try {
-    await chargerTousLesJoueurs(); // S'assurer d'avoir la liste à jour
+    await chargerTousLesJoueurs();
     const doc = await db.collection("players").doc(user.uid).get();
     if(doc.exists && doc.data().name) {
       document.getElementById("accountProfileName").value = doc.data().name;
@@ -146,10 +142,9 @@ document.getElementById("btnUpdateProfileName").addEventListener("click", async 
   const nouveauPseudo = document.getElementById("accountProfileName").value.trim();
   if(!nouveauPseudo) return showPopup("Le pseudo ne peut pas être vide.", true);
 
-  // Verrou d'unicité : empêche de prendre le nom de quelqu'un d'autre
   const doublon = tousLesJoueursBase.some(p => p.id !== user.uid && p.name.toLowerCase() === nouveauPseudo.toLowerCase());
   if (doublon) {
-    return showPopup(`Le nom "${nouveauPseudo}" existe déjà !`, true); // Message rouge
+    return showPopup(`Le nom "${nouveauPseudo}" existe déjà !`, true);
   }
 
   try {
@@ -253,10 +248,9 @@ document.getElementById("btnValidateCreatePlayer").addEventListener("click", asy
   const email = document.getElementById("createPlayerEmail").value.trim().toLowerCase();
   if(!name) return showPopup("Le nom est obligatoire.", true);
 
-  // Verrou d'unicité : empêche la création d'un invité portant un nom déjà existant
   const existeDeja = tousLesJoueursBase.some(p => p.name.toLowerCase() === name.toLowerCase());
   if (existeDeja) {
-    return showPopup(`Le nom "${name}" existe déjà !`, true); // Message rouge
+    return showPopup(`Le nom "${name}" existe déjà !`, true);
   }
 
   try {
@@ -355,7 +349,6 @@ document.getElementById("startGameBtn").addEventListener("click", () => {
 });
 
 function demarrerMatchCricket(listeJoueurs) {
-  // L'ordre des joueurs est à chaque fois relancé en aléatoire complet
   let joueursMelanges = [...listeJoueurs];
   for (let i = joueursMelanges.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -387,7 +380,6 @@ function demarrerMatchCricket(listeJoueurs) {
       ciblesMysteres.push(cibleChoisie);
     }
 
-    // Suppression de la ligne .sort() pour que l'ordre reste totalement aléatoire dans le tableau (Suspense max)
     cricketState.targets = ciblesMysteres;
     cricketState.revealedTargets = [];
   } else {
@@ -398,7 +390,8 @@ function demarrerMatchCricket(listeJoueurs) {
   cricketState.players.forEach(p => {
     cricketState.scores[p.id] = 0;
     cricketState.marks[p.id] = {};
-    cricketState.statsDetails[p.id] = { dartsThrown: 0, touchesNum: {}, pointsGiv: {} };
+    // AJOUT : Suivi précis des touches utiles pour le calcul du MPR réel
+    cricketState.statsDetails[p.id] = { dartsThrown: 0, touchesUtiles: 0, touchesNum: {}, pointsGiv: {} };
     
     cricketState.targets.forEach(t => {
       cricketState.marks[p.id][t] = 0;
@@ -492,7 +485,6 @@ function renderGrid() {
   });
 }
 
-// ================== GESTION DYNAMIQUE DES CLAVIERS CRICKET ==================
 function renderKeyboard() {
   const container = document.getElementById("cricketDynamicRows");
   if (!container) return;
@@ -577,21 +569,32 @@ function taperChiffre(valeurBouton) {
       let touchesPrecedentes = cricketState.marks[joueurActuel.id][valeurBouton];
       let touchesRestantes = 3 - touchesPrecedentes;
       let touchesAppliquees = Math.min(modificateurEnCours, touchesRestantes);
+      
       cricketState.marks[joueurActuel.id][valeurBouton] += touchesAppliquees;
+      
+      // FIX MPR : On enregistre ces touches appliquées comme "utiles" (Fermeture personnelle)
+      cricketState.statsDetails[joueurActuel.id].touchesUtiles += touchesAppliquees;
 
       let surplus = modificateurEnCours - touchesAppliquees;
       if (surplus > 0) {
+        let pointsReellementDonnesCeCoup = 0;
+        
         cricketState.players.forEach(adversaire => {
           if (adversaire.id !== joueurActuel.id) {
             const advFerme = cricketState.marks[adversaire.id][valeurBouton] >= 3;
             if (!advFerme) {
               let penalite = valeurBouton * surplus;
               cricketState.scores[adversaire.id] -= penalite;
-              // CORRECTION DES STATS : Seuls les points réellement infligés (quand l'adversaire est ouvert) sont incrémentés
-              cricketState.statsDetails[joueurActuel.id].pointsGiv[valeurBouton] += penalite;
+              pointsReellementDonnesCeCoup += penalite;
             }
           }
         });
+
+        // CORRECTION COMPLETE POINTS DONNES + MPR : S'applique uniquement si au moins un joueur a subi la pénalité
+        if (pointsReellementDonnesCeCoup > 0) {
+          cricketState.statsDetails[joueurActuel.id].pointsGiv[valeurBouton] += pointsReellementDonnesCeCoup;
+          cricketState.statsDetails[joueurActuel.id].touchesUtiles += surplus;
+        }
       }
     }
   }
@@ -676,7 +679,6 @@ function lancerPageVictoire(vainqueur) {
 document.getElementById("btnGoHomeAfterMatch").onclick = () => showScreen(screens.home);
 document.getElementById("btnGoHomeAfterStats").onclick = () => showScreen(screens.home);
 
-// Gestion de la Revanche : Brasse à nouveau de manière aléatoire
 document.getElementById("btnRematch").onclick = () => {
   demarrerMatchCricket(cricketState.players);
 };
@@ -692,16 +694,16 @@ function genererTableauStatistiques() {
   rowHeader.innerHTML = html; table.appendChild(rowHeader);
 
   const rowMpr = document.createElement("tr"); rowMpr.style.borderBottom = "1px solid var(--divider)";
-  let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:bold; color:var(--accent);">MPR (Moyenne)</td>`;
+  let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:bold; color:var(--accent);">MPR (Efficace)</td>`;
   cricketState.players.forEach(p => {
-    const totalTouches = Object.values(cricketState.statsDetails[p.id].touchesNum).reduce((a,b)=>a+b, 0);
+    // FIX COMPLET MPR : Utilise maintenant les touches réelles utiles au tableau
+    const totalTouchesUtiles = cricketState.statsDetails[p.id].touchesUtiles || 0;
     const totalDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
-    const mpr = ((totalTouches / totalDarts) * 3).toFixed(2); 
+    const mpr = ((totalTouchesUtiles / totalDarts) * 3).toFixed(2); 
     mprHtml += `<td style="font-weight:700; border-left:1px solid var(--divider); color:var(--primary-strong);">${mpr}</td>`;
   });
   rowMpr.innerHTML = mprHtml; table.appendChild(rowMpr);
 
-  // Utilisation des cibles de la partie courante (conserve l'ordre aléatoire de la partie)
   cricketState.targets.forEach(cible => {
     const libelleCible = cible === 25 ? "🎯 Bull" : `🎯 Zone ${cible}`;
     const rowTouches = document.createElement("tr");
