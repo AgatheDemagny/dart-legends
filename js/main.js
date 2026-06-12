@@ -10,11 +10,21 @@ const screens = {
   matchStats: document.getElementById("statsMatchScreen")
 };
 
-// Banque de noms d'équipes inspirée par la nature (Fleurs et Animaux < 12 caractères)
+// Banque de noms d'équipes inspirée par la nature
 const POOL_NOMS_EQUIPES = [
-  "Jonquille", "Gorille", "Fourmi", "Loutre", "Renard", "Hibou", "Koala", "Tulipe", 
-  "Rose", "Panda", "Jaguar", "Pivoine", "Castor", "Faucon", "Hérisson", "Orchidée",
-  "Lilas", "Guépard", "Marguerite", "Lynx", "Écureuil", "Flamant", "Lotus", "Pinson"
+  // Animaux
+  "Gorille", "Loutre", "Renard", "Koala", "Castor", "Hérisson", "Blaireau", "Suricate", 
+  "Lémurien", "Requin", "Piranha", "Bison", "Coyote", "Morse", "Otarie", "Furet", 
+  "Grizzly", "Taupe", "Python", "Cobra", "Gecko", "Jaguar", "Lynx", "Puma", "Panthère", "Zèbre",
+  // Oiseaux
+  "Aigle", "Albatros", "Alouette", "Épervier", "Faucon", "Colibri", "Hibou", "Toucan", "Pélican", "Vautour",
+  // Fleurs & Végétaux
+  "Jonquille", "Tulipe", "Rose", "Pivoine", "Orchidée", "Lilas", "Lotus", "Coquelicot", 
+  "Tournesol", "Jasmin", "Anémone", "Lavande", "Bambou", "Iris", "Capucine", "Camélia", 
+  "Dahlia", "Magnolia", "Trèfle", "Mimosa", "Hibiscus", "Fuchsia", "Géranium",
+  // Insectes
+  "Fourmi", "Scorpion", "Mante", "Bourdon", "Luciole", "Cigale", "Scarabée", "Papillon", 
+  "Araignée", "Libellule", "Abeille", "Sauterelle"  
 ];
 
 function showScreen(activeScreen) {
@@ -24,7 +34,7 @@ function showScreen(activeScreen) {
   if(activeScreen) activeScreen.classList.remove("hidden");
 }
 
-function showPopup(text, isError = false) {
+function showPopup(text, isError = false) {"
   const popup = document.getElementById("popup");
   if (!popup) return;
   popup.innerText = text;
@@ -384,7 +394,7 @@ function genererEquipesAleatoires() {
   for (let i = 0; i < nbEquipesDemandees; i++) {
     listeEquipesFormees.push({
       id: "team-" + i,
-      name: "Équipe " + nomsPioches[i],
+      name: nomsPioches[i],
       members: []
     });
   }
@@ -923,12 +933,37 @@ function taperChiffre(valeurBouton) {
 function cloreVoleeActuelle(joueur) {
   const libelleName = cricketState.isTeamMode ? `${joueur.name} (${joueur.teamName})` : joueur.name;
   cricketState.lastTurnText = `${libelleName} - ${cricketState.currentTurnDartsText.join('/')}`;
+  
+  // Sauvegarde de l'index et de l'équipe du joueur qui vient de finir
+  const ancienPlayerIdx = cricketState.currentPlayerIdx;
+  const ancienneTeamId = joueur.teamId;
+
   cricketState.currentDart = 1; 
   cricketState.currentPlayerIdx += 1; 
   cricketState.currentTurnDartsText = [];
+
+  // Si on a fait le tour de tous les joueurs de la ligne de tir
   if (cricketState.currentPlayerIdx >= cricketState.players.length) {
     cricketState.currentPlayerIdx = 0; 
-    cricketState.currentTurn += 1;
+    
+    // En mode normal, un tour de table complet = +1 tour de jeu
+    if (!cricketState.isTeamMode) {
+      cricketState.currentTurn += 1;
+    }
+  }
+
+  // LOGIQUE COMPTEUR DE TOURS POUR LES ÉQUIPES
+  if (cricketState.isTeamMode) {
+    const prochainJoueur = cricketState.players[cricketState.currentPlayerIdx];
+    
+    // On récupère l'ordre d'apparition unique des équipes pour savoir qui est qui
+    const ordreEquipes = listeEquipesFormees.map(eq => eq.id);
+    const indexOrdreAncien = ordreEquipes.indexOf(ancienneTeamId);
+    const indexOrdreProchain = ordreEquipes.indexOf(prochainJoueur.teamId);
+
+    if (indexOrdreProchain <= indexOrdreAncien) {
+      cricketState.currentTurn += 1;
+    }
   }
 }
 
