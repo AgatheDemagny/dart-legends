@@ -305,7 +305,7 @@ function retirerJoueurMatch(idx) {
   renderSelectedPlayers();
 }
 
-// ================== MOTEUR DE CRICKET COMPLET ==================
+// ================== MOTEUR DE JEU GENERAL ET DYNAMIQUE ==================
 let cricketState = {
   gameMode: "cricket",
   x01StartPoints: 301, x01Checkout: "single",
@@ -366,26 +366,34 @@ document.getElementById("startGameBtn").addEventListener("click", () => {
   }
 });
 
-function demarrerMatchCricket(listeJoueurs) {
-  let joueursMelanges = [...listeJoueurs];
+function melangerJoueurs(liste) {
+  let joueursMelanges = [...liste];
   for (let i = joueursMelanges.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [joueursMelanges[i], joueursMelanges[j]] = [joueursMelanges[j], joueursMelanges[i]];
   }
-  cricketState.players = joueursMelanges;
+  return joueursMelanges;
+}
 
-  cricketState.maxTurns = parseInt(document.getElementById("gameTurnsSelect").value, 10);
-  cricketState.isBlind = document.getElementById("blindModeCheckbox").checked;
-  
+function initVariablesMatchGenerales(joueursMelanges) {
+  cricketState.players = joueursMelanges;
   cricketState.history = []; 
   cricketState.currentTurnDartsText = [];
   cricketState.currentPlayerIdx = 0; 
   cricketState.currentDart = 1; 
   cricketState.currentTurn = 1;
   cricketState.scores = {}; 
-  cricketState.marks = {}; 
   cricketState.statsDetails = {};
   cricketState.lastTurnText = "Aucun";
+}
+
+function demarrerMatchCricket(listeJoueurs) {
+  cricketState.gameMode = "cricket";
+  initVariablesMatchGenerales(melangerJoueurs(listeJoueurs));
+
+  cricketState.maxTurns = parseInt(document.getElementById("gameTurnsSelect").value, 10);
+  cricketState.isBlind = document.getElementById("blindModeCheckbox").checked;
+  cricketState.marks = {}; 
 
   if (cricketState.isBlind) {
     let toutesLesCiblesPossibles = [];
@@ -398,7 +406,6 @@ function demarrerMatchCricket(listeJoueurs) {
       let cibleChoisie = toutesLesCiblesPossibles.splice(indexAlea, 1)[0];
       ciblesMysteres.push(cibleChoisie);
     }
-
     cricketState.targets = ciblesMysteres;
     cricketState.revealedTargets = [];
   } else {
@@ -409,7 +416,6 @@ function demarrerMatchCricket(listeJoueurs) {
   cricketState.players.forEach(p => {
     cricketState.scores[p.id] = 0;
     cricketState.marks[p.id] = {};
-    // AJOUT : Suivi précis des touches utiles pour le calcul du MPR réel
     cricketState.statsDetails[p.id] = { dartsThrown: 0, touchesUtiles: 0, touchesNum: {}, pointsGiv: {} };
     
     cricketState.targets.forEach(t => {
@@ -419,53 +425,30 @@ function demarrerMatchCricket(listeJoueurs) {
     });
   });
 
-  showScreen(screens.cricket);
-  cricketState.startTime = Date.now(); 
-  cricketState.elapsedTime = 0; 
-  cricketState.isPaused = false;
-  document.getElementById("btnPauseGame").innerText = "⏸️";
-  clearInterval(cricketState.timerInterval);
-  cricketState.timerInterval = setInterval(updateTimer, 1000);
-
-  renderKeyboard(); 
-  resetModifierUI(); 
-  renderGrid(); 
-  updateTurnHeader();
+  lancerInterfaceJeu("cricket");
 }
 
 function demarrerMatchX01(listeJoueurs) {
-  // Mélange des joueurs
-  let joueursMelanges = [...listeJoueurs];
-  for (let i = joueursMelanges.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [joueursMelanges[i], joueursMelanges[j]] = [joueursMelanges[j], joueursMelanges[i]];
-  }
-  
   cricketState.gameMode = "x01";
-  cricketState.players = joueursMelanges;
+  initVariablesMatchGenerales(melangerJoueurs(listeJoueurs));
+  
   cricketState.x01StartPoints = parseInt(document.getElementById("x01StartPointsSelect").value, 10);
   cricketState.x01Checkout = document.getElementById("x01CheckoutSelect").value;
-  
-  cricketState.history = []; 
-  cricketState.currentTurnDartsText = [];
-  cricketState.currentPlayerIdx = 0; 
-  cricketState.currentDart = 1; 
-  cricketState.currentTurn = 1;
-  cricketState.maxTurns = 999; // Pas de limite de tours par défaut sur le X01
-  cricketState.scores = {}; 
-  cricketState.statsDetails = {};
-  cricketState.lastTurnText = "Aucun";
+  cricketState.maxTurns = 999; 
 
   cricketState.players.forEach(p => {
-    // Au X01, on part du score max (ex: 501) et on descend vers 0
     cricketState.scores[p.id] = cricketState.x01StartPoints;
     cricketState.statsDetails[p.id] = { 
       dartsThrown: 0, 
-      totalScoreScored: 0, // Pour calculer le score moyen par volée (3 fléchettes)
+      totalScoreScored: 0, 
       bustsCount: 0 
     };
   });
 
+  lancerInterfaceJeu("x01");
+}
+
+function lancerInterfaceJeu(mode) {
   showScreen(screens.cricket);
   cricketState.startTime = Date.now(); 
   cricketState.elapsedTime = 0; 
@@ -474,9 +457,14 @@ function demarrerMatchX01(listeJoueurs) {
   clearInterval(cricketState.timerInterval);
   cricketState.timerInterval = setInterval(updateTimer, 1000);
 
-  renderKeyboardX01(); 
   resetModifierUI(); 
-  renderGridX01(); 
+  if (mode === "x01") {
+    renderKeyboardX01(); 
+    renderGridX01();
+  } else {
+    renderKeyboard(); 
+    renderGrid();
+  }
   updateTurnHeader();
 }
 
@@ -504,6 +492,7 @@ document.getElementById("btnPauseGame").addEventListener("click", () => {
 
 function updateTurnHeader() {
   const p = cricketState.players[cricketState.currentPlayerIdx];
+  if (!p) return;
   document.getElementById("cricketCurrentPlayerName").innerText = p.name;
   const chaineLancers = cricketState.currentTurnDartsText.join(" / ");
   document.getElementById("dartsHistoryText").innerText = chaineLancers || "En attente...";
@@ -629,19 +618,16 @@ function renderKeyboardX01() {
   if (!container) return;
   container.innerHTML = "";
 
-  // Ligne 1 : 1 à 7
   const row1 = document.createElement("div");
   row1.style.display = "grid"; row1.style.gridTemplateColumns = "repeat(7, 1fr)"; row1.style.gap = "5px";
   for (let i = 1; i <= 7; i++) row1.appendChild(creerBoutonClavier(i, i));
   container.appendChild(row1);
 
-  // Ligne 2 : 8 à 14
   const row2 = document.createElement("div");
   row2.style.display = "grid"; row2.style.gridTemplateColumns = "repeat(7, 1fr)"; row2.style.gap = "5px";
   for (let i = 8; i <= 14; i++) row2.appendChild(creerBoutonClavier(i, i));
   container.appendChild(row2);
 
-  // Ligne 3 : 15 à 20 + Bulleye
   const row3 = document.createElement("div");
   row3.style.display = "grid"; row3.style.gridTemplateColumns = "repeat(7, 1fr)"; row3.style.gap = "5px";
   for (let i = 15; i <= 20; i++) row3.appendChild(creerBoutonClavier(i, i));
@@ -656,13 +642,15 @@ function creerBoutonClavier(libelle, valeur) {
   return btn;
 }
 
+// ROUTEUR ET ENREGISTREMENT DE COUPS
 function taperChiffre(valeurBouton) {
   if (cricketState.isPaused) return;
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
   
+  // Sauvegarde historique pour l'annulation
   cricketState.history.push({
     scores: JSON.parse(JSON.stringify(cricketState.scores)),
-    marks: JSON.parse(JSON.stringify(cricketState.marks)),
+    marks: cricketState.marks ? JSON.parse(JSON.stringify(cricketState.marks)) : null,
     revealedTargets: [...cricketState.revealedTargets],
     currentTurnDartsText: [...cricketState.currentTurnDartsText],
     statsDetails: JSON.parse(JSON.stringify(cricketState.statsDetails)),
@@ -672,6 +660,7 @@ function taperChiffre(valeurBouton) {
     lastTurnText: cricketState.lastTurnText
   });
 
+  // Construction du texte de la fléchette lancée
   let prefixeText = modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "";
   if (valeurBouton === 0) { 
     cricketState.currentTurnDartsText.push("0"); 
@@ -681,97 +670,20 @@ function taperChiffre(valeurBouton) {
     cricketState.currentTurnDartsText.push(prefixeText + valeurBouton); 
   }
 
+  // Incrémentation unique du tir
   cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
 
-  cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
-
-  if (valeurBouton !== 0) {
-    if (cricketState.gameMode === "x01") {
-      // --- LOGIQUE DE CALCUL DU X01 ---
-      let valeurReelle = valeurBouton === 25 ? 25 : valeurBouton;
-      // La bulle au X01 fait 25 en simple, 50 en double (T3 impossible géré par la fonction Bull)
-      if (valeurBouton === 25 && modificateurEnCours === 2) valeurReelle = 50;
-      
-      const pointsMarques = valeurReelle * modificateurEnCours;
-      const scoreActuel = cricketState.scores[joueurActuel.id];
-      const scoreResultat = scoreActuel - pointsMarques;
-
-      let estBust = false;
-
-      if (scoreResultat < 0) {
-        estBust = true; // On a dépassé le score nécessaire
-      } else if (scoreResultat === 1 && cricketState.x01Checkout === "double") {
-        estBust = true; // Impossible de finir par un double si on se retrouve à 1 point restant
-      } else if (scoreResultat === 0) {
-        if (cricketState.x01Checkout === "double" && modificateurEnCours !== 2) {
-          estBust = true; // On arrive à 0 mais ce n'est pas un double ! Bust !
-        }
-      }
-
-      if (estBust) {
-        showPopup("💥 Bust ! Score annulé.", true);
-        cricketState.statsDetails[joueurActuel.id].bustsCount += 1;
-        
-        // ANNULATION DE TOUTE LA VOLÉE (On force le passage immédiat au joueur suivant)
-        // On compense les fléchettes restantes de la volée
-        const tirsEffectuesCeTour = cricketState.currentDart; // 1, 2 ou 3
-        const tirsManquants = 3 - tirsEffectuesCeTour;
-        cricketState.statsDetails[joueurActuel.id].dartsThrown += tirsManquants;
-        
-        cricketState.currentTurnDartsText.push("💥 BUST");
-        cricketState.currentDart = 3; // Force la fin de la volée ci-dessous
-      } else {
-        // Le coup est valide, on soustrait les points !
-        cricketState.scores[joueurActuel.id] = scoreResultat;
-        cricketState.statsDetails[joueurActuel.id].totalScoreScored += pointsMarques;
-      }
-    } else {
-      // --- LOGIQUE DE CALCUL ORIGINALE CRICKET ---
-      if (cricketState.targets.includes(valeurBouton)) {
-        if (!cricketState.revealedTargets.includes(valeurBouton)) {
-          cricketState.revealedTargets.push(valeurBouton);
-        }
-        const estFermePourTous = cricketState.players.every(p => cricketState.marks[p.id][valeurBouton] >= 3);
-        if (!estFermePourTous) {
-          cricketState.statsDetails[joueurActuel.id].touchesNum[valeurBouton] += modificateurEnCours;
-        }
-        let touchesPrecedentes = cricketState.marks[joueurActuel.id][valeurBouton];
-        let touchesRestantes = 3 - touchesPrecedentes;
-        let touchesAppliquees = Math.min(modificateurEnCours, touchesRestantes);
-        cricketState.marks[joueurActuel.id][valeurBouton] += touchesAppliquees;
-        cricketState.statsDetails[joueurActuel.id].touchesUtiles += touchesAppliquees;
-        let surplus = modificateurEnCours - touchesAppliquees;
-        if (surplus > 0) {
-          let pointsReellementDonnesCeCoup = 0;
-          cricketState.players.forEach(adversaire => {
-            if (adversaire.id !== joueurActuel.id) {
-              const advFerme = cricketState.marks[adversaire.id][valeurBouton] >= 3;
-              if (!advFerme) {
-                let penalite = valeurBouton * surplus;
-                cricketState.scores[adversaire.id] -= penalite;
-                pointsReellementDonnesCeCoup += penalite;
-              }
-            }
-          });
-          if (pointsReellementDonnesCeCoup > 0) {
-            cricketState.statsDetails[joueurActuel.id].pointsGiv[valeurBouton] += pointsReellementDonnesCeCoup;
-            cricketState.statsDetails[joueurActuel.id].touchesUtiles += surplus;
-          }
-        }
-      }
-    }
+  // Delegation aux modules de calcul spécialisés
+  if (cricketState.gameMode === "x01") {
+    traiterCalculX01(joueurActuel, valeurBouton);
+  } else {
+    traiterCalculCricket(joueurActuel, valeurBouton);
   }
 
+  // Gestion de la transition de volée / joueur
   cricketState.currentDart += 1;
   if (cricketState.currentDart > 3) {
-    cricketState.lastTurnText = `${joueurActuel.name} - ${cricketState.currentTurnDartsText.join('/')}`;
-    cricketState.currentDart = 1; 
-    cricketState.currentPlayerIdx += 1; 
-    cricketState.currentTurnDartsText = [];
-    if (cricketState.currentPlayerIdx >= cricketState.players.length) {
-      cricketState.currentPlayerIdx = 0; 
-      cricketState.currentTurn += 1;
-    }
+    cloreVoleeActuelle(joueurActuel);
   }
 
   resetModifierUI(); 
@@ -784,6 +696,95 @@ function taperChiffre(valeurBouton) {
   }
   updateTurnHeader(); 
   verifierConditionsFinMatch();
+}
+
+function cloreVoleeActuelle(joueur) {
+  cricketState.lastTurnText = `${joueur.name} - ${cricketState.currentTurnDartsText.join('/')}`;
+  cricketState.currentDart = 1; 
+  cricketState.currentPlayerIdx += 1; 
+  cricketState.currentTurnDartsText = [];
+  if (cricketState.currentPlayerIdx >= cricketState.players.length) {
+    cricketState.currentPlayerIdx = 0; 
+    cricketState.currentTurn += 1;
+  }
+}
+
+// SUB-LOGIQUE 1 : CRICKET MOTEUR
+function traiterCalculCricket(joueurActuel, valeurBouton) {
+  if (valeurBouton === 0) return;
+  
+  if (cricketState.targets.includes(valeurBouton)) {
+    if (!cricketState.revealedTargets.includes(valeurBouton)) {
+      cricketState.revealedTargets.push(valeurBouton);
+    }
+    const estFermePourTous = cricketState.players.every(p => cricketState.marks[p.id][valeurBouton] >= 3);
+    if (!estFermePourTous) {
+      cricketState.statsDetails[joueurActuel.id].touchesNum[valeurBouton] += modificateurEnCours;
+    }
+    let touchesPrecedentes = cricketState.marks[joueurActuel.id][valeurBouton];
+    let touchesRestantes = 3 - touchesPrecedentes;
+    let touchesAppliquees = Math.min(modificateurEnCours, touchesRestantes);
+    cricketState.marks[joueurActuel.id][valeurBouton] += touchesAppliquees;
+    cricketState.statsDetails[joueurActuel.id].touchesUtiles += touchesAppliquees;
+    
+    let surplus = modificateurEnCours - touchesAppliquees;
+    if (surplus > 0) {
+      let pointsReellementDonnesCeCoup = 0;
+      cricketState.players.forEach(adversaire => {
+        if (adversaire.id !== joueurActuel.id) {
+          const advFerme = cricketState.marks[adversaire.id][valeurBouton] >= 3;
+          if (!advFerme) {
+            let penalite = valeurBouton * surplus;
+            cricketState.scores[adversaire.id] -= penalite;
+            pointsReellementDonnesCeCoup += penalite;
+          }
+        }
+      });
+      if (pointsReellementDonnesCeCoup > 0) {
+        cricketState.statsDetails[joueurActuel.id].pointsGiv[valeurBouton] += pointsReellementDonnesCeCoup;
+        cricketState.statsDetails[joueurActuel.id].touchesUtiles += surplus;
+      }
+    }
+  }
+}
+
+// SUB-LOGIQUE 2 : X01 MOTEUR
+function traiterCalculX01(joueurActuel, valeurBouton) {
+  if (valeurBouton === 0) return;
+
+  let valeurReelle = valeurBouton === 25 ? 25 : valeurBouton;
+  if (valeurBouton === 25 && modificateurEnCours === 2) valeurReelle = 50;
+  
+  const pointsMarques = valeurReelle * modificateurEnCours;
+  const scoreActuel = cricketState.scores[joueurActuel.id];
+  const scoreResultat = scoreActuel - pointsMarques;
+
+  let estBust = false;
+
+  if (scoreResultat < 0) {
+    estBust = true; 
+  } else if (scoreResultat === 1 && cricketState.x01Checkout === "double") {
+    estBust = true; 
+  } else if (scoreResultat === 0) {
+    if (cricketState.x01Checkout === "double" && modificateurEnCours !== 2) {
+      estBust = true; 
+    }
+  }
+
+  if (estBust) {
+    showPopup("💥 Bust ! Score annulé.", true);
+    cricketState.statsDetails[joueurActuel.id].bustsCount += 1;
+    
+    const tirsEffectuesCeTour = cricketState.currentDart; 
+    const tirsManquants = 3 - tirsEffectuesCeTour;
+    cricketState.statsDetails[joueurActuel.id].dartsThrown += tirsManquants;
+    
+    cricketState.currentTurnDartsText.push("💥 BUST");
+    cricketState.currentDart = 3; 
+  } else {
+    cricketState.scores[joueurActuel.id] = scoreResultat;
+    cricketState.statsDetails[joueurActuel.id].totalScoreScored += pointsMarques;
+  }
 }
 
 document.getElementById("btnKeyUndo").onclick = () => { annulerDernierCoup(); };
@@ -800,6 +801,7 @@ function annulerDernierCoup() {
   cricketState.currentDart = precedentState.currentDart; 
   cricketState.currentTurn = precedentState.currentTurn;
   cricketState.lastTurnText = precedentState.lastTurnText;
+  
   resetModifierUI(); 
   if (cricketState.gameMode === "x01") {
     renderKeyboardX01(); renderGridX01();
@@ -808,12 +810,11 @@ function annulerDernierCoup() {
   }
   updateTurnHeader();
 }
-}
 
 function verifierConditionsFinMatch() {
   let gagnantVirtuel = null;
+  
   if (cricketState.gameMode === "x01") {
-    // Au X01, le premier à atteindre exactement 0 a gagné
     for (let p of cricketState.players) {
       if (cricketState.scores[p.id] === 0) {
         gagnantVirtuel = p;
@@ -829,18 +830,27 @@ function verifierConditionsFinMatch() {
         if (estLeader) { gagnantVirtuel = p; break; }
       }
     }
-  if (!gagnantVirtuel && cricketState.currentTurn > cricketState.maxTurns && cricketState.maxTurns !== 999) {
-    let meilleurScore = -Infinity;
-    cricketState.players.forEach(p => {
-      if (cricketState.scores[p.id] > meilleurScore) { meilleurScore = cricketState.scores[p.id]; gagnantVirtuel = p; }
-    });
+    if (!gagnantVirtuel && cricketState.currentTurn > cricketState.maxTurns && cricketState.maxTurns !== 999) {
+      let meilleurScore = -Infinity;
+      cricketState.players.forEach(p => {
+        if (cricketState.scores[p.id] > meilleurScore) { 
+          meilleurScore = cricketState.scores[p.id]; 
+          gagnantVirtuel = p; 
+        }
+      });
+    }
   }
+
   if (gagnantVirtuel) {
     clearInterval(cricketState.timerInterval);
     setTimeout(() => {
       const confirmation = confirm(`🎯 ${gagnantVirtuel.name} a-t-il vraiment gagné la partie ?`);
-      if (confirmation) { lancerPageVictoire(gagnantVirtuel); } 
-      else { annulerDernierCoup(); cricketState.timerInterval = setInterval(updateTimer, 1000); }
+      if (confirmation) { 
+        lancerPageVictoire(gagnantVirtuel); 
+      } else { 
+        annulerDernierCoup(); 
+        cricketState.timerInterval = setInterval(updateTimer, 1000); 
+      }
     }, 100);
   }
 }
@@ -848,12 +858,14 @@ function verifierConditionsFinMatch() {
 function lancerPageVictoire(vainqueur) {
   document.getElementById("victoryTitle").innerText = `${vainqueur.name} gagne la partie !`;
   document.getElementById("victorySubtitle").innerText = `Match bouclé en ${document.getElementById("gameTimerDisplay").innerText}`;
- const classementTrie = [...cricketState.players].sort((a, b) => {
+  
+  const classementTrie = [...cricketState.players].sort((a, b) => {
     if (cricketState.gameMode === "x01") {
-      return cricketState.scores[a.id] - cricketState.scores[b.id]; // Au X01, le plus petit score restant (0) est premier !
+      return cricketState.scores[a.id] - cricketState.scores[b.id]; 
     }
     return cricketState.scores[b.id] - cricketState.scores[a.id];
   });
+  
   const containerRanking = document.getElementById("finalRankingList");
   containerRanking.innerHTML = "";
 
@@ -866,8 +878,9 @@ function lancerPageVictoire(vainqueur) {
   });
 
   db.collection("games_history").add({
-    type: "cricket", winner: vainqueur.name, duration: cricketState.elapsedTime, createdAt: Date.now()
+    type: cricketState.gameMode, winner: vainqueur.name, duration: cricketState.elapsedTime, createdAt: Date.now()
   }).catch(e => console.error(e));
+  
   showScreen(screens.gameOver);
 }
 
@@ -875,7 +888,11 @@ document.getElementById("btnGoHomeAfterMatch").onclick = () => showScreen(screen
 document.getElementById("btnGoHomeAfterStats").onclick = () => showScreen(screens.home);
 
 document.getElementById("btnRematch").onclick = () => {
-  demarrerMatchCricket(cricketState.players);
+  if (cricketState.gameMode === "x01") {
+    demarrerMatchX01(cricketState.players);
+  } else {
+    demarrerMatchCricket(cricketState.players);
+  }
 };
 
 document.getElementById("btnGoToStats").onclick = () => { 
@@ -898,7 +915,6 @@ function genererTableauStatistiques() {
   const rowMpr = document.createElement("tr"); rowMpr.style.borderBottom = "1px solid var(--divider)";
   let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:bold; color:var(--accent);">MPR (Efficace)</td>`;
   cricketState.players.forEach(p => {
-    // FIX COMPLET MPR : Utilise maintenant les touches réelles utiles au tableau
     const totalTouchesUtiles = cricketState.statsDetails[p.id].touchesUtiles || 0;
     const totalDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
     const mpr = ((totalTouchesUtiles / totalDarts) * 3).toFixed(2); 
@@ -924,5 +940,8 @@ function genererTableauStatistiques() {
 }
 
 document.getElementById("btnLeaveGame").addEventListener("click", () => {
-  if (confirm("Abandonner le match en cours ?")) { clearInterval(cricketState.timerInterval); showScreen(screens.home); }
+  if (confirm("Abandonner le match en cours ?")) { 
+    clearInterval(cricketState.timerInterval); 
+    showScreen(screens.home); 
+  }
 });
