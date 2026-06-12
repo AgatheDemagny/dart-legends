@@ -221,6 +221,31 @@
         </div>
       </div>
 
+      <div id="teamModeBlock" class="card form-card hidden">
+        <h3>👥 Mode Équipe</h3>
+        <div class="stat-row" style="border:none; padding:0; display:flex; justify-content:space-between; align-items:center;">
+          <span class="stat-label"><strong>Activer le mode équipe</strong></span>
+          <input type="checkbox" id="teamModeCheckbox" style="width:auto; margin-top:0;">
+        </div>
+
+        <div id="teamModeConfig" class="hidden" style="margin-top: 12px; border-top: 1px solid var(--divider); padding-top: 12px;">
+          <div>
+            <label><strong>Nombre d'équipes</strong></label>
+            <select id="teamCountSelect">
+              <option value="2" selected>2 équipes</option>
+              <option value="3">3 équipes</option>
+              <option value="4">4 équipes</option>
+            </select>
+          </div>
+
+          <div class="actions" style="margin-top: 12px;">
+            <button id="btnReshuffleTeams" class="ghost btn-block" style="font-size:13px; padding:6px;">🔀 Re-mélanger les équipes</button>
+          </div>
+
+          <div id="teamsContainer" style="margin-top:12px; display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+      </div>
+
       <button id="startGameBtn" class="primary btn-block" style="margin-top: 10px; margin-bottom: 20px; font-size: 18px;">🎯 DÉMARRER LA PARTIE</button>
     </section>
 
