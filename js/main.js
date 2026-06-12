@@ -1166,7 +1166,8 @@ function genererTableauStatistiques() {
   rowMpr.innerHTML = mprHtml; table.appendChild(rowMpr);
 
   cricketState.targets.forEach(cible => {
-    const libelleCible = cible === 25 ? "🎯 Bull" : `🎯 Zone ${cible}`;\n    const rowTouches = document.createElement("tr");
+    const libelleCible = cible === 25 ? "🎯 Bull" : `🎯 Zone ${cible}`;
+    const rowTouches = document.createElement("tr");
     let touchesHtml = `<td style="text-align:left; padding:6px 8px; font-size:12px; opacity:0.8;">${libelleCible} (Touches)</td>`;
     cricketState.players.forEach(p => { touchesHtml += `<td style="border-left:1px solid var(--divider); font-size:12px;">${cricketState.statsDetails[p.id].touchesNum[cible]}</td>`; });
     rowTouches.innerHTML = touchesHtml; table.appendChild(rowTouches);
