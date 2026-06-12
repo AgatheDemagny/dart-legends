@@ -441,6 +441,6 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
 #cricketKeyboardZone #btnModDouble,
 #cricketKeyboardZone #btnModTriple,
 #cricketKeyboardZone #btnKeyUndo {
-  font-size: 15.5px !important;  /* Zoom maximal lisible pour les mots longs (était à 14px) */
+  font-size: 19px !important;  /* Zoom maximal lisible pour les mots longs (était à 14px) */
   letter-spacing: -0.5px;        /* Resserre très légèrement les lettres pour la sécurité sur mobile */
 }
