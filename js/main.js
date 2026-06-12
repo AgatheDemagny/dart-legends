@@ -299,7 +299,7 @@ let cricketState = {
   players: [], maxTurns: 20, isBlind: false, targets: [], blindMap: {}, revealedTargets: [],
   scores: {}, marks: {}, history: [], currentTurnDartsText: [], statsDetails: {},
   currentPlayerIdx: 0, currentDart: 1, currentTurn: 1, startTime: 0, elapsedTime: 0,
-  timerInterval: null, isPaused: false
+  timerInterval: null, isPaused: false, lastTurnText: "Aucun"
 };
 
 let modificateurEnCours = 1;
@@ -367,6 +367,7 @@ function demarrerMatchCricket(listeJoueurs) {
   cricketState.scores = {}; 
   cricketState.marks = {}; 
   cricketState.statsDetails = {};
+  cricketState.lastTurnText = "Aucun";
 
   if (cricketState.isBlind) {
     let toutesLesCiblesPossibles = [];
@@ -443,6 +444,7 @@ function updateTurnHeader() {
   document.getElementById("dartsHistoryText").innerText = chaineLancers || "En attente...";
   const tText = cricketState.maxTurns === 999 ? "∞" : cricketState.maxTurns;
   document.getElementById("gameTurnIndicator").innerText = `Tour ${cricketState.currentTurn}/${tText}`;
+  document.getElementById("lastTurnHistoryText").innerText = `Coup précédent : ${cricketState.lastTurnText}`;
 }
 
 function renderGrid() {
@@ -544,7 +546,8 @@ function taperChiffre(valeurBouton) {
     statsDetails: JSON.parse(JSON.stringify(cricketState.statsDetails)),
     currentPlayerIdx: cricketState.currentPlayerIdx,
     currentDart: cricketState.currentDart,
-    currentTurn: cricketState.currentTurn
+    currentTurn: cricketState.currentTurn,
+    lastTurnText: cricketState.lastTurnText
   });
 
   let prefixeText = modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "";
@@ -605,6 +608,7 @@ function taperChiffre(valeurBouton) {
 
   cricketState.currentDart += 1;
   if (cricketState.currentDart > 3) {
+    cricketState.lastTurnText = `${joueurActuel.name} - ${cricketState.currentTurnDartsText.join('/')}`;
     cricketState.currentDart = 1; 
     cricketState.currentPlayerIdx += 1; 
     cricketState.currentTurnDartsText = [];
@@ -626,10 +630,15 @@ document.getElementById("btnKeyUndo").onclick = () => { annulerDernierCoup(); };
 function annulerDernierCoup() {
   if (cricketState.history.length === 0) return showPopup("Aucun coup à effacer.", true);
   const precedentState = cricketState.history.pop();
-  cricketState.scores = precedentState.scores; cricketState.marks = precedentState.marks;
-  cricketState.revealedTargets = precedentState.revealedTargets; cricketState.currentTurnDartsText = precedentState.currentTurnDartsText;
-  cricketState.statsDetails = precedentState.statsDetails; cricketState.currentPlayerIdx = precedentState.currentPlayerIdx;
-  cricketState.currentDart = precedentState.currentDart; cricketState.currentTurn = precedentState.currentTurn;
+  cricketState.scores = precedentState.scores; 
+  cricketState.marks = precedentState.marks;
+  cricketState.revealedTargets = precedentState.revealedTargets; 
+  cricketState.currentTurnDartsText = precedentState.currentTurnDartsText;
+  cricketState.statsDetails = precedentState.statsDetails; 
+  cricketState.currentPlayerIdx = precedentState.currentPlayerIdx;
+  cricketState.currentDart = precedentState.currentDart; 
+  cricketState.currentTurn = precedentState.currentTurn;
+  cricketState.lastTurnText = precedentState.lastTurnText;
   resetModifierUI(); renderKeyboard(); renderGrid(); updateTurnHeader();
 }
 
