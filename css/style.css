@@ -424,18 +424,23 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
 
 /* ================== OPTIMISATION TEXTE CLAVIER ================== */
 #cricketKeyboardZone button {
-  font-size: 18px !important;
-  font-weight: 800 !important;
-  padding: 10px 2px !important;
+  font-size: 19px !important;    /* Augmente la taille du texte des chiffres (1 à 20 et B) */
+  font-weight: 800 !important;   /* Impact visuel fort */
+  padding: 10px 1px !important;  /* Réduit l'espace sur les côtés pour laisser de la place au texte */
   display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
 }
 
-/* Ajustement spécifique pour les textes plus longs comme Double / Triple / Retour */
+/* Ajustement et zoom sur la ligne du bas (0, Double, Triple, Retour) */
+#cricketKeyboardZone #btnKeyZero {
+  font-size: 19px !important;    /* Le 0 s'aligne sur la taille des autres chiffres */
+}
+
 #cricketKeyboardZone #btnModDouble,
 #cricketKeyboardZone #btnModTriple,
 #cricketKeyboardZone #btnKeyUndo {
-  font-size: 14px !important;
+  font-size: 15.5px !important;  /* Zoom maximal lisible pour les mots longs (était à 14px) */
+  letter-spacing: -0.5px;        /* Resserre très légèrement les lettres pour la sécurité sur mobile */
 }
