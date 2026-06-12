@@ -34,7 +34,7 @@ function showScreen(activeScreen) {
   if(activeScreen) activeScreen.classList.remove("hidden");
 }
 
-function showPopup(text, isError = false) {"
+function showPopup(text, isError = false) {
   const popup = document.getElementById("popup");
   if (!popup) return;
   popup.innerText = text;
