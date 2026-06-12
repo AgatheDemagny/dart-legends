@@ -35,13 +35,17 @@ document.getElementById("menuNewGame").addEventListener("click", () => {
 document.getElementById("backHomeBtn").addEventListener("click", () => showScreen(screens.home));
 
 // Affichage dynamique des paramètres selon le mode de jeu sélectionné
+// Affichage dynamique des paramètres selon le mode de jeu sélectionné
 document.getElementById("gameModeSelect").addEventListener("change", (e) => {
+  const cricketParams = document.getElementById("cricketParamsGroup");
+  const x01Params = document.getElementById("x01ParamsGroup");
+  
   if (e.target.value === "x01") {
-    document.getElementById("cricketParamsGroup").classList.add("hidden");
-    document.getElementById("x01ParamsGroup").classList.remove("hidden");
+    cricketParams.classList.add("hidden");
+    x01Params.classList.remove("hidden");
   } else {
-    document.getElementById("cricketParamsGroup").classList.remove("hidden");
-    document.getElementById("x01ParamsGroup").classList.add("hidden");
+    cricketParams.classList.remove("hidden");
+    x01Params.classList.add("hidden");
   }
 });
 
