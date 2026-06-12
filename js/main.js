@@ -20,8 +20,8 @@ const POOL_NOMS_EQUIPES = [
   "Aigle", "Albatros", "Alouette", "Épervier", "Faucon", "Colibri", "Hibou", "Toucan", "Pélican", "Vautour",
   // Fleurs & Végétaux
   "Jonquille", "Tulipe", "Rose", "Pivoine", "Orchidée", "Lilas", "Lotus", "Coquelicot", 
-  "Tournesol", "Jasmin", "Anémone", "Lavande", "Bambou", "Iris", "Capucine", "Camélia", 
-  "Dahlia", "Magnolia", "Trèfle", "Mimosa", "Hibiscus", "Fuchsia", "Géranium",
+  "Tournesol", "Jasmin", "Anémone", "Lavande", "Iris", "Capucine", "Camélia", "Dahlia",
+  "Magnolia", "Trèfle", "Mimosa", "Hibiscus", "Fuchsia", "Géranium", "Pissenlit",
   // Insectes
   "Fourmi", "Scorpion", "Bourdon", "Luciole", "Cigale", "Scarabée", "Papillon", 
   "Araignée", "Libellule", "Abeille", "Sauterelle"  
@@ -433,9 +433,9 @@ function renderEquipesUI() {
     equipe.members.forEach((m, indexMembre) => {
       teamHtml += `
         <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; opacity:0.9;">
-          <span>👤 ${m.name}</span>
+          <span>${m.name}</span>
           <button class="ghost" style="font-size:11px; padding:2px 6px; color:var(--text-soft);" 
-                  onclick="deplacerJoueurManuellement(${indexTeam}, ${indexMembre})">🔄 Déplacer</button>
+                  onclick="deplacerJoueurManuellement(${indexTeam}, ${indexMembre})">Changer d'équipe</button>
         </div>
       `;
     });
@@ -932,7 +932,7 @@ function taperChiffre(valeurBouton) {
 
 function cloreVoleeActuelle(joueur) {
   const libelleName = cricketState.isTeamMode ? `${joueur.name} (${joueur.teamName})` : joueur.name;
-  cricketState.lastTurnText = `${libelleName} / ${cricketState.currentTurnDartsText.join('/')}`;
+  cricketState.lastTurnText = `${libelleName} ${cricketState.currentTurnDartsText.join('/')}`;
   
   // Sauvegarde de l'index et de l'équipe du joueur qui vient de finir
   const ancienPlayerIdx = cricketState.currentPlayerIdx;
