@@ -34,6 +34,17 @@ document.getElementById("menuNewGame").addEventListener("click", () => {
 });
 document.getElementById("backHomeBtn").addEventListener("click", () => showScreen(screens.home));
 
+// Affichage dynamique des paramètres selon le mode de jeu sélectionné
+document.getElementById("gameModeSelect").addEventListener("change", (e) => {
+  if (e.target.value === "x01") {
+    document.getElementById("cricketParamsGroup").classList.add("hidden");
+    document.getElementById("x01ParamsGroup").classList.remove("hidden");
+  } else {
+    document.getElementById("cricketParamsGroup").classList.remove("hidden");
+    document.getElementById("x01ParamsGroup").classList.add("hidden");
+  }
+});
+
 // Navigation vers la page Mon Compte
 document.getElementById("menuAccount").addEventListener("click", () => {
   showScreen(screens.account);
@@ -296,6 +307,8 @@ function retirerJoueurMatch(idx) {
 
 // ================== MOTEUR DE CRICKET COMPLET ==================
 let cricketState = {
+  gameMode: "cricket",
+  x01StartPoints: 301, x01Checkout: "single",
   players: [], maxTurns: 20, isBlind: false, targets: [], blindMap: {}, revealedTargets: [],
   scores: {}, marks: {}, history: [], currentTurnDartsText: [], statsDetails: {},
   currentPlayerIdx: 0, currentDart: 1, currentTurn: 1, startTime: 0, elapsedTime: 0,
@@ -345,7 +358,12 @@ document.getElementById("startGameBtn").addEventListener("click", () => {
   if (joueursSelectionnesMatch.length < 2) {
     return showPopup("⚠️ Il faut au moins 2 joueurs sur la ligne de tir pour démarrer !", true);
   }
-  demarrerMatchCricket(joueursSelectionnesMatch);
+  const mode = document.getElementById("gameModeSelect").value;
+  if (mode === "x01") {
+    demarrerMatchX01(joueursSelectionnesMatch);
+  } else {
+    demarrerMatchCricket(joueursSelectionnesMatch);
+  }
 });
 
 function demarrerMatchCricket(listeJoueurs) {
@@ -412,6 +430,53 @@ function demarrerMatchCricket(listeJoueurs) {
   renderKeyboard(); 
   resetModifierUI(); 
   renderGrid(); 
+  updateTurnHeader();
+}
+
+function demarrerMatchX01(listeJoueurs) {
+  // Mélange des joueurs
+  let joueursMelanges = [...listeJoueurs];
+  for (let i = joueursMelanges.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [joueursMelanges[i], joueursMelanges[j]] = [joueursMelanges[j], joueursMelanges[i]];
+  }
+  
+  cricketState.gameMode = "x01";
+  cricketState.players = joueursMelanges;
+  cricketState.x01StartPoints = parseInt(document.getElementById("x01StartPointsSelect").value, 10);
+  cricketState.x01Checkout = document.getElementById("x01CheckoutSelect").value;
+  
+  cricketState.history = []; 
+  cricketState.currentTurnDartsText = [];
+  cricketState.currentPlayerIdx = 0; 
+  cricketState.currentDart = 1; 
+  cricketState.currentTurn = 1;
+  cricketState.maxTurns = 999; // Pas de limite de tours par défaut sur le X01
+  cricketState.scores = {}; 
+  cricketState.statsDetails = {};
+  cricketState.lastTurnText = "Aucun";
+
+  cricketState.players.forEach(p => {
+    // Au X01, on part du score max (ex: 501) et on descend vers 0
+    cricketState.scores[p.id] = cricketState.x01StartPoints;
+    cricketState.statsDetails[p.id] = { 
+      dartsThrown: 0, 
+      totalScoreScored: 0, // Pour calculer le score moyen par volée (3 fléchettes)
+      bustsCount: 0 
+    };
+  });
+
+  showScreen(screens.cricket);
+  cricketState.startTime = Date.now(); 
+  cricketState.elapsedTime = 0; 
+  cricketState.isPaused = false;
+  document.getElementById("btnPauseGame").innerText = "⏸️";
+  clearInterval(cricketState.timerInterval);
+  cricketState.timerInterval = setInterval(updateTimer, 1000);
+
+  renderKeyboardX01(); 
+  resetModifierUI(); 
+  renderGridX01(); 
   updateTurnHeader();
 }
 
@@ -487,6 +552,38 @@ function renderGrid() {
   });
 }
 
+function renderGridX01() {
+  const table = document.getElementById("cricketGridTable");
+  table.innerHTML = "";
+  
+  const headerRow = document.createElement("tr");
+  headerRow.style.background = "rgba(255,255,255,0.02)";
+  headerRow.innerHTML = `
+    <th style="text-align:left; padding: 12px 8px; border-bottom: 2px solid var(--divider); width: 40%;">Joueurs</th>
+    <th style="font-weight:bold; padding: 12px 8px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); width: 30%;">Fléchettes</th>
+    <th style="padding: 12px 8px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 30%;">Reste</th>
+  `;
+  table.appendChild(headerRow);
+
+  cricketState.players.forEach(p => {
+    const row = document.createElement("tr");
+    row.style.borderBottom = "1px solid var(--divider)";
+    if(p.id === cricketState.players[cricketState.currentPlayerIdx].id) {
+      row.style.backgroundColor = "rgba(192,101,42,0.15)";
+    }
+    
+    let nomTronque = p.name.length > 12 ? p.name.substring(0, 12) + "." : p.name;
+    const totalDarts = cricketState.statsDetails[p.id].dartsThrown || 0;
+    
+    row.innerHTML = `
+      <td style="text-align:left; padding: 14px 8px; font-weight:700;">${nomTronque}</td>
+      <td style="padding: 14px 8px; border-left: 1px solid var(--divider); opacity: 0.7;">${totalDarts} tirs</td>
+      <td style="font-weight:800; padding: 14px 8px; border-left: 1px solid var(--divider); color: var(--primary-strong); font-size: 18px;">${cricketState.scores[p.id]}</td>
+    `;
+    table.appendChild(row);
+  });
+}
+
 function renderKeyboard() {
   const container = document.getElementById("cricketDynamicRows");
   if (!container) return;
@@ -527,6 +624,31 @@ function renderKeyboard() {
   }
 }
 
+function renderKeyboardX01() {
+  const container = document.getElementById("cricketDynamicRows");
+  if (!container) return;
+  container.innerHTML = "";
+
+  // Ligne 1 : 1 à 7
+  const row1 = document.createElement("div");
+  row1.style.display = "grid"; row1.style.gridTemplateColumns = "repeat(7, 1fr)"; row1.style.gap = "5px";
+  for (let i = 1; i <= 7; i++) row1.appendChild(creerBoutonClavier(i, i));
+  container.appendChild(row1);
+
+  // Ligne 2 : 8 à 14
+  const row2 = document.createElement("div");
+  row2.style.display = "grid"; row2.style.gridTemplateColumns = "repeat(7, 1fr)"; row2.style.gap = "5px";
+  for (let i = 8; i <= 14; i++) row2.appendChild(creerBoutonClavier(i, i));
+  container.appendChild(row2);
+
+  // Ligne 3 : 15 à 20 + Bulleye
+  const row3 = document.createElement("div");
+  row3.style.display = "grid"; row3.style.gridTemplateColumns = "repeat(7, 1fr)"; row3.style.gap = "5px";
+  for (let i = 15; i <= 20; i++) row3.appendChild(creerBoutonClavier(i, i));
+  row3.appendChild(creerBoutonClavier("🎯 B", 25));
+  container.appendChild(row3);
+}
+
 function creerBoutonClavier(libelle, valeur) {
   const btn = document.createElement("button");
   btn.className = "ghost"; btn.style.padding = "14px 2px"; btn.style.fontSize = "14px"; btn.style.fontWeight = "bold";
@@ -561,46 +683,80 @@ function taperChiffre(valeurBouton) {
 
   cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
 
+  cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
+
   if (valeurBouton !== 0) {
-    if (cricketState.targets.includes(valeurBouton)) {
-      if (!cricketState.revealedTargets.includes(valeurBouton)) {
-        cricketState.revealedTargets.push(valeurBouton);
+    if (cricketState.gameMode === "x01") {
+      // --- LOGIQUE DE CALCUL DU X01 ---
+      let valeurReelle = valeurBouton === 25 ? 25 : valeurBouton;
+      // La bulle au X01 fait 25 en simple, 50 en double (T3 impossible géré par la fonction Bull)
+      if (valeurBouton === 25 && modificateurEnCours === 2) valeurReelle = 50;
+      
+      const pointsMarques = valeurReelle * modificateurEnCours;
+      const scoreActuel = cricketState.scores[joueurActuel.id];
+      const scoreResultat = scoreActuel - pointsMarques;
+
+      let estBust = false;
+
+      if (scoreResultat < 0) {
+        estBust = true; // On a dépassé le score nécessaire
+      } else if (scoreResultat === 1 && cricketState.x01Checkout === "double") {
+        estBust = true; // Impossible de finir par un double si on se retrouve à 1 point restant
+      } else if (scoreResultat === 0) {
+        if (cricketState.x01Checkout === "double" && modificateurEnCours !== 2) {
+          estBust = true; // On arrive à 0 mais ce n'est pas un double ! Bust !
+        }
       }
 
-      const estFermePourTous = cricketState.players.every(p => cricketState.marks[p.id][valeurBouton] >= 3);
-      
-      // On comptabilise la touche dans les stats UNIQUEMENT s'il reste au moins une personne ouverte
-      if (!estFermePourTous) {
-        cricketState.statsDetails[joueurActuel.id].touchesNum[valeurBouton] += modificateurEnCours;
-      }
-
-      let touchesPrecedentes = cricketState.marks[joueurActuel.id][valeurBouton];
-      let touchesRestantes = 3 - touchesPrecedentes;
-      let touchesAppliquees = Math.min(modificateurEnCours, touchesRestantes);
-      
-      cricketState.marks[joueurActuel.id][valeurBouton] += touchesAppliquees;
-  
-      cricketState.statsDetails[joueurActuel.id].touchesUtiles += touchesAppliquees;
-
-      let surplus = modificateurEnCours - touchesAppliquees;
-      if (surplus > 0) {
-        let pointsReellementDonnesCeCoup = 0;
+      if (estBust) {
+        showPopup("💥 Bust ! Score annulé.", true);
+        cricketState.statsDetails[joueurActuel.id].bustsCount += 1;
         
-        cricketState.players.forEach(adversaire => {
-          if (adversaire.id !== joueurActuel.id) {
-            const advFerme = cricketState.marks[adversaire.id][valeurBouton] >= 3;
-            if (!advFerme) {
-              let penalite = valeurBouton * surplus;
-              cricketState.scores[adversaire.id] -= penalite;
-              pointsReellementDonnesCeCoup += penalite;
+        // ANNULATION DE TOUTE LA VOLÉE (On force le passage immédiat au joueur suivant)
+        // On compense les fléchettes restantes de la volée
+        const tirsEffectuesCeTour = cricketState.currentDart; // 1, 2 ou 3
+        const tirsManquants = 3 - tirsEffectuesCeTour;
+        cricketState.statsDetails[joueurActuel.id].dartsThrown += tirsManquants;
+        
+        cricketState.currentTurnDartsText.push("💥 BUST");
+        cricketState.currentDart = 3; // Force la fin de la volée ci-dessous
+      } else {
+        // Le coup est valide, on soustrait les points !
+        cricketState.scores[joueurActuel.id] = scoreResultat;
+        cricketState.statsDetails[joueurActuel.id].totalScoreScored += pointsMarques;
+      }
+    } else {
+      // --- LOGIQUE DE CALCUL ORIGINALE CRICKET ---
+      if (cricketState.targets.includes(valeurBouton)) {
+        if (!cricketState.revealedTargets.includes(valeurBouton)) {
+          cricketState.revealedTargets.push(valeurBouton);
+        }
+        const estFermePourTous = cricketState.players.every(p => cricketState.marks[p.id][valeurBouton] >= 3);
+        if (!estFermePourTous) {
+          cricketState.statsDetails[joueurActuel.id].touchesNum[valeurBouton] += modificateurEnCours;
+        }
+        let touchesPrecedentes = cricketState.marks[joueurActuel.id][valeurBouton];
+        let touchesRestantes = 3 - touchesPrecedentes;
+        let touchesAppliquees = Math.min(modificateurEnCours, touchesRestantes);
+        cricketState.marks[joueurActuel.id][valeurBouton] += touchesAppliquees;
+        cricketState.statsDetails[joueurActuel.id].touchesUtiles += touchesAppliquees;
+        let surplus = modificateurEnCours - touchesAppliquees;
+        if (surplus > 0) {
+          let pointsReellementDonnesCeCoup = 0;
+          cricketState.players.forEach(adversaire => {
+            if (adversaire.id !== joueurActuel.id) {
+              const advFerme = cricketState.marks[adversaire.id][valeurBouton] >= 3;
+              if (!advFerme) {
+                let penalite = valeurBouton * surplus;
+                cricketState.scores[adversaire.id] -= penalite;
+                pointsReellementDonnesCeCoup += penalite;
+              }
             }
+          });
+          if (pointsReellementDonnesCeCoup > 0) {
+            cricketState.statsDetails[joueurActuel.id].pointsGiv[valeurBouton] += pointsReellementDonnesCeCoup;
+            cricketState.statsDetails[joueurActuel.id].touchesUtiles += surplus;
           }
-        });
-
-        // CORRECTION COMPLETE POINTS DONNES + MPR : S'applique uniquement si au moins un joueur a subi la pénalité
-        if (pointsReellementDonnesCeCoup > 0) {
-          cricketState.statsDetails[joueurActuel.id].pointsGiv[valeurBouton] += pointsReellementDonnesCeCoup;
-          cricketState.statsDetails[joueurActuel.id].touchesUtiles += surplus;
         }
       }
     }
@@ -619,8 +775,13 @@ function taperChiffre(valeurBouton) {
   }
 
   resetModifierUI(); 
-  renderKeyboard(); 
-  renderGrid(); 
+  if (cricketState.gameMode === "x01") {
+    renderKeyboardX01(); 
+    renderGridX01();
+  } else {
+    renderKeyboard(); 
+    renderGrid();
+  }
   updateTurnHeader(); 
   verifierConditionsFinMatch();
 }
@@ -639,19 +800,35 @@ function annulerDernierCoup() {
   cricketState.currentDart = precedentState.currentDart; 
   cricketState.currentTurn = precedentState.currentTurn;
   cricketState.lastTurnText = precedentState.lastTurnText;
-  resetModifierUI(); renderKeyboard(); renderGrid(); updateTurnHeader();
+  resetModifierUI(); 
+  if (cricketState.gameMode === "x01") {
+    renderKeyboardX01(); renderGridX01();
+  } else {
+    renderKeyboard(); renderGrid();
+  }
+  updateTurnHeader();
+}
 }
 
 function verifierConditionsFinMatch() {
   let gagnantVirtuel = null;
-  for (let p of cricketState.players) {
-    let aToutFerme = cricketState.targets.every(t => cricketState.marks[p.id][t] >= 3);
-    if (aToutFerme) {
-      let scoreCourant = cricketState.scores[p.id];
-      let estLeader = cricketState.players.every(autre => scoreCourant >= cricketState.scores[autre.id]);
-      if (estLeader) { gagnantVirtuel = p; break; }
+  if (cricketState.gameMode === "x01") {
+    // Au X01, le premier à atteindre exactement 0 a gagné
+    for (let p of cricketState.players) {
+      if (cricketState.scores[p.id] === 0) {
+        gagnantVirtuel = p;
+        break;
+      }
     }
-  }
+  } else {
+    for (let p of cricketState.players) {
+      let aToutFerme = cricketState.targets.every(t => cricketState.marks[p.id][t] >= 3);
+      if (aToutFerme) {
+        let scoreCourant = cricketState.scores[p.id];
+        let estLeader = cricketState.players.every(autre => scoreCourant >= cricketState.scores[autre.id]);
+        if (estLeader) { gagnantVirtuel = p; break; }
+      }
+    }
   if (!gagnantVirtuel && cricketState.currentTurn > cricketState.maxTurns && cricketState.maxTurns !== 999) {
     let meilleurScore = -Infinity;
     cricketState.players.forEach(p => {
@@ -671,7 +848,12 @@ function verifierConditionsFinMatch() {
 function lancerPageVictoire(vainqueur) {
   document.getElementById("victoryTitle").innerText = `${vainqueur.name} gagne la partie !`;
   document.getElementById("victorySubtitle").innerText = `Match bouclé en ${document.getElementById("gameTimerDisplay").innerText}`;
-  const classementTrie = [...cricketState.players].sort((a, b) => cricketState.scores[b.id] - cricketState.scores[a.id]);
+ const classementTrie = [...cricketState.players].sort((a, b) => {
+    if (cricketState.gameMode === "x01") {
+      return cricketState.scores[a.id] - cricketState.scores[b.id]; // Au X01, le plus petit score restant (0) est premier !
+    }
+    return cricketState.scores[b.id] - cricketState.scores[a.id];
+  });
   const containerRanking = document.getElementById("finalRankingList");
   containerRanking.innerHTML = "";
 
@@ -696,7 +878,14 @@ document.getElementById("btnRematch").onclick = () => {
   demarrerMatchCricket(cricketState.players);
 };
 
-document.getElementById("btnGoToStats").onclick = () => { genererTableauStatistiques(); showScreen(screens.matchStats); };
+document.getElementById("btnGoToStats").onclick = () => { 
+  if (cricketState.gameMode === "x01") {
+    showPopup("Statistiques détaillées indisponibles pour le X01.");
+  } else {
+    genererTableauStatistiques(); 
+    showScreen(screens.matchStats); 
+  }
+};
 document.getElementById("btnBackToPodium").onclick = () => showScreen(screens.gameOver);
 
 function genererTableauStatistiques() {

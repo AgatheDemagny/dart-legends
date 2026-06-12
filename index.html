@@ -163,34 +163,61 @@
         <div>
           <label><strong>Mode de jeu</strong></label>
           <select id="gameModeSelect">
+            <option value="x01">💯​ X01</option>
             <option value="cricket">🏏 Cricket</option>
           </select>
         </div>
 
-        <div>
-          <label><strong>Nombre de tours</strong></label>
-          <select id="gameTurnsSelect">
-            <option value="20">20 tours</option>
-            <option value="10">10 tours</option>
-            <option value="12">12 tours</option>
-            <option value="14">14 tours</option>
-            <option value="16">16 tours</option>
-            <option value="18">18 tours</option>
-            <option value="22">22 tours</option>
-            <option value="24">24 tours</option>
-            <option value="26">26 tours</option>
-            <option value="28">28 tours</option>
-            <option value="30">30 tours</option>
-            <option value="999">Sans limite</option>
-          </select>
+        <div id="cricketParamsGroup"></div>
+          <div>
+            <label><strong>Nombre de tours</strong></label>
+            <select id="gameTurnsSelect">
+              <option value="20">20 tours</option>
+              <option value="10">10 tours</option>
+              <option value="12">12 tours</option>
+              <option value="14">14 tours</option>
+              <option value="16">16 tours</option>
+              <option value="18">18 tours</option>
+              <option value="22">22 tours</option>
+              <option value="24">24 tours</option>
+              <option value="26">26 tours</option>
+              <option value="28">28 tours</option>
+              <option value="30">30 tours</option>
+              <option value="999">Sans limite</option>
+            </select>
+          </div>
+
+          <div style="margin-top: 4px;">
+            <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
+              <span class="stat-label"><strong>Mode n'a qu'un œil</strong></span>
+              <input type="checkbox" id="blindModeCheckbox" style="width: auto; margin-top: 0;">
+            </div>
+            <p class="hint" style="margin-top: 2px;">Dans ce mode, les numéros sont masqués et se révèlent au premier impact.</p>
+          </div>
         </div>
 
-        <div style="margin-top: 4px;">
-          <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
-            <span class="stat-label"><strong>Mode n'a qu'un œil</strong></span>
-            <input type="checkbox" id="blindModeCheckbox" style="width: auto; margin-top: 0;">
+        <div id="x01ParamsGroup" class="hidden">
+          <div>
+            <label><strong>Points de départ</strong></label>
+            <select id="x01StartPointsSelect">
+              <option value="301" selected>301</option>
+              <option value="401">401</option>
+              <option value="501">501</option>
+              <option value="601">601</option>
+              <option value="701">701</option>
+              <option value="801">801</option>
+              <option value="901">901</option>
+              <option value="1001">1001</option>
+            </select>
           </div>
-          <p class="hint" style="margin-top: 2px;">Dans ce mode, les numéros sont masqués et se révèlent au premier impact.</p>
+
+          <div style="margin-top: 12px;">
+            <label><strong>Checkout</strong></label>
+            <select id="x01CheckoutSelect">
+              <option value="double"selected>Double-out</option>
+              <option value="single">Sans contrainte</option>
+            </select>
+          </div>
         </div>
       </div>
 
