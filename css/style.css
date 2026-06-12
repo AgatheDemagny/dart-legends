@@ -172,6 +172,19 @@ button.mod-btn.active {
   border-color: var(--primary) !important;
   box-shadow: 0 4px 12px rgba(15, 76, 129, 0.2);
 }
+
+.danger-btn {
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  color: #FFFFFF !important;
+}
+
+.danger-btn:hover {
+  background: #b82e30; /* Un rouge un peu plus sombre au survol */
+  border-color: #b82e30;
+  box-shadow: 0 6px 16px rgba(217, 56, 58, 0.25);
+}
+
 /* ================== INPUTS ================== */
 input, select {
   width: 100%;
@@ -407,4 +420,22 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
 }
 #cricketKeyboardZone button {
   touch-action: manipulation;
+}
+
+/* ================== OPTIMISATION TEXTE CLAVIER ================== */
+#cricketKeyboardZone button {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  padding: 10px 2px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+/* Ajustement spécifique pour les textes plus longs comme Double / Triple / Retour */
+#cricketKeyboardZone #btnModDouble,
+#cricketKeyboardZone #btnModTriple,
+#cricketKeyboardZone #btnKeyUndo {
+  font-size: 14px !important;
 }

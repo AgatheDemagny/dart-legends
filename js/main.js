@@ -564,15 +564,19 @@ function taperChiffre(valeurBouton) {
         cricketState.revealedTargets.push(valeurBouton);
       }
 
-      cricketState.statsDetails[joueurActuel.id].touchesNum[valeurBouton] += modificateurEnCours;
+      const estFermePourTous = cricketState.players.every(p => cricketState.marks[p.id][valeurBouton] >= 3);
+      
+      // On comptabilise la touche dans les stats UNIQUEMENT s'il reste au moins une personne ouverte
+      if (!estFermePourTous) {
+        cricketState.statsDetails[joueurActuel.id].touchesNum[valeurBouton] += modificateurEnCours;
+      }
 
       let touchesPrecedentes = cricketState.marks[joueurActuel.id][valeurBouton];
       let touchesRestantes = 3 - touchesPrecedentes;
       let touchesAppliquees = Math.min(modificateurEnCours, touchesRestantes);
       
       cricketState.marks[joueurActuel.id][valeurBouton] += touchesAppliquees;
-      
-      // FIX MPR : On enregistre ces touches appliquées comme "utiles" (Fermeture personnelle)
+  
       cricketState.statsDetails[joueurActuel.id].touchesUtiles += touchesAppliquees;
 
       let surplus = modificateurEnCours - touchesAppliquees;
