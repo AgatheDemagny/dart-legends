@@ -23,7 +23,7 @@ const POOL_NOMS_EQUIPES = [
   "Tournesol", "Jasmin", "Anémone", "Lavande", "Bambou", "Iris", "Capucine", "Camélia", 
   "Dahlia", "Magnolia", "Trèfle", "Mimosa", "Hibiscus", "Fuchsia", "Géranium",
   // Insectes
-  "Fourmi", "Scorpion", "Mante", "Bourdon", "Luciole", "Cigale", "Scarabée", "Papillon", 
+  "Fourmi", "Scorpion", "Bourdon", "Luciole", "Cigale", "Scarabée", "Papillon", 
   "Araignée", "Libellule", "Abeille", "Sauterelle"  
 ];
 
@@ -932,7 +932,7 @@ function taperChiffre(valeurBouton) {
 
 function cloreVoleeActuelle(joueur) {
   const libelleName = cricketState.isTeamMode ? `${joueur.name} (${joueur.teamName})` : joueur.name;
-  cricketState.lastTurnText = `${libelleName} - ${cricketState.currentTurnDartsText.join('/')}`;
+  cricketState.lastTurnText = `${libelleName} / ${cricketState.currentTurnDartsText.join('/')}`;
   
   // Sauvegarde de l'index et de l'équipe du joueur qui vient de finir
   const ancienPlayerIdx = cricketState.currentPlayerIdx;
