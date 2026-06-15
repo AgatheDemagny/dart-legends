@@ -621,7 +621,8 @@ function demarrerMatchCricket(listeJoueurs) {
   cricketState.gameMode = "cricket";
   initVariablesMatchGenerales(listeJoueurs);
 
-  cricketState.maxTurns = parseInt(document.getElementById("gameTurnsSelect").value, 10);
+  const selectTours = document.getElementById("gameTurnsSelect");
+  cricketState.maxTurns = selectTours ? parseInt(selectTours.value, 10) : 20;
   cricketState.isBlind = document.getElementById("blindModeCheckbox").checked;
   cricketState.marks = {}; 
 
@@ -668,8 +669,11 @@ function demarrerMatchX01(listeJoueurs) {
   cricketState.gameMode = "x01";
   initVariablesMatchGenerales(listeJoueurs);
   
-  cricketState.x01StartPoints = parseInt(document.getElementById("x01StartPointsSelect").value, 10);
-  cricketState.x01Checkout = document.getElementById("x01CheckoutSelect").value;
+  const selectPoints = document.getElementById("x01StartPointsSelect");
+  const selectCheckout = document.getElementById("x01CheckoutSelect");
+
+  cricketState.x01StartPoints = selectPoints ? parseInt(selectPoints.value, 10) : 301;
+  cricketState.x01Checkout = selectCheckout ? selectCheckout.value : "double";
   cricketState.maxTurns = 999; 
 
   cricketState.players.forEach(p => {
@@ -1459,7 +1463,6 @@ async function chargerHistoriqueParties() {
 
   try {
     // On récupère TOUTES les parties triées par date décroissante
-    // (Firestore garde tout pour tes futures stats, on filtre l'affichage ici)
     const snap = await db.collection("games_history")
                           .orderBy("createdAt", "desc")
                           .get();
@@ -1494,10 +1497,14 @@ async function chargerHistoriqueParties() {
       // 3. Détermination des paramètres à afficher selon le mode
       let libelleMode = d.type === "x01" ? "💯 X01" : "🏏 Cricket";
       let detailsParametres = "";
+      
       if (d.type === "x01") {
-        detailsParametres = `${d.x01StartPoints || 301} (${d.x01Checkout === "double" ? "Double-Out" : "Single"})`;
+        const typeCheckout = d.x01Checkout === "double" ? "Double-Out" : "Sans contrainte";
+        detailsParametres = `${d.x01StartPoints || 301} points • ${typeCheckout}`;
       } else {
-        const toursTxt = d.maxTurns === 999 ? "Sans limite" : `${d.maxTurns} tours`;
+        // Sécurité si maxTurns est absent ou mal enregistré
+        const nbrTours = d.maxTurns || 20;
+        const toursTxt = nbrTours === 999 ? "Sans limite" : `${nbrTours} tours`;
         detailsParametres = `${toursTxt} ${d.isBlind ? "• Mode n'a qu'un œil" : ""}`;
       }
       if (d.isTeamMode) detailsParametres += " • En Équipe";
