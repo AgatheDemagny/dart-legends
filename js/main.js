@@ -1506,7 +1506,9 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
     return donneesEntite;
   });
 
-  // Sauvegarde enrichie dans Firestore
+  const idParticipantsMatch = cricketState.players.map(p => p.id);
+
+  // Sauvegarde enrichie dans Firestore avec indexation communautaire et personnelle
   db.collection("games_history").add({
     type: cricketState.gameMode,
     winner: nomVainqueur,
@@ -1517,7 +1519,9 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
     isBlind: cricketState.isBlind,
     x01StartPoints: cricketState.x01StartPoints,
     x01Checkout: cricketState.x01Checkout,
-    classementFinal: resumeClassement
+    classementFinal: resumeClassement,
+    communityId: cricketState.communityId,
+    participantIds: idParticipantsMatch
   }).catch(e => console.error("Erreur enregistrement historique :", e));
   
   showScreen(screens.gameOver);
@@ -1816,83 +1820,158 @@ document.getElementById("btnLeaveGame").addEventListener("click", async () => {
   }
 });
 
+// Fonction d'entrée appelée quand on clique sur l'historique depuis l'accueil
 async function chargerHistoriqueParties() {
-  const container = document.getElementById("historyContainer");
-  container.innerHTML = "<p class='hint' style='text-align:center; padding:20px;'>Chargement de l'historique...</p>";
+  const selectFiltre = document.getElementById("selectFiltreHistorique");
+  if (!selectFiltre) return;
 
-  // Calcul du timestamp d'il y a 30 jours (30 jours * 24h * 60m * 60s * 1000ms)
+  // 1. On construit dynamiquement les options du filtre selon les communautés réelles de l'utilisateur
+  selectFiltre.innerHTML = "";
+  
+  // Option 1 : Le Tout-en-un (Vue par défaut)
+  const optTous = document.createElement("option");
+  optTous.value = "tous";
+  optTous.innerText = "🌐 Tout (Moi & Communautés)";
+  selectFiltre.appendChild(optTous);
+
+  // Option 2 : Uniquement mes parties à moi
+  const optPerso = document.createElement("option");
+  optPerso.value = "perso";
+  optPerso.innerText = "👤 Mes parties uniquement";
+  selectFiltre.appendChild(optPerso);
+
+  // Options suivantes : Une option par communauté dont je fais partie
+  listeMesCommunautes.forEach(commu => {
+    const opt = document.createElement("option");
+    opt.value = `commu-${commu.id}`;
+    opt.innerText = `👥 ${commu.name}`;
+    selectFiltre.appendChild(opt);
+  });
+
+  // Configurer l'écouteur de changement de filtre s'il n'est pas déjà mis
+  selectFiltre.onchange = () => {
+    executerRenduHistoriqueFiltre(selectFiltre.value);
+  };
+
+  // 2. Lancement initial avec la vue globale "Tous"
+  await executerRenduHistoriqueFiltre("tous");
+}
+
+// Moteur de requêtes et affichage de l'historique avec filtrage
+async function executerRenduHistoriqueFiltre(typeFiltre) {
+  const container = document.getElementById("historyContainer");
+  const user = auth.currentUser;
+  if (!user) return;
+
+  container.innerHTML = "<p class='hint' style='text-align:center; padding:20px;'>Chargement de l'historique...</p>";
+  
   const unMoisEnMillisecondes = 30 * 24 * 60 * 60 * 1000;
   const dateLimite = Date.now() - unMoisEnMillisecondes;
 
   try {
-    // On récupère TOUTES les parties triées par date décroissante
-    const snap = await db.collection("games_history")
-                          .orderBy("createdAt", "desc")
-                          .get();
+    let matchesFiltres = [];
 
+    // SCÉNARIO 1 : L'utilisateur veut TOUT voir (Ses matchs + les matchs de ses communautés)
+    if (typeFiltre === "tous") {
+      // Pour éviter les limitations Firebase, on récupère l'historique récent du mois (max 100 parties pour la performance)
+      const snapGlobal = await db.collection("games_history")
+                                  .orderBy("createdAt", "desc")
+                                  .limit(100)
+                                  .get();
+
+      // On extrait la liste des ID des communautés de l'utilisateur pour le filtre local
+      const mesIdsCommu = listeMesCommunautes.map(c => c.id);
+
+      snapGlobal.forEach(doc => {
+        const d = doc.data();
+        // Une partie est gardée si elle date de moins de 30 jours ET (soit l'user a joué, soit elle appartient à une de ses commus)
+        if (d.createdAt >= dateLimite) {
+          const jAiParticipe = d.participantIds && d.participantIds.includes(user.uid);
+          const appartientAMaCommu = d.communityId && mesIdsCommu.includes(d.communityId);
+          
+          if (jAiParticipe || appartientAMaCommu) {
+            matchesFiltres.push({ id: doc.id, ...d });
+          }
+        }
+      });
+
+    // SCÉNARIO 2 : L'utilisateur veut uniquement ses parties à lui
+    } else if (typeFiltre === "perso") {
+      const snapPerso = await db.collection("games_history")
+                                  .where("participantIds", "array-contains", user.uid)
+                                  .orderBy("createdAt", "desc")
+                                  .get();
+      snapPerso.forEach(doc => {
+        if (doc.data().createdAt >= dateLimite) {
+          matchesFiltres.push({ id: doc.id, ...doc.data() });
+        }
+      });
+
+    // SCÉNARIO 3 : L'utilisateur a ciblé une communauté précise (commu-XXXXXX)
+    } else if (typeFiltre.startsWith("commu-")) {
+      const targetCommuId = typeFiltre.replace("commu-", "");
+      const snapCommu = await db.collection("games_history")
+                                  .where("communityId", "==", targetCommuId)
+                                  .orderBy("createdAt", "desc")
+                                  .get();
+      snapCommu.forEach(doc => {
+        if (doc.data().createdAt >= dateLimite) {
+          matchesFiltres.push({ id: doc.id, ...doc.data() });
+        }
+      });
+    }
+
+    // --- RENDU GRAPHIQUE DES MATCHS FILTRÉS ---
     container.innerHTML = "";
-    let compteurPartiesAffichees = 0;
 
-    snap.forEach(doc => {
-      const d = doc.data();
+    if (matchesFiltres.length === 0) {
+      container.innerHTML = `<p class='hint' style='text-align:center; padding:20px;'>Aucune partie trouvée dans cette section ces 30 derniers jours 🎯</p>`;
+      return;
+    }
 
-      // FILTRE D'AFFICHAGE : Si la partie est plus vieille que 30 jours, on l'ignore pour cet écran
-      if (d.createdAt < dateLimite) {
-        return; 
-      }
+    // Tri de sécurité par date décroissante au cas où le filtrage local aurait bousculé l'ordre
+    matchesFiltres.sort((a, b) => b.createdAt - a.createdAt);
 
-      compteurPartiesAffichees++;
-
+    matchesFiltres.forEach(d => {
       const card = document.createElement("div");
       card.className = "card";
       card.style.marginBottom = "4px"; 
 
-      // 1. Formatage de la date et heure (sans les secondes)
       const datePartie = new Date(d.createdAt);
       const dateFormatee = datePartie.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
       const heureFormatee = datePartie.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+      const dureeFormatee = `${String(Math.floor((d.duration || 0) / 60)).padStart(2, "0")}:${String((d.duration || 0) % 60).padStart(2, "0")}`;
 
-      // 2. Formatage de la durée (MM:SS)
-      const min = String(Math.floor((d.duration || 0) / 60)).padStart(2, "0");
-      const sec = String((d.duration || 0) % 60).padStart(2, "0");
-      const dureeFormatee = `${min}:${sec}`;
-
-      // 3. Détermination des paramètres à afficher selon le mode
       let libelleMode = d.type === "x01" ? "💯 X01" : "🏏 Cricket";
-      let detailsParametres = "";
       
-      if (d.type === "x01") {
-        const typeCheckout = d.x01Checkout === "double" ? "Double-Out" : "Sans contrainte";
-        detailsParametres = `${d.x01StartPoints || 301} points • ${typeCheckout}`;
-      } else {
-        // Sécurité si maxTurns est absent ou mal enregistré
-        const nbrTours = d.maxTurns || 20;
-        const toursTxt = nbrTours === 999 ? "Sans limite" : `${nbrTours} tours`;
-        detailsParametres = `${toursTxt} ${d.isBlind ? "• Mode n'a qu'un œil" : ""}`;
+      // Trouver le nom de la communauté de cette partie pour l'afficher en label contextuel
+      let nomCommuLabel = "";
+      if (d.communityId) {
+        const commuTrouvee = listeMesCommunautes.find(c => c.id === d.communityId);
+        if (commuTrouvee) nomCommuLabel = ` • 👥 ${commuTrouvee.name}`;
       }
-      if (d.isTeamMode) detailsParametres += " • En Équipe";
 
-      // 4. Construction du bloc HTML
+      let detailsParametres = d.type === "x01" ? `${d.x01StartPoints || 301} pts • ${d.x01Checkout === "double" ? "Double-Out" : "Sans contrainte"}` : `${d.maxTurns === 999 ? "Sans limite" : (d.maxTurns || 20) + ' tours'} ${d.isBlind ? "• Mode n'a qu'un œil" : ""}`;
+      if (d.isTeamMode) detailsParametres += " • En Équipe";
+      detailsParametres += nomCommuLabel;
+
       let htmlContenu = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; border-bottom: 1px solid var(--divider); padding-bottom: 8px;">
           <div style="text-align: left;">
             <h3 style="text-align: left !important; margin: 0; color: var(--primary-strong); font-size: 17px;">${libelleMode}</h3>
-            <span style="font-size: 12px; color: var(--text-soft); font-weight: 600;">${detailsParametres}</span>
+            <span style="font-size: 11px; color: var(--text-soft); font-weight: 600;">${detailsParametres}</span>
           </div>
-          <div style="text-align: right; font-size: 12px; color: var(--text-main); font-weight: 600;">
-            <div>📅 ${dateFormatee} à ${heureFormatee}</div>
-            <div style="color: var(--accent); margin-top: 2px;">⏱️ ${dureeFormatee}</div>
+          <div style="text-align: right; font-size: 11px; color: var(--text-main); font-weight: 600;">
+            <div>📅 ${dateFormatee}</div>
+            <div style="color: var(--accent); margin-top: 2px;">⏱️ ${dureeFormatee} à ${heureFormatee}</div>
           </div>
         </div>
-        
         <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
       `;
 
-      // 5. Injection du classement, des scores et des joueurs pour TOUTES les équipes
       if (d.classementFinal && Array.isArray(d.classementFinal)) {
         d.classementFinal.forEach(j => {
           const estGagnant = j.rang === 1;
-          
           htmlContenu += `
             <div style="display: flex; flex-direction: column; padding: 6px; background: ${estGagnant ? 'rgba(154, 123, 28, 0.08)' : 'transparent'}; border-radius: 8px; margin-bottom: 2px;">
               <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -1902,43 +1981,24 @@ async function chargerHistoriqueParties() {
                 <strong style="font-size: 14px; color: var(--primary-strong);">${j.score} pts</strong>
               </div>
           `;
-
-          // Affichage des membres pour TOUTES les équipes si on est en mode équipe
           if (d.isTeamMode && j.membresNoms && Array.isArray(j.membresNoms)) {
             htmlContenu += `
               <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding-left: 20px;">
-                ${j.membresNoms.map(nomJoueur => `
-                  <span style="font-size: 11px; background: ${estGagnant ? 'rgba(227, 212, 174, 0.4)' : 'rgba(0, 0, 0, 0.04)'}; color: ${estGagnant ? 'var(--accent)' : 'var(--text-soft)'}; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
-                    👤 ${nomJoueur}
-                  </span>
-                `).join('')}
+                ${j.membresNoms.map(m => `<span style="font-size: 11px; background: ${estGagnant ? 'rgba(227, 212, 174, 0.4)' : 'rgba(0, 0, 0, 0.04)'}; color: ${estGagnant ? 'var(--accent)' : 'var(--text-soft)'}; padding: 2px 8px; border-radius: 4px; font-weight: 600;">👤 ${m}</span>`).join('')}
               </div>
             `;
           }
-
           htmlContenu += `</div>`;
         });
-      } else {
-        // Fallback rétrocompatible pour les anciennes parties de test sans tableau
-        htmlContenu += `
-          <div style="display: flex; justify-content: space-between; padding: 4px 6px;">
-            <span style="font-size: 14px;">👑 Vainqueur : <strong>${d.winner}</strong></span>
-          </div>
-        `;
       }
-
       htmlContenu += `</div>`;
       card.innerHTML = htmlContenu;
       container.appendChild(card);
     });
 
-    if (compteurPartiesAffichees === 0) {
-      container.innerHTML = "<p class='hint' style='text-align:center; padding:20px;'>Aucune partie enregistrée ces 30 derniers jours 🎯</p>";
-    }
-
   } catch (error) {
-    console.error("Erreur lors de la récupération de l'historique:", error);
-    container.innerHTML = "<p class='hint' style='text-align:center; padding:20px; color:var(--danger);'>Impossible de charger l'historique pour le moment.</p>";
+    console.error("Erreur lors de la filtration de l'historique:", error);
+    container.innerHTML = "<p class='hint' style='text-align:center; padding:20px; color:var(--danger);'>Erreur d'accès à l'historique.</p>";
   }
 }
 
