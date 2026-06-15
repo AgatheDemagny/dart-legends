@@ -299,10 +299,10 @@ async function initPageNouvellePartie() {
   document.getElementById("teamModeConfig").classList.add("hidden");
   document.getElementById("teamCountSelect").value = "2";
   
-  // Par défaut, on cible la communauté sélectionnée par défaut dans l'onglet Mon Compte
+  // Par défaut, on cible la communauté sélectionnée par défaut
   communauteCibleMatchId = communautéActiveId;
 
-  // Remplir le menu déroulant unique avec toutes tes communautés
+  // Remplir le menu déroulant unique
   const selectCommu = document.getElementById("selectCommuMatch");
   selectCommu.innerHTML = "";
   
@@ -310,15 +310,13 @@ async function initPageNouvellePartie() {
     const opt = document.createElement("option");
     opt.value = c.id;
     opt.innerText = c.name;
-    // On pré-sélectionne celle qui est active/par défaut
     if (c.id === communautéActiveId) opt.selected = true;
     selectCommu.appendChild(opt);
   });
 
-  // Configurer l'écouteur de changement : si l'utilisateur change de communauté, on bascule dessus
-  selectCommu.onchange = async (e) => {
+  // Si l'utilisateur change de communauté, on met à jour la variable cible
+  selectCommu.onchange = (e) => {
     communauteCibleMatchId = e.target.value;
-    await chargerJoueursCommunauteCible();
   };
 
   // Ajouter automatiquement l'utilisateur connecté sur la ligne de tir
@@ -327,6 +325,7 @@ async function initPageNouvellePartie() {
     try {
       const doc = await db.collection("players").doc(user.uid).get();
       const currentName = (doc.exists && doc.data().name) ? doc.data().name : user.email.split('@')[0];
+      // Sécurité : On s'assure de pousser le VRAI uid de l'user connecté
       joueursSelectionnesMatch.push({ id: user.uid, name: currentName });
     } catch(e) {
       joueursSelectionnesMatch.push({ id: user.uid, name: user.email.split('@')[0] });
@@ -334,9 +333,6 @@ async function initPageNouvellePartie() {
   }
   
   renderSelectedPlayers();
-  
-  // On charge les joueurs de la communauté qui est actuellement sélectionnée dans le menu
-  await chargerJoueursCommunauteCible();
 }
 
 document.getElementById("btnOpenSearchPlayer").addEventListener("click", () => {
@@ -1540,7 +1536,7 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
     return donneesEntite;
   });
 
-  const idParticipantsMatch = cricketState.players.map(p => p.id);
+  const idParticipantsMatch = joueursSelectionnesMatch.map(p => p.id);
 
   // Sauvegarde enrichie dans Firestore avec indexation communautaire et personnelle
   db.collection("games_history").add({
