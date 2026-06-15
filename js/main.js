@@ -1536,7 +1536,8 @@ async function chargerHistoriqueParties() {
       `;
 
       // 5. Injection du classement et des scores
-if (d.classementFinal && Array.isArray(d.classementFinal)) {
+      // 5. Injection du classement, des scores et des joueurs pour TOUTES les équipes
+      if (d.classementFinal && Array.isArray(d.classementFinal)) {
         d.classementFinal.forEach(j => {
           const estGagnant = j.rang === 1;
           
@@ -1550,12 +1551,12 @@ if (d.classementFinal && Array.isArray(d.classementFinal)) {
               </div>
           `;
 
-          // Si c'est l'équipe gagnante ET qu'on a la liste des membres, on l'affiche en dessous
-          if (estGagnant && d.isTeamMode && j.membresNoms && Array.isArray(j.membresNoms)) {
+          // AJUSTEMENT ICI : On affiche les membres pour TOUTES les équipes si on est en mode équipe
+          if (d.isTeamMode && j.membresNoms && Array.isArray(j.membresNoms)) {
             htmlContenu += `
               <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding-left: 20px;">
                 ${j.membresNoms.map(nomJoueur => `
-                  <span style="font-size: 11px; background: rgba(227, 212, 174, 0.4); color: var(--accent); padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                  <span style="font-size: 11px; background: ${estGagnant ? 'rgba(227, 212, 174, 0.4)' : 'rgba(0, 0, 0, 0.04)'}; color: ${estGagnant ? 'var(--accent)' : 'var(--text-soft)'}; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
                     👤 ${nomJoueur}
                   </span>
                 `).join('')}
