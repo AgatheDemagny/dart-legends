@@ -665,6 +665,7 @@ function lancerInterfaceJeu(mode) {
     renderKeyboard(); 
     renderGrid();
   }
+  gererEtatBoutonBull();
   updateTurnHeader();
 }
 
@@ -716,7 +717,7 @@ function updateTurnHeader() {
     
     // L'affichage apparaît uniquement si une combinaison valide est retournée
     if (aideTexte) {
-      helpZone.innerText = `🎯 Finition : ${aideTexte}`;
+      helpZone.innerText = `🎯 ${aideTexte}`;
       helpZone.classList.remove("hidden");
     } else {
       helpZone.classList.add("hidden"); // Disparaît instantanément sinon
@@ -741,7 +742,7 @@ function obtenirSuggestionCheckout(score, dartsCount, modeCheckout) {
     // --- FINITION EN 1 FLÉCHETTE ---
     if (dartsCount >= 1) {
       if (score <= 40 && score % 2 === 0) return `D${score / 2}`;
-      if (score === 50) return "Double Bull";
+      if (score === 50) return "DBull";
     }
 
     // Si on n'a qu'une fléchette et qu'on n'a pas validé les conditions du dessus, impossible de finir
@@ -750,22 +751,22 @@ function obtenirSuggestionCheckout(score, dartsCount, modeCheckout) {
     // --- FINITION EN 2 FLÉCHETTES ---
     if (dartsCount >= 2) {
       // Cas particuliers avec le Bullseye
-      if (score === 110) return "T20 -> Double Bull";
-      if (score === 107) return "T19 -> Double Bull";
-      if (score === 104) return "T18 -> Double Bull";
-      if (score === 101) return "T17 -> Double Bull";
+      if (score === 110) return "T20 - DBull";
+      if (score === 107) return "T19 - DBull";
+      if (score === 104) return "T18 - DBull";
+      if (score === 101) return "T17 - DBull";
 
       // Recherche d'une combinaison classique : 1 Simple ou 1 Triple + 1 Double
       for (let t = 20; t >= 1; t--) {
         // Option via un Triple (Ex: 70 restant -> T20 + D5)
         let resteApresTriple = score - (t * 3);
         if (resteApresTriple > 0 && resteApresTriple <= 40 && resteApresTriple % 2 === 0) {
-          return `T${t} -> D${resteApresTriple / 2}`;
+          return `T${t} - D${resteApresTriple / 2}`;
         }
         // Option via un Simple (Ex: 41 restant -> S1 + D20)
         let resteApresSimple = score - t;
         if (resteApresSimple > 0 && resteApresSimple <= 40 && resteApresSimple % 2 === 0) {
-          return `S${t} -> D${resteApresSimple / 2}`;
+          return `S${t} - D${resteApresSimple / 2}`;
         }
       }
     }
@@ -776,27 +777,27 @@ function obtenirSuggestionCheckout(score, dartsCount, modeCheckout) {
     // --- FINITION EN 3 FLÉCHETTES ---
     if (dartsCount === 3) {
       // Finitions mythiques et iconiques de l'historique des fléchettes
-      if (score === 170) return "T20 -> T20 -> Double Bull";
-      if (score === 167) return "T20 -> T19 -> Double Bull";
-      if (score === 164) return "T20 -> T18 -> Double Bull";
-      if (score === 161) return "T20 -> T17 -> Double Bull";
-      if (score === 160) return "T20 -> T20 -> D20";
-      if (score === 158) return "T20 -> T20 -> D19";
-      if (score === 157) return "T20 -> T19 -> D20";
-      if (score === 156) return "T20 -> T20 -> D18";
-      if (score === 155) return "T20 -> T19 -> D19";
-      if (score === 154) return "T20 -> T18 -> D20";
-      if (score === 153) return "T20 -> T19 -> D18";
-      if (score === 152) return "T20 -> T20 -> D16";
-      if (score === 151) return "T20 -> T17 -> D20";
-      if (score === 150) return "T20 -> T18 -> D18";
+      if (score === 170) return "T20 - T20 - DBull";
+      if (score === 167) return "T20 - T19 - DBull";
+      if (score === 164) return "T20 - T18 - DBull";
+      if (score === 161) return "T20 - T17 - DBull";
+      if (score === 160) return "T20 - T20 - D20";
+      if (score === 158) return "T20 - T20 - D19";
+      if (score === 157) return "T20 - T19 - D20";
+      if (score === 156) return "T20 - T20 - D18";
+      if (score === 155) return "T20 - T19 - D19";
+      if (score === 154) return "T20 - T18 - D20";
+      if (score === 153) return "T20 - T19 - D18";
+      if (score === 152) return "T20 - T20 - D16";
+      if (score === 151) return "T20 - T17 - D20";
+      if (score === 150) return "T20 - T18 - D18";
 
       // Algorithme générique pour les scores inférieurs à 150 (2 Triples + 1 Double)
       for (let t1 = 20; t1 >= 1; t1--) {
         for (let t2 = 20; t2 >= 1; t2--) {
           let reste = score - (t1 * 3) - (t2 * 3);
           if (reste > 0 && reste <= 40 && reste % 2 === 0) {
-            return `T${t1} -> T${t2} -> D${reste / 2}`;
+            return `T${t1} - T${t2} - D${reste / 2}`;
           }
         }
       }
@@ -806,7 +807,7 @@ function obtenirSuggestionCheckout(score, dartsCount, modeCheckout) {
         for (let s1 = 20; s1 >= 1; s1--) {
           let reste = score - (t1 * 3) - s1;
           if (reste > 0 && reste <= 40 && reste % 2 === 0) {
-            return `T${t1} -> S${s1} -> D${reste / 2}`;
+            return `T${t1} - ${s1} - D${reste / 2}`;
           }
         }
       }
@@ -819,11 +820,11 @@ function obtenirSuggestionCheckout(score, dartsCount, modeCheckout) {
     if (score > 180) return null;
 
     if (dartsCount >= 1) {
-      if (score <= 20) return `S${score}`;
+      if (score <= 20) return `${score}`;
       if (score === 25) return "Bull";
       if (score <= 40 && score % 2 === 0) return `D${score / 2}`;
       if (score <= 60 && score % 3 === 0) return `T${score / 3}`;
-      if (score === 50) return "Double Bull";
+      if (score === 50) return "DBull";
     }
 
     if (dartsCount === 1) return null;
@@ -831,22 +832,22 @@ function obtenirSuggestionCheckout(score, dartsCount, modeCheckout) {
     if (dartsCount >= 2) {
       for (let t = 20; t >= 1; t--) {
         let reste = score - (t * 3);
-        if (reste > 0 && reste <= 20) return `T${t} -> S${reste}`;
-        if (reste === 25) return `T${t} -> Bull`;
-        if (reste > 0 && reste <= 60 && reste % 3 === 0) return `T${t} -> T${reste / 3}`;
+        if (reste > 0 && reste <= 20) return `T${t} - ${reste}`;
+        if (reste === 25) return `T${t} - Bull`;
+        if (reste > 0 && reste <= 60 && reste % 3 === 0) return `T${t} - T${reste / 3}`;
       }
     }
 
     if (dartsCount === 2) return null;
 
     if (dartsCount === 3) {
-      if (score === 180) return "T20 -> T20 -> T20";
+      if (score === 180) return "T20 - T20 - T20";
       for (let t1 = 20; t1 >= 1; t1--) {
         for (let t2 = 20; t2 >= 1; t2--) {
           let reste = score - (t1 * 3) - (t2 * 3);
-          if (reste > 0 && reste <= 20) return `T${t1} -> T${t2} -> S${reste}`;
-          if (reste === 25) return `T${t1} -> T${t2} -> Bull`;
-          if (reste > 0 && reste <= 60 && reste % 3 === 0) return `T${t1} -> T${t2} -> T${reste / 3}`;
+          if (reste > 0 && reste <= 20) return `T${t1} - T${t2} - ${reste}`;
+          if (reste === 25) return `T${t1} -> T${t2} - Bull`;
+          if (reste > 0 && reste <= 60 && reste % 3 === 0) return `T${t1} - T${t2} - T${reste / 3}`;
         }
       }
     }
@@ -922,7 +923,7 @@ function renderGridX01() {
   headerRow.style.background = "rgba(255,255,255,0.02)";
   headerRow.innerHTML = `
     <th style="text-align:left; padding: 12px 6px; border-bottom: 2px solid var(--divider); width: 40%;">Joueurs</th>
-    <th style="padding: 12px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--text-soft); width: 30%;">Moyenne</th>
+    <th style="padding: 12px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--text-soft); width: 30%;">Moy. / flèche</th>
     <th style="padding: 12px 6px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 30%;">Reste</th>
   `;
   table.appendChild(headerRow);
@@ -951,7 +952,6 @@ function renderGridX01() {
     
     let nomTronque = entite.name.length > 12 ? entite.name.substring(0, 12) + "." : entite.name;
     
-    // Calcul de la moyenne des points de l'entité (cumulée sur ses joueurs membres)
     let totalScoreMarque = 0;
     let totalFlechettes = 0;
     entite.members.forEach(m => {
@@ -961,15 +961,15 @@ function renderGridX01() {
       }
     });
     
-    // Moyenne par volée (3 fléchettes)
-    let moyenne3Darts = "0.0";
+    // Application de la VRAIE moyenne par fléchette individuelle
+    let moyenneAffichage = "0.0";
     if (totalFlechettes > 0) {
-      moyenne3Darts = ((totalScoreMarque / totalFlechettes) * 3).toFixed(1);
+      moyenneAffichage = (totalScoreMarque / totalFlechettes).toFixed(1);
     }
     
     row.innerHTML = `
       <td style="text-align:left; padding: 14px 6px; font-weight:700;">${nomTronque}</td>
-      <td style="padding: 14px 4px; border-left: 1px solid var(--divider); font-weight:600; color: var(--text-soft); font-size: 14px;">${moyenne3Darts}</td>
+      <td style="padding: 14px 4px; border-left: 1px solid var(--divider); font-weight:600; color: var(--text-soft); font-size: 14px;">${moyenneAffichage}</td>
       <td style="font-weight:800; padding: 14px 6px; border-left: 1px solid var(--divider); color: var(--primary-strong); font-size: 18px;">${cricketState.scores[entite.id]}</td>
     `;
     table.appendChild(row);
@@ -1038,8 +1038,16 @@ function renderKeyboardX01() {
 
 function creerBoutonClavier(libelle, valeur) {
   const btn = document.createElement("button");
-  btn.className = "ghost"; btn.style.padding = "14px 2px"; btn.style.fontSize = "14px"; btn.style.fontWeight = "bold";
-  btn.innerText = libelle; btn.onclick = () => taperChiffre(valeur);
+  btn.className = "ghost"; 
+  btn.style.padding = "14px 2px"; 
+  btn.style.fontSize = "14px"; 
+  btn.style.fontWeight = "bold";
+  btn.innerText = libelle; 
+  btn.onclick = () => taperChiffre(valeur);
+  if (valeur === 25) {
+    btn.id = "btnKeyBull";
+  }
+  
   return btn;
 }
 
@@ -1091,6 +1099,7 @@ function taperChiffre(valeurBouton) {
   } else {
     renderKeyboard(); renderGrid();
   }
+  gererEtatBoutonBull();
   updateTurnHeader(); 
   verifierConditionsFinMatch();
 }
