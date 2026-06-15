@@ -591,6 +591,11 @@ document.getElementById("startGameBtn").addEventListener("click", () => {
     return showPopup("⚠️ Il faut au moins 2 joueurs sur la ligne de tir pour démarrer !", true);
   }
   
+  if (!communauteCibleMatchId) {
+    return showPopup("⚠️ Sélectionne ou rejoins une communauté avant de lancer un match.", true);
+  }
+  cricketState.communityId = communauteCibleMatchId;
+
   const estEnModeEquipe = document.getElementById("teamModeCheckbox").checked;
   let ordonnancementTireurs = [];
 
@@ -1522,7 +1527,10 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
     classementFinal: resumeClassement,
     communityId: cricketState.communityId,
     participantIds: idParticipantsMatch
-  }).catch(e => console.error("Erreur enregistrement historique :", e));
+  }).then(() => {
+    console.log("Match enregistré avec succès dans la communauté :", cricketState.communityId);
+  })
+  .catch(e => console.error("Erreur enregistrement historique :", e));
   
   showScreen(screens.gameOver);
 }

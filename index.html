@@ -170,6 +170,19 @@
 
       <div class="card form-card">
         <h3>🎮 Joueurs</h3>
+        
+        <div style="background: #F8F6F0; padding: 10px; border-radius: var(--r-1); border: 1px solid var(--divider); margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+            <span style="font-size: 13px; color: var(--text-main);"><strong>Communauté par défaut</strong></span>
+            <input type="checkbox" id="chkCommuDefautMatch" checked style="width: 20px; height: 20px; margin-top: 0; cursor: pointer;">
+          </div>
+          
+          <div id="zoneSelectCommuMatch" class="hidden" style="margin-top: 8px; border-top: 1px solid var(--divider); padding-top: 8px;">
+            <label style="font-size: 12px; color: var(--text-soft); font-weight: 600;">Sélectionner l'espace de jeu :</label>
+            <select id="selectCommuMatch" style="margin-top: 6px; padding: 10px; font-size: 13px; font-weight: 600; color: var(--primary);"></select>
+          </div>
+        </div>
+
         <div class="actions" style="margin-top: 0; display: flex; gap: 8px;">
           <button id="btnOpenSearchPlayer" class="ghost" style="flex:1;">🔍 Ajouter</button>
           <button id="btnOpenCreatePlayer" class="ghost" style="flex:1;">➕ Créer</button>
