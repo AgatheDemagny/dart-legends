@@ -129,6 +129,7 @@ document.getElementById("backHomeFromHistoryBtn").addEventListener("click", () =
 document.getElementById("btnKeyZero").onclick = () => taperChiffre(0);
 
 // ================== CONFIGURATION FIREBASE ==================
+// ================== CONFIGURATION & FLUX FIREBASE ==================
 const auth = firebase.auth();
 const db = firebase.firestore();
 let communautéActiveId = null; 
@@ -148,12 +149,13 @@ auth.onAuthStateChanged(async (user) => {
         if (doc.data().name) displayName = doc.data().name;
         if (doc.data().defaultCommunity) defaultCommunity = doc.data().defaultCommunity;
       } else {
-        // Initialisation si premier compte
+        // Initialisation si premier compte (sécurité au cas où l'inscription n'a pas fini d'écrire)
         await db.collection("players").doc(user.uid).set({
           email: user.email,
           name: displayName,
           createdAt: Date.now(),
           defaultCommunity: null,
+          communityIds: [],
           isRealAccount: true
         });
       }
@@ -163,10 +165,10 @@ auth.onAuthStateChanged(async (user) => {
         nameDisplay.innerText = displayName;
       }
       
-      // 2. Charger les communautés de l'utilisateur et définir la communauté active
+      // 2. Charger les communautés de l'utilisateur
       await chargerCommunautesUtilisateur(user.uid, defaultCommunity);
 
-      // Si l'utilisateur n'a aucune communauté, on le force à aller sur l'onglet compte pour en créer/rejoindre une
+      // Si l'utilisateur n'a aucune communauté, on le redirige sur l'écran compte pour qu'il en crée/rejoigne une
       if (listeMesCommunautes.length === 0) {
         showScreen(screens.account);
         showPopup("👋 Bienvenue ! Crée ou rejoins une communauté pour commencer à jouer.", false);
@@ -193,7 +195,6 @@ async function chargerCommunautesUtilisateur(userId, defaultId) {
       listeMesCommunautes.push({ id: doc.id, ...doc.data() });
     });
 
-    // Détermination de la communauté active par défaut
     if (listeMesCommunautes.length > 0) {
       const existeToujours = listeMesCommunautes.some(c => c.id === defaultId);
       communautéActiveId = existeToujours ? defaultId : listeMesCommunautes[0].id;
@@ -205,23 +206,28 @@ async function chargerCommunautesUtilisateur(userId, defaultId) {
   }
 }
 
-// Inscription
+// Inscription propre
 document.getElementById("btnSignup").addEventListener("click", async () => {
   const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value.trim();
   if (!email || !password) return showPopup("Champs obligatoires.", true);
   try {
     const defaultName = email.split('@')[0];
-    const nomExiste = tousLesJoueursBase.some(p => p.name.toLowerCase() === defaultName.toLowerCase());
-    const finalName = nomExiste ? defaultName + Math.floor(Math.random() * 100) : defaultName;
-
     const cred = await auth.createUserWithEmailAndPassword(email, password);
+    
+    // Création du document joueur initial avec un tableau communityIds vide
     await db.collection("players").doc(cred.user.uid).set({
-      email: email, name: finalName, createdAt: Date.now()
+      email: email, 
+      name: defaultName, 
+      createdAt: Date.now(),
+      communityIds: [],
+      isRealAccount: true
     });
-    await chargerJoueursCommunauteCible();
-    showPopup("Compte joueur enregistré !");
-  } catch (e) { showPopup(e.message, true); }
+    
+    showPopup("Compte créé avec succès ! 🎯");
+  } catch (e) { 
+    showPopup(e.message, true); 
+  }
 });
 
 // Connexion
@@ -231,7 +237,9 @@ document.getElementById("btnLogin").addEventListener("click", async () => {
   if (!email || !password) return showPopup("Champs obligatoires.", true);
   try { 
     await auth.signInWithEmailAndPassword(email, password); 
-  } catch (e) { showPopup(e.message, true); }
+  } catch (e) { 
+    showPopup(e.message, true); 
+  }
 });
 
 // Déconnexion
@@ -1914,6 +1922,7 @@ async function chargerHistoriqueParties() {
 }
 
 // Moteur de requêtes et affichage de l'historique avec filtrage
+// Moteur de requêtes et affichage de l'historique avec filtrage strict et croisé
 async function executerRenduHistoriqueFiltre(typeFiltre) {
   const container = document.getElementById("historyContainer");
   const user = auth.currentUser;
@@ -1923,35 +1932,31 @@ async function executerRenduHistoriqueFiltre(typeFiltre) {
   
   const unMoisEnMillisecondes = 30 * 24 * 60 * 60 * 1000;
   const dateLimite = Date.now() - unMoisEnMillisecondes;
+  const mesIdsCommu = listeMesCommunautes.map(c => c.id);
 
   try {
     let matchesFiltres = [];
 
-    // SCÉNARIO 1 : L'utilisateur veut TOUT voir (Ses matchs + les matchs de ses communautés)
+    // SCÉNARIO 1 : VUE GLOBALE "TOUS" (Mes parties perso + toutes les parties des communautés dont je suis membre)
     if (typeFiltre === "tous") {
-      // Pour éviter les limitations Firebase, on récupère l'historique récent du mois (max 100 parties pour la performance)
       const snapGlobal = await db.collection("games_history")
+                                  .where("createdAt", ">=", dateLimite)
                                   .orderBy("createdAt", "desc")
-                                  .limit(100)
+                                  .limit(50)
                                   .get();
-
-      // On extrait la liste des ID des communautés de l'utilisateur pour le filtre local
-      const mesIdsCommu = listeMesCommunautes.map(c => c.id);
 
       snapGlobal.forEach(doc => {
         const d = doc.data();
-        // Une partie est gardée si elle date de moins de 30 jours ET (soit l'user a joué, soit elle appartient à une de ses commus)
-        if (d.createdAt >= dateLimite) {
-          const jAiParticipe = d.participantIds && d.participantIds.includes(user.uid);
-          const appartientAMaCommu = d.communityId && mesIdsCommu.includes(d.communityId);
-          
-          if (jAiParticipe || appartientAMaCommu) {
-            matchesFiltres.push({ id: doc.id, ...d });
-          }
+        const jAiParticipe = d.participantIds && d.participantIds.includes(user.uid);
+        const appartientAMaCommu = d.communityId && mesIdsCommu.includes(d.communityId);
+        
+        // Règle d'or : On affiche si j'ai joué dedans OU si ça s'est joué dans une de mes commus
+        if (jAiParticipe || appartientAMaCommu) {
+          matchesFiltres.push({ id: doc.id, ...d });
         }
       });
 
-    // SCÉNARIO 2 : L'utilisateur veut uniquement ses parties à lui
+    // SCÉNARIO 2 : "MES PARTIES UNIQUEMENT" (Strictement les matchs où mon UID est dans participantIds)
     } else if (typeFiltre === "perso") {
       const snapPerso = await db.collection("games_history")
                                   .where("participantIds", "array-contains", user.uid)
@@ -1963,21 +1968,25 @@ async function executerRenduHistoriqueFiltre(typeFiltre) {
         }
       });
 
-    // SCÉNARIO 3 : L'utilisateur a ciblé une communauté précise (commu-XXXXXX)
+    // SCÉNARIO 3 : "COMMUNAUTÉ SPÉCIFIQUE" (Tout l'historique de cette commu, visible car j'en fais partie)
     } else if (typeFiltre.startsWith("commu-")) {
       const targetCommuId = typeFiltre.replace("commu-", "");
-      const snapCommu = await db.collection("games_history")
-                                  .where("communityId", "==", targetCommuId)
-                                  .orderBy("createdAt", "desc")
-                                  .get();
-      snapCommu.forEach(doc => {
-        if (doc.data().createdAt >= dateLimite) {
-          matchesFiltres.push({ id: doc.id, ...doc.data() });
-        }
-      });
+      
+      // Sécurité : on vérifie que le joueur est bien membre de cette commu avant d'interroger
+      if (mesIdsCommu.includes(targetCommuId)) {
+        const snapCommu = await db.collection("games_history")
+                                    .where("communityId", "==", targetCommuId)
+                                    .orderBy("createdAt", "desc")
+                                    .get();
+        snapCommu.forEach(doc => {
+          if (doc.data().createdAt >= dateLimite) {
+            matchesFiltres.push({ id: doc.id, ...doc.data() });
+          }
+        });
+      }
     }
 
-    // --- RENDU GRAPHIQUE DES MATCHS FILTRÉS ---
+    // --- RENDU GRAPHIQUE ---
     container.innerHTML = "";
 
     if (matchesFiltres.length === 0) {
@@ -1985,7 +1994,7 @@ async function executerRenduHistoriqueFiltre(typeFiltre) {
       return;
     }
 
-    // Tri de sécurité par date décroissante au cas où le filtrage local aurait bousculé l'ordre
+    // Tri d'affichage par date décroissante
     matchesFiltres.sort((a, b) => b.createdAt - a.createdAt);
 
     matchesFiltres.forEach(d => {
@@ -2000,7 +2009,6 @@ async function executerRenduHistoriqueFiltre(typeFiltre) {
 
       let libelleMode = d.type === "x01" ? "💯 X01" : "🏏 Cricket";
       
-      // Trouver le nom de la communauté de cette partie pour l'afficher en label contextuel
       let nomCommuLabel = "";
       if (d.communityId) {
         const commuTrouvee = listeMesCommunautes.find(c => c.id === d.communityId);
@@ -2053,7 +2061,7 @@ async function executerRenduHistoriqueFiltre(typeFiltre) {
     });
 
   } catch (error) {
-    console.error("Erreur lors de la filtration de l'historique:", error);
+    console.error("Erreur lors du filtrage de l'historique:", error);
     container.innerHTML = "<p class='hint' style='text-align:center; padding:20px; color:var(--danger);'>Erreur d'accès à l'historique.</p>";
   }
 }
@@ -2122,7 +2130,7 @@ document.getElementById("btnValiderActionCommu").onclick = async () => {
       showPopup("Erreur de création : " + e.message, true);
     }
 
-  } else {
+    } else {
     // 2. Mode REJOINDRE via le code
     const codeSaisi = valeurInput.toUpperCase();
     try {
@@ -2136,15 +2144,26 @@ document.getElementById("btnValiderActionCommu").onclick = async () => {
         return showPopup("Tu fais déjà partie de cette communauté !", true);
       }
 
-      // Ajout de l'utilisateur dans le tableau des membres
+      // ÉTAPE CRUCIALE DOUBLE ÉCRITURE :
+      // A. On ajoute le joueur dans le tableau des membres de la communauté
       await db.collection("communities").doc(codeSaisi).update({
         memberIds: firebase.firestore.FieldValue.arrayUnion(user.uid)
       });
 
-      // Proposition automatique de liaison si un profil invité correspond (Sera raffiné à l'étape 4)
-      showPopup(`Bienvenue dans la communauté : ${donnees.name} !`);
+      // B. On ajoute la communauté dans le tableau 'communityIds' du joueur pour qu'il soit détectable
+      await db.collection("players").doc(user.uid).update({
+        communityIds: firebase.firestore.FieldValue.arrayUnion(codeSaisi)
+      });
+
+      // Si le joueur n'avait pas de communauté active, on définit celle-ci par défaut
+      if (!communautéActiveId) {
+        await db.collection("players").doc(user.uid).update({ defaultCommunity: codeSaisi });
+      }
+
+      showPopup(`Bienvenue dans la communauté : ${donnees.name} ! 👥`);
       document.getElementById("zoneFormulaireCommu").classList.add("hidden");
 
+      // Rechargement des données locales
       await chargerCommunautesUtilisateur(user.uid, communautéActiveId || codeSaisi);
       renderGestionCommunautes();
     } catch (e) {
