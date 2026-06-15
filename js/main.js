@@ -679,7 +679,7 @@ function demarrerMatchX01(listeJoueurs) {
   cricketState.players.forEach(p => {
     const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
     cricketState.scores[keyStockage] = cricketState.x01StartPoints;
-    cricketState.statsDetails[p.id] = { dartsThrown: 0, totalScoreScored: 0, bustsCount: 0 };
+    cricketState.statsDetails[p.id] = { dartsThrown: 0, totalScoreScored: 0, bustsCount: 0, maxVolleyScore: 0, currentVolleyScore: 0 };
   });
 
   lancerInterfaceJeu("x01");
@@ -1221,9 +1221,11 @@ function traiterCalculCricket(keyStockage, joueurActuel, valeurBouton) {
   }
 }
 
-// SUB-LOGIQUE 2 : X01 AVEC OU SANS ÉQUIPE
 function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
-  if (valeurBouton === 0) return;
+  if (valeurBouton === 0) {
+    // Si le joueur fait un 0, on l'ajoute quand même au score de sa volée actuelle
+    // (Utile pour le calcul final à la fermeture de la volée)
+  }
 
   let valeurReelle = valeurBouton === 25 ? 25 : valeurBouton;
   if (valeurBouton === 25 && modificateurEnCours === 2) valeurReelle = 50;
@@ -1243,18 +1245,37 @@ function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
     }
   }
 
+  const stats = cricketState.statsDetails[joueurActuel.id];
+
   if (estBust) {
     showPopup("💥 Bust", true);
-    cricketState.statsDetails[joueurActuel.id].bustsCount += 1;
+    stats.bustsCount += 1;
+    
+    // En cas de Bust, les points de toute la volée en cours sont annulés (0 points pour ce tour)
+    stats.currentVolleyScore = 0;
     
     const tirsEffectuesCeTour = cricketState.currentDart; 
     const tirsManquants = 3 - tirsEffectuesCeTour;
-    cricketState.statsDetails[joueurActuel.id].dartsThrown += tirsManquants;
+    stats.dartsThrown += tirsManquants;
+    
+    // On vérifie si son score maximum (0) est plus grand que son max actuel (si c'est son premier coup par exemple)
+    if (stats.currentVolleyScore > stats.maxVolleyScore) {
+      stats.maxVolleyScore = stats.currentVolleyScore;
+    }
     
     cricketState.currentDart = 3; 
   } else {
     cricketState.scores[keyStockage] = scoreResultat;
-    cricketState.statsDetails[joueurActuel.id].totalScoreScored += pointsMarques;
+    stats.totalScoreScored += pointsMarques;
+    stats.currentVolleyScore += pointsMarques;
+  }
+
+  // Si on arrive à la fin de la volée de 3 fléchettes, on enregistre le score max et on reset le compteur temporaire
+  if (cricketState.currentDart === 3) {
+    if (stats.currentVolleyScore > stats.maxVolleyScore) {
+      stats.maxVolleyScore = stats.currentVolleyScore;
+    }
+    stats.currentVolleyScore = 0; // Prêt pour le prochain tour de ce joueur
   }
 }
 
@@ -1410,49 +1431,123 @@ document.getElementById("btnRematch").onclick = () => {
 };
 
 document.getElementById("btnGoToStats").onclick = () => { 
-  if (cricketState.isTeamMode) {
-    showPopup("Statistiques MPR individuelles indisponibles en équipe.");
-  } else if (cricketState.gameMode === "x01") {
-    showPopup("Statistiques détaillées indisponibles pour le X01.");
-  } else {
-    genererTableauStatistiques(); 
-    showScreen(screens.matchStats); 
-  }
+  genererTableauStatistiques(); 
+  showScreen(screens.matchStats); 
 };
 document.getElementById("btnBackToPodium").onclick = () => showScreen(screens.gameOver);
 
 function genererTableauStatistiques() {
-  const table = document.getElementById("matchStatsTable"); table.innerHTML = "";
-  const rowHeader = document.createElement("tr"); rowHeader.style.background = "rgba(255,255,255,0.03)";
+  const table = document.getElementById("matchStatsTable"); 
+  table.innerHTML = "";
+  
+  // 1. Entête du tableau : Une colonne par joueur de la ligne de tir (indépendant des équipes)
+  const rowHeader = document.createElement("tr"); 
+  rowHeader.style.background = "rgba(255,255,255,0.03)";
+  
   let html = `<th style="text-align:left; padding:10px 8px; border-bottom:2px solid var(--divider);">Critères</th>`;
-  cricketState.players.forEach(p => { html += `<th style="font-weight:bold; padding:10px 6px; border-bottom:2px solid var(--divider); border-left:1px solid var(--divider);">${p.name}</th>`; });
-  rowHeader.innerHTML = html; table.appendChild(rowHeader);
-
-  const rowMpr = document.createElement("tr"); rowMpr.style.borderBottom = "1px solid var(--divider)";
-  let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:bold; color:var(--accent);">MPR)</td>`;
-  cricketState.players.forEach(p => {
-    const totalTouchesUtiles = cricketState.statsDetails[p.id].touchesUtiles || 0;
-    const totalDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
-    const mpr = ((totalTouchesUtiles / totalDarts) * 3).toFixed(2); 
-    mprHtml += `<td style="font-weight:700; border-left:1px solid var(--divider); color:var(--primary-strong);">${mpr}</td>`;
+  cricketState.players.forEach(p => { 
+    let nomAffichage = p.name;
+    if (cricketState.isTeamMode) {
+      nomAffichage += ` <br><span style="font-size:10px; color:var(--accent); font-weight:normal;">(${p.teamName})</span>`;
+    }
+    html += `<th style="font-weight:bold; padding:10px 6px; border-bottom:2px solid var(--divider); border-left:1px solid var(--divider); text-align:center;">${nomAffichage}</th>`; 
   });
-  rowMpr.innerHTML = mprHtml; table.appendChild(rowMpr);
+  rowHeader.innerHTML = html; 
+  table.appendChild(rowHeader);
 
-  cricketState.targets.forEach(cible => {
-    const libelleCible = cible === 25 ? "🎯 Bull" : `🎯 Zone ${cible}`;
-    const rowTouches = document.createElement("tr");
-    let touchesHtml = `<td style="text-align:left; padding:6px 8px; font-size:12px; opacity:0.8;">${libelleCible} - Touches</td>`;
-    cricketState.players.forEach(p => { touchesHtml += `<td style="border-left:1px solid var(--divider); font-size:12px;">${cricketState.statsDetails[p.id].touchesNum[cible]}</td>`; });
-    rowTouches.innerHTML = touchesHtml; table.appendChild(rowTouches);
-
-    const rowPoints = document.createElement("tr"); rowPoints.style.borderBottom = "1px solid var(--divider)";
-    let pointsHtml = `<td style="text-align:left; padding:6px 8px; font-size:12px; color:var(--text-soft);">└ Points</td>`;
+  // 2. RENDU SELON LE MODE DE JEU
+  if (cricketState.gameMode === "x01") {
+    
+    // --- Ligne 1 : Score Moyen par Volée (3 fléchettes) ---
+    const rowMoyenne = document.createElement("tr");
+    rowMoyenne.style.borderBottom = "1px solid var(--divider)";
+    let moyenneHtml = `<td style="text-align:left; padding:12px 8px; font-weight:bold; color:var(--accent);">Moyenne / Volée (3 darts)</td>`;
+    
     cricketState.players.forEach(p => {
-      const pts = cricketState.statsDetails[p.id].pointsGiv[cible];
-      pointsHtml += `<td style="border-left:1px solid var(--divider); font-size:12px; color:var(--danger); font-weight:bold;">${pts > 0 ? '-' + pts : '0'}</td>`;
+      const stats = cricketState.statsDetails[p.id];
+      const totalPoints = stats.totalScoreScored || 0;
+      const totalDarts = stats.dartsThrown || 1;
+      // Formule : (Points totaux / Fléchettes totales) * 3 pour avoir la moyenne d'une volée standard
+      const moyenneVolee = ((totalPoints / totalDarts) * 3).toFixed(1);
+      moyenneHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--primary-strong); font-size:14px;">${moyenneVolee} pts</td>`;
     });
-    rowPoints.innerHTML = pointsHtml; table.appendChild(rowPoints);
-  });
+    rowMoyenne.innerHTML = moyenneHtml;
+    table.appendChild(rowMoyenne);
+
+    // --- Ligne 2 : Score Maximum en une volée ---
+    const rowMax = document.createElement("tr");
+    rowMax.style.borderBottom = "1px solid var(--divider)";
+    let maxHtml = `<td style="text-align:left; padding:12px 8px; font-weight:bold; color:var(--text-soft);">Score Max 1 Volée</td>`;
+    
+    cricketState.players.forEach(p => {
+      const stats = cricketState.statsDetails[p.id];
+      const maxScore = stats.maxVolleyScore || 0;
+      maxHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:#28a745; font-size:14px;">⚡ ${maxScore}</td>`;
+    });
+    rowMax.innerHTML = maxHtml;
+    table.appendChild(rowMax);
+
+    // --- Ligne 3 : Nombre total de fléchettes lancées ---
+    const rowDarts = document.createElement("tr");
+    rowDarts.style.borderBottom = "1px solid var(--divider)";
+    let dartsHtml = `<td style="text-align:left; padding:12px 8px; font-size:13px; opacity:0.8;">Fléchettes lancées</td>`;
+    
+    cricketState.players.forEach(p => {
+      const stats = cricketState.statsDetails[p.id];
+      dartsHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-size:13px;">${stats.dartsThrown}</td>`;
+    });
+    rowDarts.innerHTML = dartsHtml;
+    table.appendChild(rowDarts);
+
+    // --- Ligne 4 : Nombre de Busts ---
+    const rowBusts = document.createElement("tr");
+    rowBusts.style.borderBottom = "1px solid var(--divider)";
+    let bustsHtml = `<td style="text-align:left; padding:12px 8px; font-size:13px; color:var(--danger);">Nombre de "Busts" 💥</td>`;
+    
+    cricketState.players.forEach(p => {
+      const stats = cricketState.statsDetails[p.id];
+      bustsHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-size:13px; font-weight:bold; color:var(--danger);">${stats.bustsCount || 0}</td>`;
+    });
+    rowBusts.innerHTML = bustsHtml;
+    table.appendChild(rowBusts);
+
+  } else {
+    // --- MODE CRICKET (Existant mais adapté pour inclure le mode équipe par joueur) ---
+    const rowMpr = document.createElement("tr"); 
+    rowMpr.style.borderBottom = "1px solid var(--divider)";
+    let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:bold; color:var(--accent);">MPR (Marques par Tour)</td>`;
+    
+    cricketState.players.forEach(p => {
+      const totalTouchesUtiles = cricketState.statsDetails[p.id].touchesUtiles || 0;
+      const totalDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
+      const mpr = ((totalTouchesUtiles / totalDarts) * 3).toFixed(2); 
+      mprHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--primary-strong);">${mpr}</td>`;
+    });
+    rowMpr.innerHTML = mprHtml; 
+    table.appendChild(rowMpr);
+
+    cricketState.targets.forEach(cible => {
+      const libelleCible = cible === 25 ? "🎯 Bull" : `🎯 Zone ${cible}`;
+      
+      const rowTouches = document.createElement("tr");
+      let touchesHtml = `<td style="text-align:left; padding:6px 8px; font-size:12px; opacity:0.8;">${libelleCible} - Touches</td>`;
+      cricketState.players.forEach(p => { 
+        touchesHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-size:12px;">${cricketState.statsDetails[p.id].touchesNum[cible]}</td>`; 
+      });
+      rowTouches.innerHTML = touchesHtml; 
+      table.appendChild(rowTouches);
+
+      const rowPoints = document.createElement("tr"); 
+      rowPoints.style.borderBottom = "1px solid var(--divider)";
+      let pointsHtml = `<td style="text-align:left; padding:6px 8px; font-size:12px; color:var(--text-soft);">└ Points donnés aux autres</td>`;
+      cricketState.players.forEach(p => {
+        const pts = cricketState.statsDetails[p.id].pointsGiv[cible];
+        pointsHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-size:12px; color:var(--danger); font-weight:bold;">${pts > 0 ? '-' + pts : '0'}</td>`;
+      });
+      rowPoints.innerHTML = pointsHtml; 
+      table.appendChild(rowPoints);
+    });
+  }
 }
 
 document.getElementById("btnLeaveGame").addEventListener("click", async () => {
