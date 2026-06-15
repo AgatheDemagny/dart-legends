@@ -694,15 +694,19 @@ function demarrerMatchX01(listeJoueurs) {
     cricketState.statsDetails[p.id] = { 
       dartsThrown: 0, 
       totalScoreScored: 0, 
-      bustsCount: 0, 
-      maxVolleyScore: 0, 
+      bustsCount: 0,
+      maxVolleyScore: 0,
       currentVolleyScore: 0,
       first9DartsScore: 0,
       scoreFamily50: 0,
       scoreFamily100: 0,
       scoreFamily140: 0,
-      scoreFamily180: 0
-     };
+      scoreFamily180: 0,
+      checkoutHits: 0,
+      touchesNum: {}
+    };
+    for (let i = 1; i <= 20; i++) cricketState.statsDetails[p.id].touchesNum[i] = 0;
+    cricketState.statsDetails[p.id].touchesNum[25] = 0;
   });
 
   lancerInterfaceJeu("x01");
@@ -1266,6 +1270,14 @@ function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
   if (valeurBouton === 25 && modificateurEnCours === 2) valeurReelle = 50;
   
   const pointsMarques = valeurReelle * modificateurEnCours;
+  if (valeurBouton !== 0 && stats) {
+    stats.touchesNum[valeurBouton] += modificateurEnCours;
+    
+    // Si ce coup fait tomber le score exactement à 0 (et valide le match), c'est un Checkout réussi !
+    if (scoreResultat === 0 && !estBust) {
+      stats.checkoutHits += 1;
+    }
+  }
   const scoreActuel = cricketState.scores[keyStockage];
   const scoreResultat = scoreActuel - pointsMarques;
 
@@ -1485,18 +1497,16 @@ document.getElementById("btnBackToPodium").onclick = () => showScreen(screens.ga
 
 function genererTableauStatistiques() {
   const container = document.getElementById("matchStatsTable"); 
-  // On vide le conteneur principal. Pour insérer des blocs, on va utiliser des div structurées
   container.innerHTML = "";
   
-  // Création d'un sous-conteneur stylisé pour accueillir nos blocs sans casser la mise en page
   const mainWrapper = document.createElement("div");
-  mainWrapper.style.padding = "0 8px";
+  mainWrapper.style.padding = "0 8px 40px 8px"; // Espace en bas pour le scroll mobile
   mainWrapper.style.display = "flex";
   mainWrapper.style.flexDirection = "column";
   mainWrapper.style.gap = "20px";
   container.appendChild(mainWrapper);
 
-  // Fonction utilitaire pour générer la structure d'un bloc de stats
+  // Fonction utilitaire pour générer un bloc propre
   function creerBlocStats(titreBloc) {
     const blockDiv = document.createElement("div");
     blockDiv.style.background = "var(--card-bg)";
@@ -1525,11 +1535,11 @@ function genererTableauStatistiques() {
     return { blockDiv, table };
   }
 
-  // Fonction pour générer la ligne d'entête commune avec le nom des joueurs
+  // Fonction pour l'entête des joueurs
   function genererEnteteJoueurs(tableTarget) {
     const rowHeader = document.createElement("tr");
     rowHeader.style.background = "rgba(255,255,255,0.02)";
-    let html = `<th style="text-align:left; padding:8px; border-bottom:1px solid var(--divider); width:40%;">Joueurs</th>`;
+    let html = `<th style="text-align:left; padding:8px; border-bottom:1px solid var(--divider); width:35%;">Joueurs</th>`;
     cricketState.players.forEach(p => {
       let nom = p.name.length > 9 ? p.name.substring(0, 9) + "." : p.name;
       if (cricketState.isTeamMode) {
@@ -1550,9 +1560,7 @@ function genererTableauStatistiques() {
     const blocGen = creerBlocStats("📊 Statistiques Générales");
     genererEnteteJoueurs(blocGen.table);
     
-    // Ligne MPR
-    let rowMpr = document.createElement("tr");
-    rowMpr.style.borderBottom = "1px solid var(--divider)";
+    let rowMpr = document.createElement("tr"); rowMpr.style.borderBottom = "1px solid var(--divider)";
     let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--accent);">MPR (Marques/Tour)</td>`;
     cricketState.players.forEach(p => {
       const totalTouches = cricketState.statsDetails[p.id].touchesUtiles || 0;
@@ -1561,24 +1569,19 @@ function genererTableauStatistiques() {
     });
     rowMpr.innerHTML = mprHtml; blocGen.table.appendChild(rowMpr);
 
-    // Ligne Total Points Donnés
-    let rowTotPts = document.createElement("tr");
-    rowTotPts.style.borderBottom = "1px solid var(--divider)";
+    let rowTotPts = document.createElement("tr"); rowTotPts.style.borderBottom = "1px solid var(--divider)";
     let totPtsHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Total points infligés</td>`;
     cricketState.players.forEach(p => {
       totPtsHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700; color:var(--danger);">${cricketState.statsDetails[p.id].totalPointsGiven || 0} pts</td>`;
     });
     rowTotPts.innerHTML = totPtsHtml; blocGen.table.appendChild(rowTotPts);
 
-    // Ligne Plus Grosse Punition
-    let rowMaxPts = document.createElement("tr");
-    rowMaxPts.style.borderBottom = "1px solid var(--divider)";
+    let rowMaxPts = document.createElement("tr"); rowMaxPts.style.borderBottom = "1px solid var(--divider)";
     let maxPtsHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px; color:var(--text-soft);">Max infligé en 1 volée</td>`;
     cricketState.players.forEach(p => {
       maxPtsHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600;">⚡ ${cricketState.statsDetails[p.id].maxPointsGivenInOneVolley || 0}</td>`;
     });
     rowMaxPts.innerHTML = maxPtsHtml; blocGen.table.appendChild(rowMaxPts);
-
     mainWrapper.appendChild(blocGen.blockDiv);
 
     // --- BLOC 2 : ANALYSE PAR TARGET ---
@@ -1587,10 +1590,8 @@ function genererTableauStatistiques() {
 
     cricketState.targets.forEach(cible => {
       const libelleCible = cible === 25 ? "🎯 Bull" : `🎯 Zone ${cible}`;
-      
-      let row = document.createElement("tr");
-      row.style.borderBottom = "1px solid var(--divider)";
-      let rowHtml = `<td style="text-align:left; padding:8px; font-weight:600; background:rgba(0,0,0,0.01);">${libelleCible}</td>`;
+      let row = document.createElement("tr"); row.style.borderBottom = "1px solid var(--divider)";
+      let rowHtml = `<td style="text-align:left; padding:8px; font-weight:600;">${libelleCible}</td>`;
       
       cricketState.players.forEach(p => {
         const tNum = cricketState.statsDetails[p.id].touchesNum[cible] || 0;
@@ -1604,16 +1605,39 @@ function genererTableauStatistiques() {
         let subText = txtBonus.length > 0 ? `<br><span style="font-size:10px; color:#28a745;">(${txtBonus.join(' / ')})</span>` : '';
         let penaliteText = pGiv > 0 ? `<br><span style="font-size:10px; color:var(--danger); font-weight:700;">+${pGiv} pts</span>` : '';
 
-        rowHtml += `
-          <td style="text-align:center; border-left:1px solid var(--divider); padding:6px 2px;">
-            <strong>${tNum} hit${tNum > 1 ? 's' : ''}</strong>${subText}${penaliteText}
-          </td>`;
+        rowHtml += `<td style="text-align:center; border-left:1px solid var(--divider); padding:6px 2px;"><strong>${tNum} hit${tNum > 1 ? 's' : ''}</strong>${subText}${penaliteText}</td>`;
+      });
+      row.innerHTML = rowHtml; blocZone.table.appendChild(row);
+    });
+    mainWrapper.appendChild(blocZone.blockDiv);
+
+    // --- BLOC 3 : LA GRILLE SOUVENIR DU MATCH (NEW) ---
+    const blocGrille = creerBlocStats("🏁 Grille de Fin de Match");
+    genererEnteteJoueurs(blocGrille.table);
+
+    cricketState.targets.forEach(t => {
+      let row = document.createElement("tr");
+      row.style.borderBottom = "1px solid var(--divider)";
+      let libelle = t === 25 ? "B" : t;
+      let rowHtml = `<td style="text-align:left; padding:10px 8px; font-weight:700; color:var(--primary);">${libelle}</td>`;
+
+      cricketState.players.forEach(p => {
+        // En mode équipe, on va chercher l'état des marques de l'équipe du joueur
+        const keyGrille = cricketState.isTeamMode ? p.teamId : p.id;
+        const touches = cricketState.marks[keyGrille][t];
+        let symbole = "-";
+
+        if (touches === 1) symbole = `<span style="font-size:16px; font-weight:900; font-family:monospace;">\\</span>`;
+        else if (touches === 2) symbole = `<span style="font-size:16px; font-weight:900; font-family:monospace;">X</span>`;
+        else if (touches >= 3) {
+          symbole = `<span style="display:inline-block; border: 2px solid #ff3838; border-radius: 50%; width: 20px; height: 20px; line-height: 16px; font-weight: 900; color: #ff3838; text-align:center; font-family: monospace; font-size:11px; background: rgba(255,56,56,0.05);">X</span>`;
+        }
+        rowHtml += `<td style="text-align:center; border-left:1px solid var(--divider); padding:6px 2px;">${symbole}</td>`;
       });
       row.innerHTML = rowHtml;
-      blocZone.table.appendChild(row);
+      blocGrille.table.appendChild(row);
     });
-
-    mainWrapper.appendChild(blocZone.blockDiv);
+    mainWrapper.appendChild(blocGrille.blockDiv);
 
   // ==========================================
   // RENDU DU MODE : X01
@@ -1624,7 +1648,6 @@ function genererTableauStatistiques() {
     const blocGenX = creerBlocStats("📊 Statistiques Générales");
     genererEnteteJoueurs(blocGenX.table);
 
-    // Moyenne Volée
     let rowMoy = document.createElement("tr"); rowMoy.style.borderBottom = "1px solid var(--divider)";
     let moyHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--accent);">Moyenne / Volée (3 darts)</td>`;
     cricketState.players.forEach(p => {
@@ -1634,18 +1657,14 @@ function genererTableauStatistiques() {
     });
     rowMoy.innerHTML = moyHtml; blocGenX.table.appendChild(rowMoy);
 
-    // First 9 Darts (Moyenne sur les 9 premières fléchettes)
     let rowF9 = document.createElement("tr"); rowF9.style.borderBottom = "1px solid var(--divider)";
     let f9Html = `<td style="text-align:left; padding:10px 8px; font-size:13px; color:var(--text-soft); font-weight:600;">First 9 Darts Ø (Scoring)</td>`;
     cricketState.players.forEach(p => {
       const scoreF9 = cricketState.statsDetails[p.id].first9DartsScore || 0;
-      // On divise par 3 volées max pour obtenir la moyenne par volée du début de match
-      const moyF9 = (scoreF9 / 3).toFixed(1);
-      f9Html += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600; color:var(--text-soft);">${moyF9} pts</td>`;
+      f9Html += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600; color:var(--text-soft);">${(scoreF9 / 3).toFixed(1)} pts</td>`;
     });
     rowF9.innerHTML = f9Html; blocGenX.table.appendChild(rowF9);
 
-    // Score Max
     let rowMaxX = document.createElement("tr"); rowMaxX.style.borderBottom = "1px solid var(--divider)";
     let maxXHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Meilleure volée</td>`;
     cricketState.players.forEach(p => {
@@ -1653,7 +1672,6 @@ function genererTableauStatistiques() {
     });
     rowMaxX.innerHTML = maxXHtml; blocGenX.table.appendChild(rowMaxX);
 
-    // Busts
     let rowBustX = document.createElement("tr"); rowBustX.style.borderBottom = "1px solid var(--divider)";
     let bustXHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px; color:var(--danger);">Nombre de Busts 💥</td>`;
     cricketState.players.forEach(p => {
@@ -1663,7 +1681,7 @@ function genererTableauStatistiques() {
 
     mainWrapper.appendChild(blocGenX.blockDiv);
 
-    // --- BLOC 2 : TRANCHES ET FAMILLES DE SCORES ---
+    // --- BLOC 2 : RÉPARTITION DES VOLÉES (FAMILLES) ---
     const blocFamily = creerBlocStats("🔥 Répartition des Volées");
     genererEnteteJoueurs(blocFamily.table);
 
@@ -1671,22 +1689,76 @@ function genererTableauStatistiques() {
       { key: 'scoreFamily50', label: 'Volées 50+' },
       { key: 'scoreFamily100', label: 'Volées 100+ 🚀' },
       { key: 'scoreFamily140', label: 'Volées 140+ ✈️' },
-      { key: 'scoreFamily180', label: 'Gral TON 180 👑' }
+      { key: 'scoreFamily180', label: 'Graal TON 180 👑' }
     ];
 
     familles.forEach(f => {
-      let row = document.createElement("tr");
-      row.style.borderBottom = "1px solid var(--divider)";
+      let row = document.createElement("tr"); row.style.borderBottom = "1px solid var(--divider)";
       let fHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600;">${f.label}</td>`;
       cricketState.players.forEach(p => {
         const count = cricketState.statsDetails[p.id][f.key] || 0;
         fHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:${count > 0 ? '700' : 'normal'}; color:${count > 0 ? 'var(--text-main)' : '#ccc'};">${count}</td>`;
       });
-      row.innerHTML = fHtml;
-      blocFamily.table.appendChild(row);
+      row.innerHTML = fHtml; blocFamily.table.appendChild(row);
+    });
+    mainWrapper.appendChild(blocFamily.blockDiv);
+
+    // --- BLOC 3 : COMPTEUR D'IMPACTS ET % PRÉFÉRENCE (NEW) ---
+    const blocHits = creerBlocStats("🎯 Fréquence des Tirs (Chiffres préférés)");
+    genererEnteteJoueurs(blocHits.table);
+
+    // Ligne spéciale pour le OUT (Bouton fermeture réussi)
+    let rowOut = document.createElement("tr");
+    rowOut.style.borderBottom = "2px solid var(--divider)";
+    rowOut.style.background = "rgba(40, 167, 69, 0.04)";
+    let outHtml = `<td style="text-align:left; padding:10px 8px; font-weight:700; color:#28a745;">🎯 Finition (Out)</td>`;
+    cricketState.players.forEach(p => {
+      const outHits = cricketState.statsDetails[p.id].checkoutHits || 0;
+      outHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700; color:#28a745;">${outHits} hit${outHits > 1 ? 's' : ''}</td>`;
+    });
+    rowOut.innerHTML = outHtml;
+    blocHits.table.appendChild(rowOut);
+
+    // On prépare la liste complète : de 20 jusqu'à 1, puis le Bull (25)
+    let chiffresAles = [];
+    for(let i = 20; i >= 1; i--) chiffresAles.push(i);
+    chiffresAles.push(25);
+
+    chiffresAles.forEach(num => {
+      // On vérifie d'abord si au moins un des joueurs a touché ce chiffre pour ne pas afficher 20 lignes vides inutiles
+      const estUtile = cricketState.players.some(p => (cricketState.statsDetails[p.id].touchesNum[num] || 0) > 0);
+      if (!estUtile) return; // Si personne n'a tiré dessus, on passe au chiffre suivant (plus propre sur mobile)
+
+      let rowNum = document.createElement("tr");
+      rowNum.style.borderBottom = "1px solid var(--divider)";
+      let libelleNum = num === 25 ? "Zone Bull" : `Zone ${num}`;
+      let rowNumHtml = `<td style="text-align:left; padding:8px; font-weight:600;">${libelleNum}</td>`;
+
+      cricketState.players.forEach(p => {
+        const stats = cricketState.statsDetails[p.id];
+        const hits = stats.touchesNum[num] || 0;
+        
+        // Calcul du % par rapport au nombre total de touches réussies de ce joueur
+        let totalHitsJoueur = 0;
+        Object.values(stats.touchesNum).forEach(v => totalHitsJoueur += v);
+        
+        let pourcentage = 0;
+        if (totalHitsJoueur > 0 && hits > 0) {
+          pourcentage = Math.round((hits / totalHitsJoueur) * 100);
+        }
+
+        if (hits > 0) {
+          rowNumHtml += `<td style="text-align:center; border-left:1px solid var(--divider); padding:8px 4px;"><strong>${hits}</strong> <span style="font-size:11px; color:var(--text-soft); font-weight:600;"><br>(${pourcentage}%)</span></td>`;
+        } else {
+          rowNumHtml += `<td style="text-align:center; border-left:1px solid var(--divider); color:#ccc;">-</td>`;
+        }
+      });
+
+      rowNum.innerHTML = rowNumHtml;
+      blocHits.table.appendChild(rowNum);
     });
 
-    mainWrapper.appendChild(blocFamily.blockDiv);
+    mainWrapper.appendChild(blocHits.blockDiv);
   }
 }
 
