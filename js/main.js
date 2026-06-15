@@ -1429,7 +1429,7 @@ function genererTableauStatistiques() {
   rowHeader.innerHTML = html; table.appendChild(rowHeader);
 
   const rowMpr = document.createElement("tr"); rowMpr.style.borderBottom = "1px solid var(--divider)";
-  let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:bold; color:var(--accent);">MPR (Efficace)</td>`;
+  let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:bold; color:var(--accent);">MPR)</td>`;
   cricketState.players.forEach(p => {
     const totalTouchesUtiles = cricketState.statsDetails[p.id].touchesUtiles || 0;
     const totalDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
@@ -1441,12 +1441,12 @@ function genererTableauStatistiques() {
   cricketState.targets.forEach(cible => {
     const libelleCible = cible === 25 ? "🎯 Bull" : `🎯 Zone ${cible}`;
     const rowTouches = document.createElement("tr");
-    let touchesHtml = `<td style="text-align:left; padding:6px 8px; font-size:12px; opacity:0.8;">${libelleCible} (Touches)</td>`;
+    let touchesHtml = `<td style="text-align:left; padding:6px 8px; font-size:12px; opacity:0.8;">${libelleCible} - Touches</td>`;
     cricketState.players.forEach(p => { touchesHtml += `<td style="border-left:1px solid var(--divider); font-size:12px;">${cricketState.statsDetails[p.id].touchesNum[cible]}</td>`; });
     rowTouches.innerHTML = touchesHtml; table.appendChild(rowTouches);
 
     const rowPoints = document.createElement("tr"); rowPoints.style.borderBottom = "1px solid var(--divider)";
-    let pointsHtml = `<td style="text-align:left; padding:6px 8px; font-size:12px; color:var(--text-soft);">└ Points donnés</td>`;
+    let pointsHtml = `<td style="text-align:left; padding:6px 8px; font-size:12px; color:var(--text-soft);">└ Points</td>`;
     cricketState.players.forEach(p => {
       const pts = cricketState.statsDetails[p.id].pointsGiv[cible];
       pointsHtml += `<td style="border-left:1px solid var(--divider); font-size:12px; color:var(--danger); font-weight:bold;">${pts > 0 ? '-' + pts : '0'}</td>`;
@@ -1535,23 +1535,22 @@ async function chargerHistoriqueParties() {
         <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
       `;
 
-      // 5. Injection du classement et des scores
       // 5. Injection du classement, des scores et des joueurs pour TOUTES les équipes
       if (d.classementFinal && Array.isArray(d.classementFinal)) {
         d.classementFinal.forEach(j => {
           const estGagnant = j.rang === 1;
           
           htmlContenu += `
-            <div style="display: flex; flex-direction: column; padding: 6px; background: ${estGagnant ? 'rgba(15, 76, 129, 0.05)' : 'transparent'}; border-radius: 8px; margin-bottom: 2px;">
+            <div style="display: flex; flex-direction: column; padding: 6px; background: ${estGagnant ? 'rgba(154, 123, 28, 0.08)' : 'transparent'}; border-radius: 8px; margin-bottom: 2px;">
               <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <span style="font-size: 14px; ${estGagnant ? 'font-weight: 700; color: var(--primary);' : 'color: var(--text-main);'}">
+                <span style="font-size: 14px; ${estGagnant ? 'font-weight: 700; color: var(--accent);' : 'color: var(--text-main);'}">
                   ${estGagnant ? '👑' : ` #` + j.rang} — ${j.name}
                 </span>
                 <strong style="font-size: 14px; color: var(--primary-strong);">${j.score} pts</strong>
               </div>
           `;
 
-          // AJUSTEMENT ICI : On affiche les membres pour TOUTES les équipes si on est en mode équipe
+          // Affichage des membres pour TOUTES les équipes si on est en mode équipe
           if (d.isTeamMode && j.membresNoms && Array.isArray(j.membresNoms)) {
             htmlContenu += `
               <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding-left: 20px;">
@@ -1564,7 +1563,7 @@ async function chargerHistoriqueParties() {
             `;
           }
 
-          htmlContenu += `</div>`; // Fermeture du bloc joueur/équipe
+          htmlContenu += `</div>`;
         });
       } else {
         // Fallback rétrocompatible pour les anciennes parties de test sans tableau
