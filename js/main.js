@@ -1214,7 +1214,6 @@ function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
     const tirsManquants = 3 - tirsEffectuesCeTour;
     cricketState.statsDetails[joueurActuel.id].dartsThrown += tirsManquants;
     
-    cricketState.currentTurnDartsText.push("");
     cricketState.currentDart = 3; 
   } else {
     cricketState.scores[keyStockage] = scoreResultat;
