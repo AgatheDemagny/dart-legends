@@ -326,6 +326,16 @@
 
     <div id="popup"></div>
 
+    <div id="customModalOverlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 3000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+      <div class="card" style="width: min(340px, calc(100% - 32px)); margin: 0; padding: 24px; text-align: center; box-shadow: 0 12px 36px rgba(0,0,0,0.25);">
+        <h3 id="customModalTitle" style="color: var(--primary-strong); font-size: 19px; margin-bottom: 12px;">Confirmation</h3>
+        <p id="customModalMessage" style="color: var(--text-main); font-size: 14px; border: none; padding: 0; margin-bottom: 20px; justify-content: center; text-align: center; line-height: 1.4;">Voulez-vous valider cette action ?</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <button id="customModalBtnCancel" class="ghost" style="padding: 10px; font-size: 14px;">Annuler</button>
+          <button id="customModalBtnConfirm" class="primary" style="padding: 10px; font-size: 14px;">Confirmer</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>

@@ -445,23 +445,23 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
   letter-spacing: -0.5px;        /* Resserre très légèrement les lettres pour la sécurité sur mobile */
 }
 
-/* Boutons secondaires d'action (Retirer, Changer d'équipe, etc.) */
+/* Boutons secondaires d'action */
 button.ghost.btn-action-soft {
-  background-color: #EAEAEA !important;
-  border: 1px solid #D9CEB6 !important;
-  color: #82898B !important;
+  background-color: #F8F6F0 !important;             
+  border: 1px solid rgba(42, 90, 133, 0.15) !important;
+  color: #5A6E7F !important;
   border-radius: 6px !important;
   padding: 4px 10px !important;
   font-size: 12px !important;
   font-weight: 600 !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  transition: all 0.1s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  transition: all 0.2s ease;
 }
 
 button.ghost.btn-action-soft:hover {
-  background-color: #E3D4AE !important;
-  color: var(--primary-strong) !important;
-  border-color: var(--primary) !important;
+  background-color: rgba(15, 76, 129, 0.06) !important;
+  color: var(--primary) !important;
+  border-color: rgba(15, 76, 129, 0.3) !important;
 }
 
 /* Style des noms d'équipes et des joueurs dans la configuration */

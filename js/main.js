@@ -44,6 +44,31 @@ function showPopup(text, isError = false) {
   window.popupTimeout = setTimeout(() => { popup.style.display = "none"; }, 2500);
 }
 
+// Fonction pour ouvrir la boîte de dialogue stylisée (Renvoie Promise true/false)
+function openCustomModal(title, message) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("customModalOverlay");
+    const titleEl = document.getElementById("customModalTitle");
+    const msgEl = document.getElementById("customModalMessage");
+    const btnConfirm = document.getElementById("customModalBtnConfirm");
+    const btnCancel = document.getElementById("customModalBtnCancel");
+
+    titleEl.innerText = title;
+    msgEl.innerText = message;
+    overlay.classList.remove("hidden");
+
+    btnConfirm.onclick = () => {
+      overlay.classList.add("hidden");
+      resolve(true);
+    };
+
+    btnCancel.onclick = () => {
+      overlay.classList.add("hidden");
+      resolve(false);
+    };
+  });
+}
+
 // Navigation de base
 document.getElementById("menuNewGame").addEventListener("click", () => {
   showScreen(screens.newGame);
@@ -1285,8 +1310,8 @@ function verifierConditionsFinMatch() {
       if(pTrouve) nomVainqueur = pTrouve.name;
     }
 
-    setTimeout(() => {
-      const confirmation = confirm(`${nomVainqueur} remporte la partie ! Valider le résultat ?`);
+    setTimeout(async () => {
+      const confirmation = await openCustomModal("🏆 Partie Terminée !", `${nomVainqueur} remporte la partie ! Souhaitez-vous valider et enregistrer ce résultat ?`);
       if (confirmation) { 
         lancerPageVictoire(gagnantId, nomVainqueur); 
       } else { 
@@ -1321,7 +1346,7 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
     const row = document.createElement("div"); row.className = "stat-row"; row.style.padding = "10px";
     row.style.background = entite.id === gagnantId ? "rgba(192,101,42,0.15)" : "rgba(255,255,255,0.02)";
     row.style.borderRadius = "12px";
-    row.innerHTML = `<span><strong>#${idx + 1}</strong> — 👤 ${entite.name}</span><span style="color:var(--primary-strong); font-weight:800;">${cricketState.scores[entite.id]} pts</span>`;
+    row.innerHTML = `<span><strong>#${idx + 1}</strong> — 👤 ${entite.name}</span><span style="color:var(--primary-strong); font-weight:800;"> ${cricketState.scores[entite.id]}</span>`;
     containerRanking.appendChild(row);
   });
 
@@ -1390,8 +1415,9 @@ function genererTableauStatistiques() {
   });
 }
 
-document.getElementById("btnLeaveGame").addEventListener("click", () => {
-  if (confirm("Abandonner le match en cours ?")) { 
+document.getElementById("btnLeaveGame").addEventListener("click", async () => {
+  const quitter = await openCustomModal("🏃‍♂️ Abandonner ?", "Êtes-vous sûr de vouloir quitter le match en cours ? Il ne sera pas pris en compte");
+  if (quitter) { 
     clearInterval(cricketState.timerInterval); 
     showScreen(screens.home); 
   }
