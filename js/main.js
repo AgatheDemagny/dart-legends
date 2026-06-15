@@ -334,17 +334,15 @@ function renderSelectedPlayers() {
       badge.style.marginBottom = "5px";
       badge.innerHTML = `
         <span><strong>${p.name}</strong></span>
-        <button class="ghost" style="padding: 2px 8px; font-size:12px; color:var(--text-soft);" onclick="retirerJoueurMatch(${index})">Retirer</button>
+        <button class="ghost btn-action-soft" onclick="retirerJoueurMatch(${index})">Retirer</button>
       `;
       container.appendChild(badge);
     });
   }
 
-  // Verification en temps réel du bloc équipe (minimum 4 joueurs requis)
   const blockEquipe = document.getElementById("teamModeBlock");
   if (joueursSelectionnesMatch.length >= 4) {
     blockEquipe.classList.remove("hidden");
-    // Ajuster le sélecteur du nombre d'équipes max possible selon le nombre de personnes
     const teamSelect = document.getElementById("teamCountSelect");
     const valCourante = parseInt(teamSelect.value, 10);
     teamSelect.innerHTML = "";
@@ -415,26 +413,25 @@ function renderEquipesUI() {
   listeEquipesFormees.forEach((equipe, indexTeam) => {
     const cardTeam = document.createElement("div");
     cardTeam.className = "card subtle";
-    cardTeam.style.padding = "10px";
+    cardTeam.style.padding = "12px";
     cardTeam.style.background = "rgba(255,255,255,0.01)";
     cardTeam.style.border = "1px solid var(--divider)";
 
-    // Titre modifiable (champ de saisie)
     let teamHtml = `
-      <div style="margin-bottom:8px;">
+      <div style="margin-bottom:10px;">
         <input type="text" value="${equipe.name}" 
-               style="font-weight:bold; color:var(--accent); font-size:15px; border:none; border-bottom:1px dashed var(--accent); background:transparent; padding:2px 0px; width:100%; border-radius:0;"
+               class="team-config-title"
+               style="border:none; background:transparent; padding:2px 0px; width:100%; border-radius:0; outline:none;"
                oninput="mettreAJourNomEquipe(${indexTeam}, this.value)" />
       </div>
-      <div style="display:flex; flex-direction:column; gap:4px; padding-left:10px;">
+      <div style="display:flex; flex-direction:column; gap:8px; padding-left:4px;">
     `;
 
-    // Affichage des membres avec un bouton d'échange manuel
     equipe.members.forEach((m, indexMembre) => {
       teamHtml += `
-        <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; opacity:0.9;">
-          <span>${m.name}</span>
-          <button class="ghost" style="font-size:11px; padding:2px 6px; color:var(--text-soft);" 
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="team-config-player">${m.name}</span>
+          <button class="ghost btn-action-soft" 
                   onclick="deplacerJoueurManuellement(${indexTeam}, ${indexMembre})">Changer d'équipe</button>
         </div>
       `;
@@ -697,7 +694,6 @@ function updateTurnHeader() {
   const p = cricketState.players[cricketState.currentPlayerIdx];
   if (!p) return;
   
-  // Affiche le nom du joueur + son équipe s'il y en a une
   const indicationLabel = cricketState.isTeamMode ? `${p.name} (${p.teamName})` : p.name;
   document.getElementById("cricketCurrentPlayerName").innerText = indicationLabel;
   
@@ -706,6 +702,157 @@ function updateTurnHeader() {
   const tText = cricketState.maxTurns === 999 ? "∞" : cricketState.maxTurns;
   document.getElementById("gameTurnIndicator").innerText = `Tour ${cricketState.currentTurn}/${tText}`;
   document.getElementById("lastTurnHistoryText").innerText = `Coup précédent : ${cricketState.lastTurnText}`;
+
+  // Gestion ultra-dynamique de la zone d'aide X01
+  const helpZone = document.getElementById("x01CheckoutHelpZone");
+  if (cricketState.gameMode === "x01") {
+    const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
+    const scoreRestant = cricketState.scores[keyStockage];
+    
+    // Déduction stricte des fléchettes restantes dans la main (3 au début, puis 2, puis 1)
+    const dartsRestantes = 4 - cricketState.currentDart; 
+
+    const aideTexte = obtenirSuggestionCheckout(scoreRestant, dartsRestantes, cricketState.x01Checkout);
+    
+    // L'affichage apparaît uniquement si une combinaison valide est retournée
+    if (aideTexte) {
+      helpZone.innerText = `🎯 Finition : ${aideTexte}`;
+      helpZone.classList.remove("hidden");
+    } else {
+      helpZone.classList.add("hidden"); // Disparaît instantanément sinon
+    }
+  } else {
+    helpZone.classList.add("hidden");
+  }
+}
+
+// Algorithme de calcul de checkout dynamique et strict selon le nombre de fléchettes restantes
+function obtenirSuggestionCheckout(score, dartsCount, modeCheckout) {
+  if (score <= 1) return null;
+
+  // En Double-Out, le maximum absolu en 3 fléchettes est 170. Le maximum en 2 fléchettes est 110 (T20 + DBull)
+  if (modeCheckout === "double") {
+    if (score > 170) return null;
+    
+    // Les "Bogey numbers" : scores inférieurs à 170 mais impossibles à finir en 3 fléchettes
+    const bogeys3Darts = [159, 162, 163, 165, 166, 168, 169];
+    if (dartsCount === 3 && bogeys3Darts.includes(score)) return null;
+
+    // --- FINITION EN 1 FLÉCHETTE ---
+    if (dartsCount >= 1) {
+      if (score <= 40 && score % 2 === 0) return `D${score / 2}`;
+      if (score === 50) return "Double Bull";
+    }
+
+    // Si on n'a qu'une fléchette et qu'on n'a pas validé les conditions du dessus, impossible de finir
+    if (dartsCount === 1) return null;
+
+    // --- FINITION EN 2 FLÉCHETTES ---
+    if (dartsCount >= 2) {
+      // Cas particuliers avec le Bullseye
+      if (score === 110) return "T20 -> Double Bull";
+      if (score === 107) return "T19 -> Double Bull";
+      if (score === 104) return "T18 -> Double Bull";
+      if (score === 101) return "T17 -> Double Bull";
+
+      // Recherche d'une combinaison classique : 1 Simple ou 1 Triple + 1 Double
+      for (let t = 20; t >= 1; t--) {
+        // Option via un Triple (Ex: 70 restant -> T20 + D5)
+        let resteApresTriple = score - (t * 3);
+        if (resteApresTriple > 0 && resteApresTriple <= 40 && resteApresTriple % 2 === 0) {
+          return `T${t} -> D${resteApresTriple / 2}`;
+        }
+        // Option via un Simple (Ex: 41 restant -> S1 + D20)
+        let resteApresSimple = score - t;
+        if (resteApresSimple > 0 && resteApresSimple <= 40 && resteApresSimple % 2 === 0) {
+          return `S${t} -> D${resteApresSimple / 2}`;
+        }
+      }
+    }
+
+    // Si on a 2 fléchettes et qu'on n'a rien trouvé, impossible de finir en 2 coups (ex: score de 111 à 170)
+    if (dartsCount === 2) return null;
+
+    // --- FINITION EN 3 FLÉCHETTES ---
+    if (dartsCount === 3) {
+      // Finitions mythiques et iconiques de l'historique des fléchettes
+      if (score === 170) return "T20 -> T20 -> Double Bull";
+      if (score === 167) return "T20 -> T19 -> Double Bull";
+      if (score === 164) return "T20 -> T18 -> Double Bull";
+      if (score === 161) return "T20 -> T17 -> Double Bull";
+      if (score === 160) return "T20 -> T20 -> D20";
+      if (score === 158) return "T20 -> T20 -> D19";
+      if (score === 157) return "T20 -> T19 -> D20";
+      if (score === 156) return "T20 -> T20 -> D18";
+      if (score === 155) return "T20 -> T19 -> D19";
+      if (score === 154) return "T20 -> T18 -> D20";
+      if (score === 153) return "T20 -> T19 -> D18";
+      if (score === 152) return "T20 -> T20 -> D16";
+      if (score === 151) return "T20 -> T17 -> D20";
+      if (score === 150) return "T20 -> T18 -> D18";
+
+      // Algorithme générique pour les scores inférieurs à 150 (2 Triples + 1 Double)
+      for (let t1 = 20; t1 >= 1; t1--) {
+        for (let t2 = 20; t2 >= 1; t2--) {
+          let reste = score - (t1 * 3) - (t2 * 3);
+          if (reste > 0 && reste <= 40 && reste % 2 === 0) {
+            return `T${t1} -> T${t2} -> D${reste / 2}`;
+          }
+        }
+      }
+      
+      // Alternative au cas où (1 Triple + 1 Simple + 1 Double)
+      for (let t1 = 20; t1 >= 1; t1--) {
+        for (let s1 = 20; s1 >= 1; s1--) {
+          let reste = score - (t1 * 3) - s1;
+          if (reste > 0 && reste <= 40 && reste % 2 === 0) {
+            return `T${t1} -> S${s1} -> D${reste / 2}`;
+          }
+        }
+      }
+    }
+  } 
+  
+  // --- MODE SANS CONTRAINTE (SINGLE OUT) ---
+  else {
+    // En mode Single Out, le maximum en 3 fléchettes est 180 (T20 x3)
+    if (score > 180) return null;
+
+    if (dartsCount >= 1) {
+      if (score <= 20) return `S${score}`;
+      if (score === 25) return "Bull";
+      if (score <= 40 && score % 2 === 0) return `D${score / 2}`;
+      if (score <= 60 && score % 3 === 0) return `T${score / 3}`;
+      if (score === 50) return "Double Bull";
+    }
+
+    if (dartsCount === 1) return null;
+
+    if (dartsCount >= 2) {
+      for (let t = 20; t >= 1; t--) {
+        let reste = score - (t * 3);
+        if (reste > 0 && reste <= 20) return `T${t} -> S${reste}`;
+        if (reste === 25) return `T${t} -> Bull`;
+        if (reste > 0 && reste <= 60 && reste % 3 === 0) return `T${t} -> T${reste / 3}`;
+      }
+    }
+
+    if (dartsCount === 2) return null;
+
+    if (dartsCount === 3) {
+      if (score === 180) return "T20 -> T20 -> T20";
+      for (let t1 = 20; t1 >= 1; t1--) {
+        for (let t2 = 20; t2 >= 1; t2--) {
+          let reste = score - (t1 * 3) - (t2 * 3);
+          if (reste > 0 && reste <= 20) return `T${t1} -> T${t2} -> S${reste}`;
+          if (reste === 25) return `T${t1} -> T${t2} -> Bull`;
+          if (reste > 0 && reste <= 60 && reste % 3 === 0) return `T${t1} -> T${t2} -> T${reste / 3}`;
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 function renderGrid() {
@@ -774,19 +921,20 @@ function renderGridX01() {
   const headerRow = document.createElement("tr");
   headerRow.style.background = "rgba(255,255,255,0.02)";
   headerRow.innerHTML = `
-    <th style="text-align:left; padding: 12px 8px; border-bottom: 2px solid var(--divider); width: 50%;">Équipes / Joueurs</th>
-    <th style="padding: 12px 8px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 50%;">Reste</th>
+    <th style="text-align:left; padding: 12px 6px; border-bottom: 2px solid var(--divider); width: 40%;">Joueurs</th>
+    <th style="padding: 12px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--text-soft); width: 30%;">Moyenne</th>
+    <th style="padding: 12px 6px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 30%;">Reste</th>
   `;
   table.appendChild(headerRow);
 
   let entitesAAfficher = [];
   if (cricketState.isTeamMode) {
     listeEquipesFormees.forEach(eq => {
-      entitesAAfficher.push({ id: eq.id, name: eq.name });
+      entitesAAfficher.push({ id: eq.id, name: eq.name, members: eq.members });
     });
   } else {
     cricketState.players.forEach(p => {
-      entitesAAfficher.push({ id: p.id, name: p.name });
+      entitesAAfficher.push({ id: p.id, name: p.name, members: [p] });
     });
   }
 
@@ -801,11 +949,28 @@ function renderGridX01() {
       row.style.backgroundColor = "rgba(192,101,42,0.15)";
     }
     
-    let nomTronque = entite.name.length > 15 ? entite.name.substring(0, 15) + "." : entite.name;
+    let nomTronque = entite.name.length > 12 ? entite.name.substring(0, 12) + "." : entite.name;
+    
+    // Calcul de la moyenne des points de l'entité (cumulée sur ses joueurs membres)
+    let totalScoreMarque = 0;
+    let totalFlechettes = 0;
+    entite.members.forEach(m => {
+      if(cricketState.statsDetails[m.id]) {
+        totalScoreMarque += cricketState.statsDetails[m.id].totalScoreScored || 0;
+        totalFlechettes += cricketState.statsDetails[m.id].dartsThrown || 0;
+      }
+    });
+    
+    // Moyenne par volée (3 fléchettes)
+    let moyenne3Darts = "0.0";
+    if (totalFlechettes > 0) {
+      moyenne3Darts = ((totalScoreMarque / totalFlechettes) * 3).toFixed(1);
+    }
     
     row.innerHTML = `
-      <td style="text-align:left; padding: 14px 8px; font-weight:700;">${nomTronque}</td>
-      <td style="font-weight:800; padding: 14px 8px; border-left: 1px solid var(--divider); color: var(--primary-strong); font-size: 18px;">${cricketState.scores[entite.id]}</td>
+      <td style="text-align:left; padding: 14px 6px; font-weight:700;">${nomTronque}</td>
+      <td style="padding: 14px 4px; border-left: 1px solid var(--divider); font-weight:600; color: var(--text-soft); font-size: 14px;">${moyenne3Darts}</td>
+      <td style="font-weight:800; padding: 14px 6px; border-left: 1px solid var(--divider); color: var(--primary-strong); font-size: 18px;">${cricketState.scores[entite.id]}</td>
     `;
     table.appendChild(row);
   });

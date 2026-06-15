@@ -444,3 +444,48 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
   font-size: 19px !important;  /* Zoom maximal lisible pour les mots longs (était à 14px) */
   letter-spacing: -0.5px;        /* Resserre très légèrement les lettres pour la sécurité sur mobile */
 }
+
+/* Boutons secondaires d'action (Retirer, Changer d'équipe, etc.) */
+button.ghost.btn-action-soft {
+  background-color: #F0EFEA !important;
+  border: 1px solid #D9CEB6 !important;
+  color: var(--text-soft) !important;
+  border-radius: 6px !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: all 0.1s ease;
+}
+
+button.ghost.btn-action-soft:hover {
+  background-color: #E3D4AE !important;
+  color: var(--primary-strong) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Style des noms d'équipes et des joueurs dans la configuration */
+.team-config-title {
+  font-size: 18px !important;
+  color: var(--primary) !important;
+  font-weight: 700 !important;
+}
+
+.team-config-player {
+  font-size: 15px !important;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Ajustement de la zone d'aide à la fermeture X01 */
+#x01CheckoutHelpZone {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--danger);
+  text-align: center;
+  padding: 6px;
+  background: rgba(217, 56, 58, 0.08);
+  border-radius: 6px;
+  margin: 4px 8px;
+}
