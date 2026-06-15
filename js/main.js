@@ -277,7 +277,7 @@ function filtrerEtAfficherJoueurs(query) {
     d.style.cursor = "pointer";
     d.style.padding = "8px 6px";
     d.style.borderBottom = "1px solid var(--divider)";
-    d.innerHTML = `<span>👤 <strong>${p.name}</strong></span>`;
+    d.innerHTML = `<span><strong>${p.name}</strong></span>`;
     
     d.onclick = () => {
       joueursSelectionnesMatch.push({ id: p.id, name: p.name });
@@ -333,7 +333,7 @@ function renderSelectedPlayers() {
       badge.style.borderRadius = "10px";
       badge.style.marginBottom = "5px";
       badge.innerHTML = `
-        <span>🎯 <strong>${p.name}</strong></span>
+        <span><strong>${p.name}</strong></span>
         <button class="ghost" style="padding: 2px 8px; font-size:12px; color:var(--text-soft);" onclick="retirerJoueurMatch(${index})">Retirer</button>
       `;
       container.appendChild(badge);
@@ -1113,7 +1113,7 @@ function verifierConditionsFinMatch() {
     }
 
     setTimeout(() => {
-      const confirmation = confirm(`🎯 ${nomVainqueur} remporte la partie ! Valider le résultat ?`);
+      const confirmation = confirm(`${nomVainqueur} remporte la partie ! Valider le résultat ?`);
       if (confirmation) { 
         lancerPageVictoire(gagnantId, nomVainqueur); 
       } else { 
