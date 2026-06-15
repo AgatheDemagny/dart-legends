@@ -290,12 +290,38 @@ let tousLesJoueursBase = [];
 let joueursSelectionnesMatch = [];
 let listeEquipesFormees = []; // Conservera la composition courante des équipes
 
+// Variable pour savoir quelle communauté est actuellement ciblée sur l'écran Nouvelle Partie
+let communauteCibleMatchId = null;
+
 async function initPageNouvellePartie() {
   joueursSelectionnesMatch = [];
   document.getElementById("teamModeCheckbox").checked = false;
   document.getElementById("teamModeConfig").classList.add("hidden");
   document.getElementById("teamCountSelect").value = "2";
   
+  // Par défaut, on cible la communauté sélectionnée par défaut dans l'onglet Mon Compte
+  communauteCibleMatchId = communautéActiveId;
+
+  // Remplir le menu déroulant unique avec toutes tes communautés
+  const selectCommu = document.getElementById("selectCommuMatch");
+  selectCommu.innerHTML = "";
+  
+  listeMesCommunautes.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.innerText = c.name;
+    // On pré-sélectionne celle qui est active/par défaut
+    if (c.id === communautéActiveId) opt.selected = true;
+    selectCommu.appendChild(opt);
+  });
+
+  // Configurer l'écouteur de changement : si l'utilisateur change de communauté, on bascule dessus
+  selectCommu.onchange = async (e) => {
+    communauteCibleMatchId = e.target.value;
+    await chargerJoueursCommunauteCible();
+  };
+
+  // Ajouter automatiquement l'utilisateur connecté sur la ligne de tir
   const user = auth.currentUser;
   if (user) {
     try {
@@ -306,8 +332,11 @@ async function initPageNouvellePartie() {
       joueursSelectionnesMatch.push({ id: user.uid, name: user.email.split('@')[0] });
     }
   }
+  
   renderSelectedPlayers();
-  await chargerTousLesJoueurs();
+  
+  // On charge les joueurs de la communauté qui est actuellement sélectionnée dans le menu
+  await chargerJoueursCommunauteCible();
 }
 
 document.getElementById("btnOpenSearchPlayer").addEventListener("click", () => {
