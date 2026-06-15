@@ -131,17 +131,31 @@ document.getElementById("btnKeyZero").onclick = () => taperChiffre(0);
 // ================== CONFIGURATION FIREBASE ==================
 const auth = firebase.auth();
 const db = firebase.firestore();
+let communautéActiveId = null; 
+let listeMesCommunautes = [];
 
 auth.onAuthStateChanged(async (user) => {
   if (screens.loading) screens.loading.classList.add("hidden");
 
   if (user) {
     try {
+      // 1. Récupérer ou initialiser le profil du joueur réel connecté
       const doc = await db.collection("players").doc(user.uid).get();
       let displayName = user.email ? user.email.split('@')[0] : "Joueur";
-      
-      if (doc.exists && doc.data().name) {
-        displayName = doc.data().name;
+      let defaultCommunity = null;
+
+      if (doc.exists) {
+        if (doc.data().name) displayName = doc.data().name;
+        if (doc.data().defaultCommunity) defaultCommunity = doc.data().defaultCommunity;
+      } else {
+        // Initialisation si premier compte
+        await db.collection("players").doc(user.uid).set({
+          email: user.email,
+          name: displayName,
+          createdAt: Date.now(),
+          defaultCommunity: null,
+          isRealAccount: true
+        });
       }
       
       const nameDisplay = document.getElementById("playerNameDisplay");
@@ -149,16 +163,47 @@ auth.onAuthStateChanged(async (user) => {
         nameDisplay.innerText = displayName;
       }
       
-      await chargerTousLesJoueurs();
-      showScreen(screens.home);
+      // 2. Charger les communautés de l'utilisateur et définir la communauté active
+      await chargerCommunautesUtilisateur(user.uid, defaultCommunity);
+
+      // Si l'utilisateur n'a aucune communauté, on le force à aller sur l'onglet compte pour en créer/rejoindre une
+      if (listeMesCommunautes.length === 0) {
+        showScreen(screens.account);
+        showPopup("👋 Bienvenue ! Crée ou rejoins une communauté pour commencer à jouer.", false);
+      } else {
+        showScreen(screens.home);
+      }
     } catch(e) {
-      console.error("Erreur Firestore au démarrage:", e);
+      console.error("Erreur d'initialisation au démarrage:", e);
       showScreen(screens.home);
     }
   } else {
     showScreen(screens.login);
   }
 });
+
+async function chargerCommunautesUtilisateur(userId, defaultId) {
+  listeMesCommunautes = [];
+  try {
+    const snap = await db.collection("communities")
+                          .where("memberIds", "array-contains", userId)
+                          .get();
+    
+    snap.forEach(doc => {
+      listeMesCommunautes.push({ id: doc.id, ...doc.data() });
+    });
+
+    // Détermination de la communauté active par défaut
+    if (listeMesCommunautes.length > 0) {
+      const existeToujours = listeMesCommunautes.some(c => c.id === defaultId);
+      communautéActiveId = existeToujours ? defaultId : listeMesCommunautes[0].id;
+    } else {
+      communautéActiveId = null;
+    }
+  } catch (error) {
+    console.error("Erreur lors du chargement des communautés:", error);
+  }
+}
 
 // Inscription
 document.getElementById("btnSignup").addEventListener("click", async () => {
@@ -1895,4 +1940,185 @@ async function chargerHistoriqueParties() {
     console.error("Erreur lors de la récupération de l'historique:", error);
     container.innerHTML = "<p class='hint' style='text-align:center; padding:20px; color:var(--danger);'>Impossible de charger l'historique pour le moment.</p>";
   }
+}
+
+// Variable pour savoir si le mini-formulaire est en mode "creation" ou "rejoindre"
+let modeActionCommu = "creer"; 
+
+// On intercepte l'ouverture de l'écran compte pour charger le listing des communautés
+document.getElementById("menuAccount").addEventListener("click", () => {
+  renderGestionCommunautes();
+});
+
+document.getElementById("btnDeclencherCreerCommu").onclick = () => {
+  modeActionCommu = "creer";
+  document.getElementById("zoneFormulaireCommu").classList.remove("hidden");
+  document.getElementById("titreActionCommu").innerText = "Nom de ta nouvelle communauté :";
+  document.getElementById("inputNomCodeCommu").placeholder = "Ex: Les Amis du Bar";
+  document.getElementById("inputNomCodeCommu").value = "";
+  document.getElementById("inputNomCodeCommu").focus();
+};
+
+document.getElementById("btnDeclencherRejoindreCommu").onclick = () => {
+  modeActionCommu = "rejoindre";
+  document.getElementById("zoneFormulaireCommu").classList.remove("hidden");
+  document.getElementById("titreActionCommu").innerText = "Saisir le Code unique :";
+  document.getElementById("inputNomCodeCommu").placeholder = "Ex: AB47X9";
+  document.getElementById("inputNomCodeCommu").value = "";
+  document.getElementById("inputNomCodeCommu").focus();
+};
+
+document.getElementById("btnValiderActionCommu").onclick = async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const valeurInput = document.getElementById("inputNomCodeCommu").value.trim();
+  if (!valeurInput) return showPopup("Ce champ ne peut pas être vide.", true);
+
+  if (modeActionCommu === "creer") {
+    // 1. Génération d'un code unique à 6 caractères majuscules
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let codeUnique = "";
+    for (let i = 0; i < 6; i++) {
+      codeUnique += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+    }
+
+    try {
+      await db.collection("communities").doc(codeUnique).set({
+        name: valeurInput,
+        adminId: user.uid,
+        memberIds: [user.uid],
+        createdAt: Date.now()
+      });
+
+      // Si c'est sa première communauté, on la met automatiquement par défaut
+      if (!communautéActiveId) {
+        await db.collection("players").doc(user.uid).update({ defaultCommunity: codeUnique });
+      }
+
+      showPopup(`Communauté "${valeurInput}" créée ! Code : ${codeUnique}`);
+      document.getElementById("zoneFormulaireCommu").classList.add("hidden");
+      
+      // Rechargement général
+      await chargerCommunautesUtilisateur(user.uid, communautéActiveId || codeUnique);
+      renderGestionCommunautes();
+    } catch (e) {
+      showPopup("Erreur de création : " + e.message, true);
+    }
+
+  } else {
+    // 2. Mode REJOINDRE via le code
+    const codeSaisi = valeurInput.toUpperCase();
+    try {
+      const docCommu = await db.collection("communities").doc(codeSaisi).get();
+      if (!docCommu.exists) {
+        return showPopup("Code communauté introuvable. Vérifie la saisie.", true);
+      }
+
+      const donnees = docCommu.data();
+      if (donnees.memberIds.includes(user.uid)) {
+        return showPopup("Tu fais déjà partie de cette communauté !", true);
+      }
+
+      // Ajout de l'utilisateur dans le tableau des membres
+      await db.collection("communities").doc(codeSaisi).update({
+        memberIds: firebase.firestore.FieldValue.arrayUnion(user.uid)
+      });
+
+      // Proposition automatique de liaison si un profil invité correspond (Sera raffiné à l'étape 4)
+      showPopup(`Bienvenue dans la communauté : ${donnees.name} !`);
+      document.getElementById("zoneFormulaireCommu").classList.add("hidden");
+
+      await chargerCommunautesUtilisateur(user.uid, communautéActiveId || codeSaisi);
+      renderGestionCommunautes();
+    } catch (e) {
+      showPopup("Erreur : " + e.message, true);
+    }
+  }
+};
+
+// Fonction de rendu graphique du gros bloc des communautés dans Mon Compte
+async function renderGestionCommunautes() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const container = document.getElementById("listeCommunautesContainer");
+  container.innerHTML = "";
+
+  if (listeMesCommunautes.length === 0) {
+    container.innerHTML = "<p class='hint' style='text-align:center;'>Aucune communauté active.</p>";
+    return;
+  }
+
+  listeMesCommunautes.forEach(commu => {
+    const card = document.createElement("div");
+    card.className = "card subtle";
+    card.style.padding = "10px";
+    card.style.margin = "0";
+    card.style.background = "rgba(0,0,0,0.01)";
+
+    const estAdmin = commu.adminId === user.uid;
+    const estParDefaut = commu.id === communautéActiveId;
+
+    let htmlButtonsAdmin = "";
+    if (estAdmin) {
+      htmlButtonsAdmin = `
+        <div style="display:flex; gap:6px; margin-top:8px;">
+          <button class="ghost btn-action-soft" style="flex:1; font-size:11px !important;" onclick="declencherAjoutMembre('${commu.id}')">👥 Gérer / Fusion</button>
+          <button class="ghost btn-action-soft" style="flex:1; font-size:11px !important; color:var(--danger) !important;" onclick="declencherSuppressionMembre('${commu.id}')">❌ Exclure</button>
+        </div>
+      `;
+    }
+
+    let boutonDefautHtml = "";
+    if (!estParDefaut) {
+      boutonDefautHtml = `
+        <button class="primary btn-block" style="font-size:11px; padding:6px; margin-top:8px; background-color:var(--accent); border-color:var(--accent);" onclick="definirCommunauteParDefaut('${commu.id}')">
+          📌 Choisir comme communauté par défaut
+        </button>
+      `;
+    } else {
+      boutonDefautHtml = `
+        <div style="text-align:center; font-size:11px; color:#28a745; font-weight:bold; margin-top:8px; padding:4px; background:rgba(40,167,69,0.05); border-radius:4px;">
+          ✅ Communauté active par défaut
+        </div>
+      `;
+    }
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <strong style="color:var(--primary-strong); font-size:15px;">${commu.name}</strong>
+        <span class="badge" style="background:var(--bg-secondary); color:var(--text-main); font-family:monospace; font-size:13px; padding:2px 6px;">${commu.id}</span>
+      </div>
+      ${htmlButtonsAdmin}
+      ${boutonDefautHtml}
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+// Assigner une communauté par défaut dans le profil Firestore
+async function definirCommunauteParDefaut(commuId) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    await db.collection("players").doc(user.uid).update({
+      defaultCommunity: commuId
+    });
+    communautéActiveId = commuId;
+    showPopup("Communauté par défaut mise à jour !");
+    renderGestionCommunautes();
+  } catch (e) {
+    showPopup(e.message, true);
+  }
+}
+
+// Placeholders pour les actions admin avancées (On les codera en détail à l'étape 4)
+function declencherAjoutMembre(commuId) {
+  showPopup("Gestion des fusions et des demandes d'approbation (Étape 4)");
+}
+function declencherSuppressionMembre(commuId) {
+  showPopup("Sélection et exclusion des membres (Étape 4)");
 }

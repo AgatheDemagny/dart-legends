@@ -120,10 +120,27 @@
           <label><strong>Email</strong></label>
           <p id="accountProfileEmail" style="font-size: 15px; color: var(--text-soft); padding: 8px 0; border: none; justify-content: flex-start;"></p>
         </div>
+      </div>
 
-        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider);">
-          <button id="btnLogout" class="danger-btn btn-block" style="margin-top: 4px;">❌​ Déconnexion</button>
+      <div class="card form-card" style="margin-top: 10px;">
+        <h3>👥 Gestion des Communautés</h3>
+        
+        <div id="listeCommunautesContainer" class="stack" style="gap: 12px; margin-top: 10px;"></div>
+
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--divider); display: flex; gap: 10px;">
+          <button id="btnDeclencherCreerCommu" class="primary" style="flex:1; font-size:13px; padding:10px 4px;">➕ Créer</button>
+          <button id="btnDeclencherRejoindreCommu" class="ghost" style="flex:1; font-size:13px; padding:10px 4px;">🔍 Rejoindre</button>
         </div>
+
+        <div id="zoneFormulaireCommu" class="hidden card subtle form-card" style="padding: 10px; margin-top: 10px;">
+          <h4 id="titreActionCommu" style="font-size: 14px; color: var(--primary);">Créer une communauté</h4>
+          <input type="text" id="inputNomCodeCommu" placeholder="Nom de la communauté ou Code">
+          <button id="btnValiderActionCommu" class="primary btn-block" style="padding: 8px;">Valider</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 10px; padding: 12px;">
+        <button id="btnLogout" class="danger-btn btn-block" style="margin-top: 0;">❌ Déconnexion</button>
       </div>
     </section>
 
