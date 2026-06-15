@@ -1363,11 +1363,22 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
   });
 
   // On prépare un résumé propre du classement pour l'historique
-  const resumeClassement = classementTrie.map((entite, idx) => ({
-    rang: idx + 1,
-    name: entite.name,
-    score: cricketState.scores[entite.id]
-  }));
+  const resumeClassement = classementTrie.map((entite, idx) => {
+    let donneesEntite = {
+      rang: idx + 1,
+      name: entite.name,
+      score: cricketState.scores[entite.id]
+    };
+
+    // Si on est en mode équipe, on va chercher et stocker le nom des joueurs de cette équipe
+    if (cricketState.isTeamMode) {
+      const equipeComplete = listeEquipesFormees.find(e => e.id === entite.id);
+      if (equipeComplete && equipeComplete.members) {
+        donneesEntite.membresNoms = equipeComplete.members.map(m => m.name);
+      }
+    }
+    return donneesEntite;
+  });
 
   // Sauvegarde enrichie dans Firestore
   db.collection("games_history").add({
@@ -1375,14 +1386,13 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
     winner: nomVainqueur,
     duration: cricketState.elapsedTime,
     createdAt: Date.now(),
-    // Nouvelles données sauvegardées pour l'historique :
     isTeamMode: cricketState.isTeamMode,
     maxTurns: cricketState.maxTurns,
     isBlind: cricketState.isBlind,
     x01StartPoints: cricketState.x01StartPoints,
     x01Checkout: cricketState.x01Checkout,
     classementFinal: resumeClassement
-  }).catch(e => console.error("Erreur enregistrement historique:", e));
+  }).catch(e => console.error("Erreur enregistrement historique :", e));
   
   showScreen(screens.gameOver);
 }
@@ -1526,22 +1536,39 @@ async function chargerHistoriqueParties() {
       `;
 
       // 5. Injection du classement et des scores
-      if (d.classementFinal && Array.isArray(d.classementFinal)) {
+if (d.classementFinal && Array.isArray(d.classementFinal)) {
         d.classementFinal.forEach(j => {
           const estGagnant = j.rang === 1;
+          
           htmlContenu += `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: ${estGagnant ? 'rgba(227, 212, 174, 0.2)' : 'transparent'}; border-radius: 6px;">
-              <span style="font-size: 14px; ${estGagnant ? 'font-weight: 700; color: var(--accent);' : 'color: var(--text-main);'}">
-                ${estGagnant ? '👑' : ` #` + j.rang} — ${j.name}
-              </span>
-              <strong style="font-size: 14px; color: var(--primary);">${j.score} pts</strong>
-            </div>
+            <div style="display: flex; flex-direction: column; padding: 6px; background: ${estGagnant ? 'rgba(15, 76, 129, 0.05)' : 'transparent'}; border-radius: 8px; margin-bottom: 2px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span style="font-size: 14px; ${estGagnant ? 'font-weight: 700; color: var(--primary);' : 'color: var(--text-main);'}">
+                  ${estGagnant ? '👑' : ` #` + j.rang} — ${j.name}
+                </span>
+                <strong style="font-size: 14px; color: var(--primary-strong);">${j.score} pts</strong>
+              </div>
           `;
+
+          // Si c'est l'équipe gagnante ET qu'on a la liste des membres, on l'affiche en dessous
+          if (estGagnant && d.isTeamMode && j.membresNoms && Array.isArray(j.membresNoms)) {
+            htmlContenu += `
+              <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding-left: 20px;">
+                ${j.membresNoms.map(nomJoueur => `
+                  <span style="font-size: 11px; background: rgba(227, 212, 174, 0.4); color: var(--accent); padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                    👤 ${nomJoueur}
+                  </span>
+                `).join('')}
+              </div>
+            `;
+          }
+
+          htmlContenu += `</div>`; // Fermeture du bloc joueur/équipe
         });
       } else {
-        // Fallback pour les anciennes parties de test sans tableau de classement complet
+        // Fallback rétrocompatible pour les anciennes parties de test sans tableau
         htmlContenu += `
-          <div style="display: flex; justify-content: space-between;">
+          <div style="display: flex; justify-content: space-between; padding: 4px 6px;">
             <span style="font-size: 14px;">👑 Vainqueur : <strong>${d.winner}</strong></span>
           </div>
         `;
