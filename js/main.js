@@ -302,13 +302,19 @@ let listeEquipesFormees = []; // Conservera la composition courante des équipes
 let communauteCibleMatchId = null;
 
 async function initPageNouvellePartie() {
+  // 1. SYNCHRONISATION CRUCIALE : On aligne la communauté du match sur la communauté active du joueur
+  communauteCibleMatchId = communautéActiveId;
+  
+  // 2. On charge immédiatement les joueurs de cette communauté pour la recherche
+  await chargerJoueursCommunauteCible();
+
+  // On vide les sélections précédentes pour repartir sur un match propre
   joueursSelectionnesMatch = [];
   document.getElementById("teamModeCheckbox").checked = false;
   document.getElementById("teamModeConfig").classList.add("hidden");
   document.getElementById("teamCountSelect").value = "2";
   
-  communauteCibleMatchId = communautéActiveId;
-
+  // Remplissage du menu déroulant (Select) avec vos communautés
   const selectCommu = document.getElementById("selectCommuMatch");
   selectCommu.innerHTML = "";
   
@@ -316,16 +322,22 @@ async function initPageNouvellePartie() {
     const opt = document.createElement("option");
     opt.value = c.id;
     opt.innerText = c.name;
+    // On pré-sélectionne la communauté active
     if (c.id === communautéActiveId) opt.selected = true;
     selectCommu.appendChild(opt);
   });
 
+  // Si l'utilisateur change manuellement de communauté dans le menu déroulant :
   selectCommu.onchange = async (e) => {
     communauteCibleMatchId = e.target.value;
-    await chargerJoueursCommunauteCible(); // Recharge la liste selon la commu choisie
+    // On recharge instantanément les joueurs de la NOUVELLE communauté sélectionnée !
+    await chargerJoueursCommunauteCible(); 
+    // On vide la liste des joueurs sélectionnés pour éviter de mélanger des joueurs de commus différentes
+    joueursSelectionnesMatch = []; 
+    renderSelectedPlayers();
   };
 
-  // Ajout automatique du joueur connecté
+  // Ajout automatique du joueur connecté sur la ligne de tir
   const user = auth.currentUser;
   if (user) {
     try {
@@ -338,31 +350,64 @@ async function initPageNouvellePartie() {
   }
   
   renderSelectedPlayers();
-  await chargerJoueursCommunauteCible();
 }
 
 // LA VOICI : Elle récupère uniquement les joueurs qui ont joué dans cette commu OU qui y sont liés
 async function chargerJoueursCommunauteCible() {
-  if (!communauteCibleMatchId) return;
+  // Sécurité : Si aucune communauté cible n'est définie pour le match, on prend la communauté active globale
+  if (!communauteCibleMatchId) {
+    communauteCibleMatchId = communautéActiveId;
+  }
+  
+  if (!communauteCibleMatchId) {
+    console.log("Aucune communauté active ou sélectionnée pour charger les joueurs.");
+    tousLesJoueursBase = [];
+    return;
+  }
   
   tousLesJoueursBase = [];
   try {
-    // On va chercher dans la collection "players" les profils qui ont l'ID de la commu dans leur tableau 'communityIds'
-    const snap = await db.collection("players")
-                          .where("communityIds", "array-contains", communauteCibleMatchId)
-                          .get();
-    snap.forEach(doc => {
-      tousLesJoueursBase.push({ id: doc.id, ...doc.data() });
+    // 1. On récupère le document de la communauté courante pour lire la liste "officielle" des membres
+    const docCommu = await db.collection("communities").doc(communauteCibleMatchId).get();
+    
+    if (docCommu.exists) {
+      const dataCommu = docCommu.data();
+      const membresIds = dataCommu.memberIds || [];
+      
+      // On va chercher les profils réels de ces membres un par un pour éviter les filtres asynchrones
+      for (const uid of membresIds) {
+        const docUser = await db.collection("players").doc(uid).get();
+        if (docUser.exists) {
+          tousLesJoueursBase.push({ id: docUser.id, ...docUser.data() });
+        }
+      }
+    }
+    
+    // 2. On récupère les joueurs "Invités / Guests" rattachés à cette communauté spécifique
+    const snapGuests = await db.collection("players")
+                                .where("communityIds", "array-contains", communauteCibleMatchId)
+                                .get();
+                                
+    snapGuests.forEach(doc => {
+      // Éviter les doublons (si un compte invité apparaissait par erreur dans memberIds)
+      if (!tousLesJoueursBase.some(p => p.id === doc.id)) {
+        tousLesJoueursBase.push({ id: doc.id, ...doc.data() });
+      }
     });
     
-    // Sécurité : On s'assure que l'utilisateur actuel est toujours inclus dans la base locale
+    // 3. Sécurité absolue : L'utilisateur connecté doit toujours pouvoir se voir et s'ajouter
     const user = auth.currentUser;
     if (user && !tousLesJoueursBase.some(p => p.id === user.uid)) {
       const docUser = await db.collection("players").doc(user.uid).get();
-      if (docUser.exists) tousLesJoueursBase.push({ id: docUser.id, ...docUser.data() });
+      if (docUser.exists) {
+        tousLesJoueursBase.push({ id: docUser.id, ...docUser.data() });
+      }
     }
+
+    console.log(`[DartLegends] ${tousLesJoueursBase.length} joueurs chargés pour la commu : ${communauteCibleMatchId}`);
+
   } catch(e) {
-    console.error("Erreur lors du chargement des joueurs de la communauté :", e);
+    console.error("Erreur lors du chargement des joueurs de la communauté active :", e);
   }
 }
 
@@ -2132,43 +2177,50 @@ document.getElementById("btnValiderActionCommu").onclick = async () => {
 
     } else {
     // 2. Mode REJOINDRE via le code
-    const codeSaisi = valeurInput.toUpperCase();
-    try {
-      const docCommu = await db.collection("communities").doc(codeSaisi).get();
-      if (!docCommu.exists) {
-        return showPopup("Code communauté introuvable. Vérifie la saisie.", true);
-      }
+    // Dans l'écouteur du bouton de validation (quand actionMode === "rejoindre") :
+const codeSaisi = valeurInput.toUpperCase();
+try {
+  const docCommu = await db.collection("communities").doc(codeSaisi).get();
+  if (!docCommu.exists) {
+    return showPopup("Code communauté introuvable.", true);
+  }
 
-      const donnees = docCommu.data();
-      if (donnees.memberIds.includes(user.uid)) {
-        return showPopup("Tu fais déjà partie de cette communauté !", true);
-      }
+  const donnees = docCommu.data();
+  if (donnees.memberIds.includes(user.uid)) {
+    return showPopup("Tu fais déjà partie de cette communauté !", true);
+  }
 
-      // ÉTAPE CRUCIALE DOUBLE ÉCRITURE :
-      // A. On ajoute le joueur dans le tableau des membres de la communauté
-      await db.collection("communities").doc(codeSaisi).update({
-        memberIds: firebase.firestore.FieldValue.arrayUnion(user.uid)
-      });
+  // 1. Ajouter le joueur dans la communauté
+  await db.collection("communities").doc(codeSaisi).update({
+    memberIds: firebase.firestore.FieldValue.arrayUnion(user.uid)
+  });
 
-      // B. On ajoute la communauté dans le tableau 'communityIds' du joueur pour qu'il soit détectable
-      await db.collection("players").doc(user.uid).update({
-        communityIds: firebase.firestore.FieldValue.arrayUnion(codeSaisi)
-      });
+  // 2. Mettre à jour le profil du joueur (Ajout de la commu dans sa liste)
+  const joueurDoc = await db.collection("players").doc(user.uid).get();
+  const joueurData = joueurDoc.data() || {};
+  
+  let majJoueur = {
+    communityIds: firebase.firestore.FieldValue.arrayUnion(codeSaisi)
+  };
 
-      // Si le joueur n'avait pas de communauté active, on définit celle-ci par défaut
-      if (!communautéActiveId) {
-        await db.collection("players").doc(user.uid).update({ defaultCommunity: codeSaisi });
-      }
+  // RÈGLE : Si le joueur n'a AUCUNE communauté par défaut définie actuellement, on lui met celle-ci
+  if (!joueurData.defaultCommunity) {
+    majJoueur.defaultCommunity = codeSaisi;
+    communautéActiveId = codeSaisi; // On l'active immédiatement en local
+  }
 
-      showPopup(`Bienvenue dans la communauté : ${donnees.name} ! 👥`);
-      document.getElementById("zoneFormulaireCommu").classList.add("hidden");
+  await db.collection("players").doc(user.uid).update(majJoueur);
 
-      // Rechargement des données locales
-      await chargerCommunautesUtilisateur(user.uid, communautéActiveId || codeSaisi);
-      renderGestionCommunautes();
-    } catch (e) {
-      showPopup("Erreur : " + e.message, true);
-    }
+  showPopup(`Bienvenue dans la communauté : ${donnees.name} ! 👥`);
+  document.getElementById("zoneFormulaireCommu").classList.add("hidden");
+
+  // Recharger les informations de l'utilisateur
+  await chargerCommunautesUtilisateur(user.uid, communautéActiveId || joueurData.defaultCommunity);
+  renderGestionCommunautes();
+
+} catch (e) {
+  showPopup("Erreur : " + e.message, true);
+}
   }
 };
 
@@ -2239,11 +2291,21 @@ async function definirCommunauteParDefaut(commuId) {
   if (!user) return;
 
   try {
+    // Écriture dans Firestore pour mémoriser le choix permanent
     await db.collection("players").doc(user.uid).update({
       defaultCommunity: commuId
     });
+    
+    // Synchronisation des variables d'état globales
     communautéActiveId = commuId;
-    showPopup("Communauté par défaut mise à jour !");
+    communauteCibleMatchId = commuId; // IMPORTANT pour l'écran de configuration du match
+
+    showPopup("Communauté active par défaut mise à jour ! 🎯");
+    
+    // Forcer le rechargement immédiat de la liste des joueurs de cette communauté
+    await chargerJoueursCommunauteCible();
+    
+    // Rafraîchir les interfaces
     renderGestionCommunautes();
   } catch (e) {
     showPopup(e.message, true);
