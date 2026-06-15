@@ -1266,18 +1266,12 @@ function traiterCalculCricket(keyStockage, joueurActuel, valeurBouton) {
 }
 
 function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
+  const stats = cricketState.statsDetails[joueurActuel.id];
+
   let valeurReelle = valeurBouton === 25 ? 25 : valeurBouton;
   if (valeurBouton === 25 && modificateurEnCours === 2) valeurReelle = 50;
   
   const pointsMarques = valeurReelle * modificateurEnCours;
-  if (valeurBouton !== 0 && stats) {
-    stats.touchesNum[valeurBouton] += modificateurEnCours;
-    
-    // Si ce coup fait tomber le score exactement à 0 (et valide le match), c'est un Checkout réussi !
-    if (scoreResultat === 0 && !estBust) {
-      stats.checkoutHits += 1;
-    }
-  }
   const scoreActuel = cricketState.scores[keyStockage];
   const scoreResultat = scoreActuel - pointsMarques;
 
@@ -1292,36 +1286,43 @@ function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
     }
   }
 
-  const stats = cricketState.statsDetails[joueurActuel.id];
+  // --- SUIVI PRÉCIS DES IMPACTS X01 (Sécurisé ici) ---
+  if (valeurBouton !== 0 && stats) {
+    stats.touchesNum[valeurBouton] += modificateurEnCours;
+    
+    // Si ce coup fait tomber le score exactement à 0 (et valide le match), c'est un Checkout réussi !
+    if (scoreResultat === 0 && !estBust) {
+      stats.checkoutHits += 1;
+    }
+  }
 
   if (estBust) {
     showPopup("💥 Bust", true);
-    stats.bustsCount += 1;
-    stats.currentVolleyScore = 0;
-    
-    const tirsEffectuesCeTour = cricketState.currentDart; 
-    const tirsManquants = 3 - tirsEffectuesCeTour;
-    
-    // Si le joueur est encore dans ses 9 premières fléchettes, le bust n'ajoute rien mais compte dans les tirs
-    if (stats.dartsThrown <= 9) {
-      // Pas de points additionnels pour les First 9
+    if (stats) {
+      stats.bustsCount += 1;
+      stats.currentVolleyScore = 0;
+      
+      const tirsEffectuesCeTour = cricketState.currentDart; 
+      const tirsManquants = 3 - tirsEffectuesCeTour;
+      
+      stats.dartsThrown += tirsManquants;
     }
-    
-    stats.dartsThrown += tirsManquants;
     cricketState.currentDart = 3; 
   } else {
     cricketState.scores[keyStockage] = scoreResultat;
-    stats.totalScoreScored += pointsMarques;
-    stats.currentVolleyScore += pointsMarques;
-    
-    // Suivi du First 9 Darts (si le joueur a lancé 9 fléchettes ou moins au total)
-    if (stats.dartsThrown <= 9) {
-      stats.first9DartsScore += pointsMarques;
+    if (stats) {
+      stats.totalScoreScored += pointsMarques;
+      stats.currentVolleyScore += pointsMarques;
+      
+      // Suivi du First 9 Darts (si le joueur a lancé 9 fléchettes ou moins au total)
+      if (stats.dartsThrown <= 9) {
+        stats.first9DartsScore += pointsMarques;
+      }
     }
   }
 
   // Fin de la volée (3 fléchettes tirées) -> Tri dans les familles de scores
-  if (cricketState.currentDart === 3) {
+  if (cricketState.currentDart === 3 && stats) {
     const finalVolley = stats.currentVolleyScore;
     
     if (finalVolley > stats.maxVolleyScore) {
