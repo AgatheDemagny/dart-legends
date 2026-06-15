@@ -127,6 +127,17 @@
       </div>
     </section>
 
+    <section id="historyScreen" class="hidden" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background-color: var(--bg-main);">
+      <header class="topbar" style="padding: 10px 14px; flex-shrink: 0;">
+        <button id="backHomeFromHistoryBtn" class="icon-btn">⬅️</button>
+        <h2>📜 Historique</h2>
+        <div style="width:40px;"></div>
+      </header>
+
+      <div id="historyContainer" style="flex: 1; overflow-y: auto; padding: 12px 0 30px 0; display: flex; flex-direction: column; gap: 14px; -webkit-overflow-scrolling: touch;">
+        </div>
+    </section>
+    
     <section id="newGameScreen" class="hidden stack">
       <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
       <header class="topbar">

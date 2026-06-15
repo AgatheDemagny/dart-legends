@@ -7,7 +7,8 @@ const screens = {
   account: document.getElementById("accountScreen"),
   cricket: document.getElementById("cricketScreen"),
   gameOver: document.getElementById("gameOverScreen"),
-  matchStats: document.getElementById("statsMatchScreen")
+  matchStats: document.getElementById("statsMatchScreen"),
+  history: document.getElementById("historyScreen")
 };
 
 // Banque de noms d'équipes inspirée par la nature
@@ -114,9 +115,16 @@ document.getElementById("menuAccount").addEventListener("click", () => {
 document.getElementById("backHomeFromAccountBtn").addEventListener("click", () => showScreen(screens.home));
 
 // Autres menus indisponibles
-["menuPlayers", "menuHistory", "menuRanking", "menuTraining", "menuTournament"].forEach(id => {
+["menuPlayers", "menuRanking", "menuTraining", "menuTournament"].forEach(id => {
   document.getElementById(id).addEventListener("click", () => { showPopup("Arrive dans la prochaine mise à jour !"); });
 });
+
+// Navigation vers l'historique
+document.getElementById("menuHistory").addEventListener("click", () => {
+  showScreen(screens.history);
+  chargerHistoriqueParties();
+});
+document.getElementById("backHomeFromHistoryBtn").addEventListener("click", () => showScreen(screens.home));
 
 document.getElementById("btnKeyZero").onclick = () => taperChiffre(0);
 
@@ -1350,9 +1358,27 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
     containerRanking.appendChild(row);
   });
 
+  // On prépare un résumé propre du classement pour l'historique
+  const resumeClassement = classementTrie.map((entite, idx) => ({
+    rang: idx + 1,
+    name: entite.name,
+    score: cricketState.scores[entite.id]
+  }));
+
+  // Sauvegarde enrichie dans Firestore
   db.collection("games_history").add({
-    type: cricketState.gameMode, winner: nomVainqueur, duration: cricketState.elapsedTime, createdAt: Date.now()
-  }).catch(e => console.error(e));
+    type: cricketState.gameMode,
+    winner: nomVainqueur,
+    duration: cricketState.elapsedTime,
+    createdAt: Date.now(),
+    // Nouvelles données sauvegardées pour l'historique :
+    isTeamMode: cricketState.isTeamMode,
+    maxTurns: cricketState.maxTurns,
+    isBlind: cricketState.isBlind,
+    x01StartPoints: cricketState.x01StartPoints,
+    x01Checkout: cricketState.x01Checkout,
+    classementFinal: resumeClassement
+  }).catch(e => console.error("Erreur enregistrement historique:", e));
   
   showScreen(screens.gameOver);
 }
@@ -1422,3 +1448,109 @@ document.getElementById("btnLeaveGame").addEventListener("click", async () => {
     showScreen(screens.home); 
   }
 });
+
+async function chargerHistoriqueParties() {
+  const container = document.getElementById("historyContainer");
+  container.innerHTML = "<p class='hint' style='text-align:center; padding:20px;'>Chargement de l'historique...</p>";
+
+  // Calcul du timestamp d'il y a 30 jours (30 jours * 24h * 60m * 60s * 1000ms)
+  const unMoisEnMillisecondes = 30 * 24 * 60 * 60 * 1000;
+  const dateLimite = Date.now() - unMoisEnMillisecondes;
+
+  try {
+    // On récupère TOUTES les parties triées par date décroissante
+    // (Firestore garde tout pour tes futures stats, on filtre l'affichage ici)
+    const snap = await db.collection("games_history")
+                          .orderBy("createdAt", "desc")
+                          .get();
+
+    container.innerHTML = "";
+    let compteurPartiesAffichees = 0;
+
+    snap.forEach(doc => {
+      const d = doc.data();
+
+      // FILTRE D'AFFICHAGE : Si la partie est plus vieille que 30 jours, on l'ignore pour cet écran
+      if (d.createdAt < dateLimite) {
+        return; 
+      }
+
+      compteurPartiesAffichees++;
+
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.marginBottom = "4px"; 
+
+      // 1. Formatage de la date et heure (sans les secondes)
+      const datePartie = new Date(d.createdAt);
+      const dateFormatee = datePartie.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+      const heureFormatee = datePartie.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+
+      // 2. Formatage de la durée (MM:SS)
+      const min = String(Math.floor((d.duration || 0) / 60)).padStart(2, "0");
+      const sec = String((d.duration || 0) % 60).padStart(2, "0");
+      const dureeFormatee = `${min}:${sec}`;
+
+      // 3. Détermination des paramètres à afficher selon le mode
+      let libelleMode = d.type === "x01" ? "💯 X01" : "🏏 Cricket";
+      let detailsParametres = "";
+      if (d.type === "x01") {
+        detailsParametres = `${d.x01StartPoints || 301} (${d.x01Checkout === "double" ? "Double-Out" : "Single"})`;
+      } else {
+        const toursTxt = d.maxTurns === 999 ? "Sans limite" : `${d.maxTurns} tours`;
+        detailsParametres = `${toursTxt} ${d.isBlind ? "• Mode n'a qu'un œil" : ""}`;
+      }
+      if (d.isTeamMode) detailsParametres += " • En Équipe";
+
+      // 4. Construction du bloc HTML
+      let htmlContenu = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; border-bottom: 1px solid var(--divider); padding-bottom: 8px;">
+          <div style="text-align: left;">
+            <h3 style="text-align: left !important; margin: 0; color: var(--primary-strong); font-size: 17px;">${libelleMode}</h3>
+            <span style="font-size: 12px; color: var(--text-soft); font-weight: 600;">${detailsParametres}</span>
+          </div>
+          <div style="text-align: right; font-size: 12px; color: var(--text-main); font-weight: 600;">
+            <div>📅 ${dateFormatee} à ${heureFormatee}</div>
+            <div style="color: var(--accent); margin-top: 2px;">⏱️ ${dureeFormatee}</div>
+          </div>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+      `;
+
+      // 5. Injection du classement et des scores
+      if (d.classementFinal && Array.isArray(d.classementFinal)) {
+        d.classementFinal.forEach(j => {
+          const estGagnant = j.rang === 1;
+          htmlContenu += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: ${estGagnant ? 'rgba(227, 212, 174, 0.2)' : 'transparent'}; border-radius: 6px;">
+              <span style="font-size: 14px; ${estGagnant ? 'font-weight: 700; color: var(--accent);' : 'color: var(--text-main);'}">
+                ${estGagnant ? '👑' : ` #` + j.rang} — ${j.name}
+              </span>
+              <strong style="font-size: 14px; color: var(--primary);">${j.score} pts</strong>
+            </div>
+          `;
+        });
+      } else {
+        // Fallback pour les anciennes parties de test sans tableau de classement complet
+        htmlContenu += `
+          <div style="display: flex; justify-content: space-between;">
+            <span style="font-size: 14px;">👑 Vainqueur : <strong>${d.winner}</strong></span>
+          </div>
+        `;
+      }
+
+      htmlContenu += `</div>`;
+      card.innerHTML = htmlContenu;
+      container.appendChild(card);
+    });
+
+    if (compteurPartiesAffichees === 0) {
+      container.innerHTML = "<p class='hint' style='text-align:center; padding:20px;'>Aucune partie enregistrée ces 30 derniers jours 🎯</p>";
+    }
+
+  } catch (error) {
+    console.error("Erreur lors de la récupération de l'historique:", error);
+    container.innerHTML = "<p class='hint' style='text-align:center; padding:20px; color:var(--danger);'>Impossible de charger l'historique pour le moment.</p>";
+  }
+}
