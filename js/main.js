@@ -502,7 +502,7 @@ function gererEtatBoutonBull() {
   const btnBull = document.getElementById("btnKeyBull");
   if (!btnBull) return; 
   if (modificateurEnCours === 3) {
-    btnBull.disabled = true; btnBull.style.opacity = "0.2"; btnBull.style.background = "rgba(255,255,255,0.01)"; btnBull.innerText = "🚫";
+    btnBull.disabled = true; btnBull.style.opacity = "0.2"; btnBull.style.background = "rgba(255,255,255,0.01)"; btnBull.innerText = "🚫 B";
   } else {
     btnBull.disabled = false; btnBull.style.opacity = "1"; btnBull.style.background = "rgba(255,255,255,0.06)"; btnBull.innerText = "🎯 B";
   }
@@ -766,7 +766,7 @@ function obtenirSuggestionCheckout(score, dartsCount, modeCheckout) {
         // Option via un Simple (Ex: 41 restant -> S1 + D20)
         let resteApresSimple = score - t;
         if (resteApresSimple > 0 && resteApresSimple <= 40 && resteApresSimple % 2 === 0) {
-          return `S${t} - D${resteApresSimple / 2}`;
+          return `${t} - D${resteApresSimple / 2}`;
         }
       }
     }
@@ -923,8 +923,8 @@ function renderGridX01() {
   headerRow.style.background = "rgba(255,255,255,0.02)";
   headerRow.innerHTML = `
     <th style="text-align:left; padding: 12px 6px; border-bottom: 2px solid var(--divider); width: 40%;">Joueurs</th>
-    <th style="padding: 12px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--text-soft); width: 30%;">Moy. / flèche</th>
-    <th style="padding: 12px 6px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 30%;">Reste</th>
+    <th style="padding: 12px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--text-soft); width: 30%;">Moyenne</th>
+    <th style="padding: 12px 6px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 30%;">Score restant</th>
   `;
   table.appendChild(headerRow);
 
@@ -1207,14 +1207,14 @@ function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
   }
 
   if (estBust) {
-    showPopup("💥 Bust ! Volée écourtée.", true);
+    showPopup("💥 Bust", true);
     cricketState.statsDetails[joueurActuel.id].bustsCount += 1;
     
     const tirsEffectuesCeTour = cricketState.currentDart; 
     const tirsManquants = 3 - tirsEffectuesCeTour;
     cricketState.statsDetails[joueurActuel.id].dartsThrown += tirsManquants;
     
-    cricketState.currentTurnDartsText.push("💥 BUST");
+    cricketState.currentTurnDartsText.push("");
     cricketState.currentDart = 3; 
   } else {
     cricketState.scores[keyStockage] = scoreResultat;
