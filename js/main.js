@@ -985,6 +985,12 @@ function renderGridWorld() {
 
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
 
+  // Calcul dynamique de la taille du parcours
+  const start = cricketState.worldStartNum;
+  const end = cricketState.worldEndNum;
+  // Si la fin est le Bull (25), l'étape juste avant est le 20. Donc le nombre de zones est (20 - start + 1) + 1 pour le Bull
+  const totalEtapes = (end === 25) ? (20 - start + 2) : (end - start + 1);
+
   entitesAAfficher.forEach(entite => {
     const row = document.createElement("tr");
     row.style.borderBottom = "1px solid var(--divider)";
@@ -994,19 +1000,27 @@ function renderGridWorld() {
       row.style.backgroundColor = "rgba(192,101,42,0.15)";
     }
     
-    let nomTronque = entite.name.length > 12 ? entite.name.substring(0, 12) + "." : entite.name;
-    let cibleCourante = cricketState.scores[entite.id];
-    let affichageCible = cibleCourante === 25 ? "🎯 BULL" : `N° ${cibleCourante}`;
+    const scoreCourant = cricketState.scores[entite.id];
     
-    // Calcul du pourcentage de progression
-    let totalAFAire = cricketState.worldEndNum - cricketState.worldStartNum;
-    let fait = cibleCourante - cricketState.worldStartNum;
-    let pct = totalAFAire > 0 ? Math.min(100, Math.round((fait / totalAFAire) * 100)) : 100;
+    // Détermination du libellé de la cible
+    let affichageCible = scoreCourant;
+    if (scoreCourant === 25) affichageCible = "🎯 BULL";
+    if (scoreCourant >= 26) affichageCible = "🎉 FINI";
+
+    // Calcul de l'étape courante pour le joueur
+    let etapeActuelle = 0;
+    if (scoreCourant >= 26) {
+      etapeActuelle = totalEtapes;
+    } else if (scoreCourant === 25) {
+      etapeActuelle = totalEtapes - 1;
+    } else {
+      etapeActuelle = scoreCourant - start + 1;
+    }
 
     row.innerHTML = `
-      <td style="text-align:left; padding: 14px 6px; font-weight:700;">${nomTronque}</td>
+      <td style="text-align:left; padding: 14px 6px; font-weight:700;">${entite.name}</td>
       <td style="padding: 14px 4px; border-left: 1px solid var(--divider); font-weight:800; color: var(--primary-strong); font-size: 16px;">${affichageCible}</td>
-      <td style="font-weight:600; padding: 14px 6px; border-left: 1px solid var(--divider); color: var(--accent); font-size: 13px;">${pct}% (${cibleCourante}/${cricketState.worldEndNum})</td>
+      <td style="font-weight:600; padding: 14px 6px; border-left: 1px solid var(--divider); color: var(--accent); font-size: 13px;">${etapeActuelle}/${totalEtapes}</td>
     `;
     table.appendChild(row);
   });
@@ -1016,14 +1030,23 @@ function renderGridWorld() {
 function traiterCalculWorld(keyStockage, joueurActuel, valeurBouton) {
   const stats = cricketState.statsDetails[joueurActuel.id];
   let cibleAttendue = cricketState.scores[keyStockage];
+  const finParcours = cricketState.worldEndNum;
 
-  // Incrémenter le nombre de fléchettes utilisées pour essayer de fermer cette cible spécifique
+  // Incrémenter le nombre de fléchettes utilisées pour cette cible
   if(stats && stats.dartsPerTarget[cibleAttendue] !== undefined) {
     stats.dartsPerTarget[cibleAttendue] += 1;
   }
 
   // Le joueur touche-t-il le bon numéro au bon moment ?
   if (valeurBouton === cibleAttendue) {
+    
+    // CAS 1 : Si le joueur touche la cible finale absolue (Bull ou chiffre classique de fin)
+    if (cibleAttendue === finParcours) {
+      stats.totalTargetsHit += 1;
+      cricketState.scores[keyStockage] = 26; // Déclenche instantanément la victoire
+      return;
+    }
+
     let bond = 1;
     if (cricketState.worldJump) {
       bond = modificateurEnCours; // +1, +2 (Double), ou +3 (Triple)
@@ -1036,8 +1059,14 @@ function traiterCalculWorld(keyStockage, joueurActuel, valeurBouton) {
     stats.totalTargetsHit += 1;
     let nouvelleCible = cibleAttendue + bond;
 
-    if (cibleAttendue === 20 || nouvelleCible >= 21) {
-      nouvelleCible = 25; // On force l'étape suivante à être le Bullseye (25)
+    // CAS 2 : Si la cible de fin est le Bull (25) et qu'on dépasse le 20, on va au Bull
+    if (finParcours === 25 && nouvelleCible >= 21) {
+      nouvelleCible = 25; 
+    }
+    
+    // CAS 3 : Si on dépasse un chiffre de fin classique (ex: max défini à 15, et un jump amène à 16)
+    if (finParcours !== 25 && nouvelleCible > finParcours) {
+      nouvelleCible = finParcours;
     }
 
     cricketState.scores[keyStockage] = nouvelleCible;
