@@ -2477,89 +2477,68 @@ document.getElementById("btnDeclencherRejoindreCommu").onclick = () => {
 };
 
 document.getElementById("btnValiderActionCommu").onclick = async () => {
-  const user = auth.currentUser;
+  const user = auth.currentUser; 
   if (!user) return;
-
-  const valeurInput = document.getElementById("inputNomCodeCommu").value.trim();
-  if (!valeurInput) return showPopup("Ce champ ne peut pas être vide.", true);
+  const text = document.getElementById("inputNomCodeCommu").value.trim();
+  if (!text) return showPopup("Le champ ne doit pas être vide.", true);
 
   if (modeActionCommu === "creer") {
-    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let codeUnique = "";
-    for (let i = 0; i < 6; i++) {
-      codeUnique += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
-    }
-
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     try {
-      // Ajout de l'admin dans la table 'communities'
-      await db.collection("communities").doc(codeUnique).set({
-        name: valeurInput,
-        adminId: user.uid,
-        memberIds: [user.uid],
-        createdAt: Date.now()
+      await db.collection("communities").doc(code).set({ 
+        name: text, 
+        adminId: user.uid, 
+        memberIds: [user.uid], 
+        createdAt: Date.now() 
       });
-
-      // Ajout du code dans la liste de l'utilisateur
-      await db.collection("players").doc(user.uid).update({
-        communityIds: firebase.firestore.FieldValue.arrayUnion(codeUnique)
+      await db.collection("players").doc(user.uid).update({ 
+        communityIds: firebase.firestore.FieldValue.arrayUnion(code) 
       });
-
       if (!communautéActiveId) {
-        await db.collection("players").doc(user.uid).update({ defaultCommunity: codeUnique });
-        communautéActiveId = codeUnique;
+        await db.collection("players").doc(user.uid).update({ defaultCommunity: code });
+        communautéActiveId = code;
       }
-
-      showPopup(`Communauté "${valeurInput}" créée ! Code : ${codeUnique}`);
+      showPopup(`Ligue créée ! Code : ${code}`);
       document.getElementById("zoneFormulaireCommu").classList.add("hidden");
-      
-      await chargerCommunautesUtilisateur(user.uid, communautéActiveId || codeUnique);
+      await chargerCommunautesUtilisateur(user.uid, communautéActiveId || code);
       renderGestionCommunautes();
-    } catch (e) {
-      showPopup("Erreur de création : " + e.message, true);
-    }
-
+    } catch(e) { showPopup(e.message, true); }
   } else {
-    // CORRECTION DU MODE REJOINDRE
-    const codeSaisi = valeurInput.toUpperCase();
+    // ==========================================
+    // VERSION FIXÉE DU MODE REJOINDRE
+    // ==========================================
+    const code = text.toUpperCase();
     try {
-      const docCommu = await db.collection("communities").doc(codeSaisi).get();
-      if (!docCommu.exists) {
-        return showPopup("Code communauté introuvable.", true);
-      }
-
-      const donnees = docCommu.data();
-      const tabMembres = donnees.memberIds || [];
-      if (tabMembres.includes(user.uid)) {
-        return showPopup("Tu fais déjà partie de cette communauté !", true);
-      }
-
-      // 1. Ajouter l'UID dans le document de la communauté
-      await db.collection("communities").doc(codeSaisi).update({
-        memberIds: firebase.firestore.FieldValue.arrayUnion(user.uid)
-      });
-
-      // 2. Ajouter le code dans le document du joueur
-      await db.collection("players").doc(user.uid).update({
-        communityIds: firebase.firestore.FieldValue.arrayUnion(codeSaisi)
-      });
-
-      const joueurDoc = await db.collection("players").doc(user.uid).get();
-      const joueurData = joueurDoc.data() || {};
+      const doc = await db.collection("communities").doc(code).get();
+      if (!doc.exists) return showPopup("Code communauté introuvable.", true);
       
-      if (!joueurData.defaultCommunity) {
-        await db.collection("players").doc(user.uid).update({ defaultCommunity: codeSaisi });
-        communautéActiveId = codeSaisi;
+      const dataCommu = doc.data();
+      const membresExistants = dataCommu.memberIds || [];
+      if (membresExistants.includes(user.uid)) return showPopup("Tu fais déjà partie de cette communauté !", true);
+
+      // 1. Ajouter l'utilisateur dans les membres de la communauté
+      await db.collection("communities").doc(code).update({ 
+        memberIds: firebase.firestore.FieldValue.arrayUnion(user.uid) 
+      });
+      
+      // 2. Ajouter la communauté dans la fiche du joueur
+      await db.collection("players").doc(user.uid).update({ 
+        communityIds: firebase.firestore.FieldValue.arrayUnion(code) 
+      });
+
+      // 3. Si aucune communauté n'est active, on l'active par défaut
+      const docJoueur = await db.collection("players").doc(user.uid).get();
+      if (!docJoueur.data().defaultCommunity) {
+        await db.collection("players").doc(user.uid).update({ defaultCommunity: code });
       }
-
-      showPopup(`Bienvenue dans la communauté : ${donnees.name} ! 👥`);
+      
+      showPopup(`Bienvenue dans la communauté : ${dataCommu.name} ! 👥`);
       document.getElementById("zoneFormulaireCommu").classList.add("hidden");
-
-      await chargerCommunautesUtilisateur(user.uid, communautéActiveId || joueurData.defaultCommunity);
+      
+      // Recharger et réinitialiser l'interface graphique du compte
+      await chargerCommunautesUtilisateur(user.uid, communautéActiveId || code);
       renderGestionCommunautes();
-
-    } catch (e) {
-      showPopup("Erreur : " + e.message, true);
-    }
+    } catch(e) { showPopup("Erreur : " + e.message, true); }
   }
 };
 

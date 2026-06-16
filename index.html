@@ -1,1070 +1,417 @@
-// =========================================================================
-// INITIALISATION & VUES
-// =========================================================================
-const screens = {
-  loading: document.getElementById("loadingScreen"),
-  login: document.getElementById("loginScreen"),
-  home: document.getElementById("homeScreen"),
-  newGame: document.getElementById("newGameScreen"),
-  account: document.getElementById("accountScreen"),
-  cricket: document.getElementById("cricketScreen"),
-  gameOver: document.getElementById("gameOverScreen"),
-  matchStats: document.getElementById("statsMatchScreen"),
-  history: document.getElementById("historyScreen")
-};
-
-const POOL_NOMS_EQUIPES = [
-  "Gorille", "Loutre", "Renard", "Koala", "Castor", "Hérisson", "Blaireau", "Suricate", 
-  "Lémurien", "Requin", "Piranha", "Bison", "Coyote", "Morse", "Otarie", "Furet", 
-  "Grizzly", "Taupe", "Python", "Cobra", "Gecko", "Jaguar", "Lynx", "Puma", "Panthère", "Zèbre",
-  "Aigle", "Albatros", "Alouette", "Épervier", "Faucon", "Colibri", "Hibou", "Toucan", "Pélican", "Vautour",
-  "Jonquille", "Tulipe", "Rose", "Pivoine", "Orchidée", "Lilas", "Lotus", "Coquelicot", 
-  "Tournesol", "Jasmin", "Anémone", "Lavande", "Iris", "Capucine", "Camélia", "Dahlia",
-  "Magnolia", "Trèfle", "Mimosa", "Hibiscus", "Fuchsia", "Géranium", "Pissenlit",
-  "Fourmi", "Scorpion", "Bourdon", "Luciole", "Cigale", "Scarabée", "Papillon", 
-  "Araignée", "Libellule", "Abeille", "Sauterelle"  
-];
-
-function showScreen(activeScreen) {
-  Object.values(screens).forEach(s => { if(s) s.classList.add("hidden"); });
-  if(activeScreen) activeScreen.classList.remove("hidden");
-}
-
-function showPopup(text, isError = false) {
-  const popup = document.getElementById("popup");
-  if (!popup) return;
-  popup.innerText = text;
-  popup.style.backgroundColor = isError ? "#D9383A" : "#1C1E21";
-  popup.style.display = "block";
-  clearTimeout(window.popupTimeout);
-  window.popupTimeout = setTimeout(() => { popup.style.display = "none"; }, 2500);
-}
-
-function openCustomModal(title, message) {
-  return new Promise((resolve) => {
-    const overlay = document.getElementById("customModalOverlay");
-    const titleEl = document.getElementById("customModalTitle");
-    const msgEl = document.getElementById("customModalMessage");
-    const btnConfirm = document.getElementById("customModalBtnConfirm");
-    const btnCancel = document.getElementById("customModalBtnCancel");
-
-    titleEl.innerText = title;
-    msgEl.innerText = message;
-    overlay.classList.remove("hidden");
-
-    btnConfirm.onclick = () => { overlay.classList.add("hidden"); resolve(true); };
-    btnCancel.onclick = () => { overlay.classList.add("hidden"); resolve(false); };
-  });
-}
-
-// Navigation de base
-document.getElementById("menuNewGame").addEventListener("click", () => {
-  showScreen(screens.newGame);
-  initPageNouvellePartie();
-});
-document.getElementById("backHomeBtn").addEventListener("click", () => showScreen(screens.home));
-
-document.getElementById("gameModeSelect").addEventListener("change", (e) => {
-  document.getElementById("cricketParamsGroup").classList.add("hidden");
-  document.getElementById("x01ParamsGroup").classList.add("hidden");
-  document.getElementById("worldParamsGroup").classList.add("hidden");
-
-  if (e.target.value === "x01") {
-    document.getElementById("x01ParamsGroup").classList.remove("hidden");
-  } else if (e.target.value === "world") {
-    document.getElementById("worldParamsGroup").classList.remove("hidden");
-  } else {
-    document.getElementById("cricketParamsGroup").classList.remove("hidden");
-  }
-});
-
-const worldStart = document.getElementById("worldStartSelect");
-const worldEnd = document.getElementById("worldEndSelect");
-
-if (worldStart && worldEnd) {
-  worldStart.addEventListener("change", () => {
-    const minVal = parseInt(worldStart.value, 10);
-    const maxVal = parseInt(worldEnd.value, 10);
-    if (minVal > maxVal - 10) {
-      if (minVal === 1) worldEnd.value = "15";
-      else if (minVal === 5) worldEnd.value = "15";
-      else if (minVal === 10) worldEnd.value = "20";
-      else if (minVal === 15) worldEnd.value = "25";
-    }
-  });
-
-  worldEnd.addEventListener("change", () => {
-    const minVal = parseInt(worldStart.value, 10);
-    const maxVal = parseInt(worldEnd.value, 10);
-    if (maxVal < minVal + 10) {
-      if (maxVal === 25) worldStart.value = "15";
-      else if (maxVal === 20) worldStart.value = "10";
-      else if (maxVal === 15) worldStart.value = "5";
-      else if (maxVal === 10) worldStart.value = "1";
-    }
-  });
-}
-
-document.getElementById("teamModeCheckbox").addEventListener("change", (e) => {
-  const configZone = document.getElementById("teamModeConfig");
-  if (e.target.checked) {
-    configZone.classList.remove("hidden");
-    genererEquipesAleatoires();
-  } else {
-    configZone.classList.add("hidden");
-  }
-});
-
-document.getElementById("teamCountSelect").addEventListener("change", () => { genererEquipesAleatoires(); });
-document.getElementById("btnReshuffleTeams").addEventListener("click", () => { genererEquipesAleatoires(); });
-
-document.getElementById("menuAccount").addEventListener("click", () => {
-  showScreen(screens.account);
-  chargerInfosProfil();
-  renderGestionCommunautes();
-});
-document.getElementById("backHomeFromAccountBtn").addEventListener("click", () => showScreen(screens.home));
-
-["menuPlayers", "menuRanking", "menuTraining", "menuTournament"].forEach(id => {
-  document.getElementById(id).addEventListener("click", () => { showPopup("Arrive dans la prochaine mise à jour !"); });
-});
-
-document.getElementById("menuHistory").addEventListener("click", () => {
-  showScreen(screens.history);
-  chargerHistoriqueParties();
-});
-document.getElementById("backHomeFromHistoryBtn").addEventListener("click", () => showScreen(screens.home));
-document.getElementById("btnKeyZero").onclick = () => taperChiffre(0);
-
-// =========================================================================
-// ŒIL POUR LE MOT DE PASSE
-// =========================================================================
-document.getElementById("btnTogglePassword").addEventListener("click", function() {
-  const passwordInput = document.getElementById("authPassword");
-  if (passwordInput.type === "password") {
-    passwordInput.type = "text";
-    this.innerText = "🙈";
-  } else {
-    passwordInput.type = "password";
-    this.innerText = "👁️";
-  }
-});
-
-// =========================================================================
-// CONFIGURATION & FLUX FIREBASE + FUSION DES COMPTES INVITÉS
-// =========================================================================
-const auth = firebase.auth();
-const db = firebase.firestore();
-let communautéActiveId = null; 
-let listeMesCommunautes = [];
-
-auth.onAuthStateChanged(async (user) => {
-  if (screens.loading) screens.loading.classList.add("hidden");
-
-  if (user) {
-    try {
-      const doc = await db.collection("players").doc(user.uid).get();
-      let displayName = user.email ? user.email.split('@')[0] : "Joueur";
-      let defaultCommunity = null;
-
-      if (doc.exists) {
-        if (doc.data().name) displayName = doc.data().name;
-        if (doc.data().defaultCommunity) defaultCommunity = doc.data().defaultCommunity;
-      } else {
-        await db.collection("players").doc(user.uid).set({
-          email: user.email,
-          name: displayName,
-          createdAt: Date.now(),
-          defaultCommunity: null,
-          communityIds: [],
-          isRealAccount: true
-        });
-      }
-      
-      await chargerCommunautesUtilisateur(user.uid, defaultCommunity);
-
-      if (listeMesCommunautes.length === 0) {
-        showScreen(screens.account);
-        showPopup("👋 Bienvenue ! Crée ou rejoins une communauté pour commencer.", false);
-      } else {
-        showScreen(screens.home);
-      }
-    } catch(e) {
-      console.error(e);
-      showScreen(screens.home);
-    }
-  } else {
-    showScreen(screens.login);
-  }
-});
-
-async function chargerCommunautesUtilisateur(userId, defaultId) {
-  listeMesCommunautes = [];
-  try {
-    const snap = await db.collection("communities").where("memberIds", "array-contains", userId).get();
-    snap.forEach(doc => { listeMesCommunautes.push({ id: doc.id, ...doc.data() }); });
-
-    if (listeMesCommunautes.length > 0) {
-      const existeToujours = listeMesCommunautes.some(c => c.id === defaultId);
-      communautéActiveId = existeToujours ? defaultId : listeMesCommunautes[0].id;
-    } else {
-      communautéActiveId = null;
-    }
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-// Inscription + Mécanisme adaptatif de liaison d'email Guest
-document.getElementById("btnSignup").addEventListener("click", async () => {
-  const email = document.getElementById("authEmail").value.trim().toLowerCase();
-  const password = document.getElementById("authPassword").value.trim();
-  if (!email || !password) return showPopup("Champs obligatoires.", true);
-  
-  try {
-    const defaultName = email.split('@')[0];
-    
-    // Vérification de l'existence préalable d'un compte invité (Guest) lié à cet email
-    const snapshotGuest = await db.collection("players").where("email", "==", email).get();
-    let commusAssociees = [];
-    let ancienDocGuestId = null;
-    let nomConserve = defaultName;
-
-    snapshotGuest.forEach(doc => {
-      if (doc.id.startsWith("guest-")) {
-        ancienDocGuestId = doc.id;
-        const dataG = doc.data();
-        if (dataG.communityIds) commusAssociees = dataG.communityIds;
-        if (dataG.name) nomConserve = dataG.name;
-      }
-    });
-
-    const cred = await auth.createUserWithEmailAndPassword(email, password);
-    
-    await db.collection("players").doc(cred.user.uid).set({
-      email: email, 
-      name: nomConserve, 
-      createdAt: Date.now(),
-      communityIds: commusAssociees,
-      defaultCommunity: commusAssociees.length > 0 ? commusAssociees[0] : null,
-      isRealAccount: true
-    });
-
-    if (ancienDocGuestId) {
-      for (const idCommu of commusAssociees) {
-        await db.collection("communities").doc(idCommu).update({
-          memberIds: firebase.firestore.FieldValue.arrayUnion(cred.user.uid)
-        });
-        await db.collection("communities").doc(idCommu).update({
-          memberIds: firebase.firestore.FieldValue.arrayRemove(ancienDocGuestId)
-        });
-      }
-      await db.collection("players").doc(ancienDocGuestId).delete();
-    }
-    
-    showPopup("Compte créé et synchronisé avec succès ! 🎯");
-  } catch (e) { 
-    showPopup(e.message, true); 
-  }
-});
-
-document.getElementById("btnLogin").addEventListener("click", async () => {
-  const email = document.getElementById("authEmail").value.trim();
-  const password = document.getElementById("authPassword").value.trim();
-  if (!email || !password) return showPopup("Champs obligatoires.", true);
-  try { await auth.signInWithEmailAndPassword(email, password); } catch (e) { showPopup(e.message, true); }
-});
-
-document.getElementById("btnLogout").addEventListener("click", () => { auth.signOut(); });
-
-// ================== LOGIQUE PROFIL ==================
-async function chargerInfosProfil() {
-  const user = auth.currentUser;
-  if (!user) return;
-  document.getElementById("accountProfileEmail").innerText = user.email;
-  try {
-    await chargerJoueursCommunauteCible();
-    const doc = await db.collection("players").doc(user.uid).get();
-    if(doc.exists && doc.data().name) {
-      document.getElementById("accountProfileName").value = doc.data().name;
-    }
-  } catch(e) { console.error(e); }
-}
-
-document.getElementById("btnUpdateProfileName").addEventListener("click", async () => {
-  const user = auth.currentUser;
-  if (!user) return;
-  const nouveauPseudo = document.getElementById("accountProfileName").value.trim();
-  if(!nouveauPseudo) return showPopup("Le pseudo ne peut pas être vide.", true);
-
-  const doublon = tousLesJoueursBase.some(p => p.id !== user.uid && p.name.toLowerCase() === nouveauPseudo.toLowerCase());
-  if (doublon) return showPopup(`Le nom "${nouveauPseudo}" existe déjà !`, true);
-
-  try {
-    await db.collection("players").doc(user.uid).update({ name: nouveauPseudo });
-    showPopup("Pseudo mis à jour !");
-    await chargerJoueursCommunauteCible();
-  } catch(e) { showPopup(e.message, true); }
-});
-
-// ================== LOGIQUE NOUVELLE PARTIE ==================
-let tousLesJoueursBase = [];
-let joueursSelectionnesMatch = [];
-let listeEquipesFormees = [];
-let communauteCibleMatchId = null;
-
-async function initPageNouvellePartie() {
-  communauteCibleMatchId = communautéActiveId;
-  await chargerJoueursCommunauteCible();
-
-  joueursSelectionnesMatch = [];
-  document.getElementById("teamModeCheckbox").checked = false;
-  document.getElementById("teamModeConfig").classList.add("hidden");
-  document.getElementById("teamCountSelect").value = "2";
-  
-  const selectCommu = document.getElementById("selectCommuMatch");
-  selectCommu.innerHTML = "";
-  
-  listeMesCommunautes.forEach(c => {
-    const opt = document.createElement("option");
-    opt.value = c.id; opt.innerText = c.name;
-    if (c.id === communautéActiveId) opt.selected = true;
-    selectCommu.appendChild(opt);
-  });
-
-  selectCommu.onchange = async (e) => {
-    communauteCibleMatchId = e.target.value;
-    await chargerJoueursCommunauteCible(); 
-    joueursSelectionnesMatch = []; 
-    renderSelectedPlayers();
-  };
-
-  const user = auth.currentUser;
-  if (user) {
-    const doc = await db.collection("players").doc(user.uid).get();
-    const currentName = (doc.exists && doc.data().name) ? doc.data().name : user.email.split('@')[0];
-    joueursSelectionnesMatch.push({ id: user.uid, name: currentName });
-  }
-  renderSelectedPlayers();
-}
-
-async function chargerJoueursCommunauteCible() {
-  if (!communauteCibleMatchId) communauteCibleMatchId = communautéActiveId;
-  if (!communauteCibleMatchId) { tousLesJoueursBase = []; return; }
-  
-  tousLesJoueursBase = [];
-  try {
-    const docCommu = await db.collection("communities").doc(communauteCibleMatchId).get();
-    if (docCommu.exists) {
-      const membresIds = docCommu.data().memberIds || [];
-      for (const uid of membresIds) {
-        const docUser = await db.collection("players").doc(uid).get();
-        if (docUser.exists) tousLesJoueursBase.push({ id: docUser.id, ...docUser.data() });
-      }
-    }
-    
-    const snapGuests = await db.collection("players").where("communityIds", "array-contains", communauteCibleMatchId).get();
-    snapGuests.forEach(doc => {
-      if (!tousLesJoueursBase.some(p => p.id === doc.id)) tousLesJoueursBase.push({ id: doc.id, ...doc.data() });
-    });
-  } catch(e) { console.error(e); }
-}
-
-document.getElementById("btnOpenSearchPlayer").onclick = () => {
-  const zoneSearch = document.getElementById("zoneSearchPlayer");
-  zoneSearch.classList.toggle("hidden");
-  document.getElementById("zoneCreatePlayer").classList.add("hidden");
-  if (!zoneSearch.classList.contains("hidden")) {
-    filtrerEtAfficherJoueurs(""); 
-    document.getElementById("searchPlayerInput").focus();
-  }
-};
-
-document.getElementById("btnOpenCreatePlayer").onclick = () => {
-  document.getElementById("zoneCreatePlayer").classList.toggle("hidden");
-  document.getElementById("zoneSearchPlayer").classList.add("hidden");
-};
-
-function filtrerEtAfficherJoueurs(query) {
-  const resultContainer = document.getElementById("searchResultsList");
-  resultContainer.innerHTML = "";
-
-  const filtres = tousLesJoueursBase.filter(p => {
-    return p.name.toLowerCase().includes(query.toLowerCase().trim()) && !joueursSelectionnesMatch.some(sel => sel.id === p.id);
-  });
-
-  if (filtres.length === 0) {
-    resultContainer.innerHTML = "<p class='hint' style='padding:6px;'>Aucun joueur disponible</p>";
-    return;
-  }
-
-  filtres.forEach(p => {
-    const d = document.createElement("div");
-    d.className = "stat-row"; d.style.cursor = "pointer"; d.style.padding = "8px 6px";
-    d.innerHTML = `<span><strong>${p.name}</strong></span>`;
-    d.onclick = () => {
-      joueursSelectionnesMatch.push({ id: p.id, name: p.name });
-      renderSelectedPlayers();
-      document.getElementById("searchPlayerInput").value = "";
-      resultContainer.innerHTML = "";
-      document.getElementById("zoneSearchPlayer").classList.add("hidden");
-    };
-    resultContainer.appendChild(d);
-  });
-}
-
-document.getElementById("searchPlayerInput").addEventListener("input", (e) => { filtrerEtAfficherJoueurs(e.target.value); });
-
-document.getElementById("btnValidateCreatePlayer").onclick = async () => {
-  const name = document.getElementById("createPlayerName").value.trim();
-  const email = document.getElementById("createPlayerEmail").value.trim().toLowerCase();
-  
-  if(!name) return showPopup("Le nom est obligatoire.", true);
-  if(!communauteCibleMatchId) return showPopup("Aucune communauté sélectionnée.", true);
-
-  if (tousLesJoueursBase.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-    return showPopup(`Le nom "${name}" existe déjà !`, true);
-  }
-
-  try {
-    const docId = "guest-" + Date.now();
-    await db.collection("players").doc(docId).set({ 
-      name: name, email: email || null, createdAt: Date.now(), communityIds: [communauteCibleMatchId] 
-    });
-    joueursSelectionnesMatch.push({ id: docId, name: name });
-    renderSelectedPlayers();
-    await chargerJoueursCommunauteCible();
-    
-    document.getElementById("createPlayerName").value = "";
-    document.getElementById("createPlayerEmail").value = "";
-    document.getElementById("zoneCreatePlayer").classList.add("hidden");
-    showPopup("Joueur invité créé !");
-  } catch(e) { showPopup(e.message, true); }
-};
-
-function renderSelectedPlayers() {
-  const container = document.getElementById("selectedPlayersMatchList");
-  container.innerHTML = "";
-  if(joueursSelectionnesMatch.length === 0) {
-    container.innerHTML = "<p class='hint'>Aucun tireur sélectionné.</p>";
-  } else {
-    joueursSelectionnesMatch.forEach((p, index) => {
-      const badge = document.createElement("div");
-      badge.className = "stat-row"; badge.style.padding = "6px 10px";
-      badge.innerHTML = `<span><strong>${p.name}</strong></span><button class="ghost btn-action-soft" onclick="retirerJoueurMatch(${index})">Retirer</button>`;
-      container.appendChild(badge);
-    });
-  }
-
-  const blockEquipe = document.getElementById("teamModeBlock");
-  if (joueursSelectionnesMatch.length >= 4) {
-    blockEquipe.classList.remove("hidden");
-    const teamSelect = document.getElementById("teamCountSelect");
-    const valCourante = parseInt(teamSelect.value, 10);
-    teamSelect.innerHTML = "";
-    for (let i = 2; i <= Math.min(4, joueursSelectionnesMatch.length); i++) {
-      let opt = document.createElement("option");
-      opt.value = i; opt.innerText = `${i} équipes`;
-      if (i === valCourante) opt.selected = true;
-      teamSelect.appendChild(opt);
-    }
-    if (document.getElementById("teamModeCheckbox").checked) genererEquipesAleatoires();
-  } else {
-    blockEquipe.classList.add("hidden");
-    document.getElementById("teamModeCheckbox").checked = false;
-    document.getElementById("teamModeConfig").classList.add("hidden");
-  }
-}
-
-function retirerJoueurMatch(idx) { joueursSelectionnesMatch.splice(idx, 1); renderSelectedPlayers(); }
-
-function genererEquipesAleatoires() {
-  const nbEquipesDemandees = parseInt(document.getElementById("teamCountSelect").value, 10);
-  let joueursMelanges = [...joueursSelectionnesMatch];
-  for (let i = joueursMelanges.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [joueursMelanges[i], joueursMelanges[j]] = [joueursMelanges[j], joueursMelanges[i]];
-  }
-
-  let nomsPioches = [];
-  let poolCopie = [...POOL_NOMS_EQUIPES];
-  for(let i=0; i<nbEquipesDemandees; i++) {
-    if(poolCopie.length === 0) poolCopie = [...POOL_NOMS_EQUIPES];
-    const indexAlea = Math.floor(Math.random() * poolCopie.length);
-    nomsPioches.push(poolCopie.splice(indexAlea, 1)[0]);
-  }
-
-  listeEquipesFormees = [];
-  for (let i = 0; i < nbEquipesDemandees; i++) {
-    listeEquipesFormees.push({ id: "team-" + i, name: nomsPioches[i], members: [] });
-  }
-  joueursMelanges.forEach((joueur, index) => {
-    listeEquipesFormees[index % nbEquipesDemandees].members.push(joueur);
-  });
-  renderEquipesUI();
-}
-
-function renderEquipesUI() {
-  const container = document.getElementById("teamsContainer");
-  container.innerHTML = "";
-  listeEquipesFormees.forEach((equipe, indexTeam) => {
-    const cardTeam = document.createElement("div");
-    cardTeam.className = "card subtle"; cardTeam.style.padding = "12px";
-    let teamHtml = `<div style="margin-bottom:10px;"><input type="text" value="${equipe.name}" class="team-config-title" style="border:none; background:transparent; width:100%;" oninput="mettreAJourNomEquipe(${indexTeam}, this.value)" /></div><div style="display:flex; flex-direction:column; gap:8px;">`;
-    equipe.members.forEach((m, indexMembre) => {
-      teamHtml += `<div style="display:flex; justify-content:space-between; align-items:center;"><span class="team-config-player">${m.name}</span><button class="ghost btn-action-soft" onclick="deplacerJoueurManuellement(${indexTeam}, ${indexMembre})">Changer</button></div>`;
-    });
-    teamHtml += `</div>`; cardTeam.innerHTML = teamHtml; container.appendChild(cardTeam);
-  });
-}
-
-function mettreAJourNomEquipe(index, nvNom) { if(listeEquipesFormees[index]) listeEquipesFormees[index].name = nvNom; }
-function deplacerJoueurManuellement(indexTeamSource, indexMembre) {
-  const joueur = listeEquipesFormees[indexTeamSource].members.splice(indexMembre, 1)[0];
-  listeEquipesFormees[(indexTeamSource + 1) % listeEquipesFormees.length].members.push(joueur);
-  renderEquipesUI();
-}
-
-// ================== MOTEUR DE JEU GENERAL ET DYNAMIQUE ==================
-let cricketState = {
-  gameMode: "cricket", isTeamMode: false, x01StartPoints: 301, x01Checkout: "single",
-  players: [], maxTurns: 20, isBlind: false, targets: [], revealedTargets: [],
-  scores: {}, marks: {}, history: [], currentTurnDartsText: [], statsDetails: {},
-  currentPlayerIdx: 0, currentDart: 1, currentTurn: 1, startTime: 0, elapsedTime: 0,
-  timerInterval: null, isPaused: false, lastTurnText: "Aucun"
-};
-
-let modificateurEnCours = 1;
-
-document.getElementById("btnModDouble").addEventListener("click", () => { alternerModificateur(2, document.getElementById("btnModDouble")); });
-document.getElementById("btnModTriple").addEventListener("click", () => { alternerModificateur(3, document.getElementById("btnModTriple")); });
-
-function alternerModificateur(valeur, boutonClique) {
-  const etaitDejaActif = boutonClique.classList.contains("active");
-  document.getElementById("btnModDouble").classList.remove("active");
-  document.getElementById("btnModTriple").classList.remove("active");
-  if (etaitDejaActif) { modificateurEnCours = 1; } else { boutonClique.classList.add("active"); modificateurEnCours = valeur; }
-  gererEtatBoutonBull();
-}
-
-function resetModifierUI() {
-  modificateurEnCours = 1;
-  document.getElementById("btnModDouble").classList.remove("active");
-  document.getElementById("btnModTriple").classList.remove("active");
-  gererEtatBoutonBull();
-}
-
-function gererEtatBoutonBull() {
-  const btnBull = document.getElementById("btnKeyBull");
-  if (!btnBull) return; 
-  if (modificateurEnCours === 3) {
-    btnBull.disabled = true; btnBull.style.opacity = "0.2"; btnBull.innerText = "🚫 B";
-  } else {
-    btnBull.disabled = false; btnBull.style.opacity = "1"; btnBull.innerText = "🎯 B";
-  }
-}
-
-document.getElementById("startGameBtn").onclick = () => {
-  if (joueursSelectionnesMatch.length < 2) return showPopup("⚠️ Minimum 2 joueurs requis !", true);
-  if (!communauteCibleMatchId) return showPopup("⚠️ Sélectionne une communauté d'abord.", true);
-  
-  cricketState.communityId = communauteCibleMatchId;
-  const estEnModeEquipe = document.getElementById("teamModeCheckbox").checked;
-  let ordonnancementTireurs = [];
-
-  if (estEnModeEquipe) {
-    if(listeEquipesFormees.some(eq => eq.members.length === 0)) return showPopup("⚠️ Chaque équipe doit avoir un joueur !", true);
-    cricketState.isTeamMode = true;
-    let curseursEquipes = {};
-    listeEquipesFormees.forEach(eq => { curseursEquipes[eq.id] = 0; });
-    
-    while(ordonnancementTireurs.length < joueursSelectionnesMatch.length) {
-      listeEquipesFormees.forEach(eq => {
-        let idx = curseursEquipes[eq.id];
-        if(idx < eq.members.length) {
-          let j = eq.members[idx];
-          ordonnancementTireurs.push({ id: j.id, name: j.name, teamId: eq.id, teamName: eq.name });
-          curseursEquipes[eq.id]++;
-        }
-      });
-    }
-  } else {
-    cricketState.isTeamMode = false;
-    ordonnancementTireurs = [...joueursSelectionnesMatch];
-  }
-
-  const mode = document.getElementById("gameModeSelect").value;
-  if (mode === "x01") demarrerMatchX01(ordonnancementTireurs);
-  else if (mode === "world") demarrerMatchWorld(ordonnancementTireurs);
-  else demarrerMatchCricket(ordonnancementTireurs);
-};
-
-function initVariablesMatchGenerales(joueursAlignes) {
-  cricketState.players = joueursAlignes; cricketState.history = []; cricketState.currentTurnDartsText = [];
-  cricketState.currentPlayerIdx = 0; cricketState.currentDart = 1; cricketState.currentTurn = 1;
-  cricketState.scores = {}; cricketState.statsDetails = {}; cricketState.lastTurnText = "Aucun";
-}
-
-function demarrerMatchCricket(listeJoueurs) {
-  cricketState.gameMode = "cricket"; initVariablesMatchGenerales(listeJoueurs);
-  cricketState.maxTurns = parseInt(document.getElementById("gameTurnsSelect").value, 10);
-  cricketState.isBlind = document.getElementById("blindModeCheckbox").checked;
-  cricketState.marks = {}; 
-  cricketState.targets = [15, 16, 17, 18, 19, 20, 25];
-  cricketState.revealedTargets = cricketState.isBlind ? [] : [...cricketState.targets];
-
-  cricketState.players.forEach(p => {
-    const key = cricketState.isTeamMode ? p.teamId : p.id;
-    cricketState.scores[key] = 0;
-    if(!cricketState.marks[key]) {
-      cricketState.marks[key] = {}; cricketState.targets.forEach(t => { cricketState.marks[key][t] = 0; });
-    }
-    cricketState.statsDetails[p.id] = { dartsThrown: 0, touchesUtiles: 0, touchesNum: {}, pointsGiv: {}, totalPointsGiven: 0, maxPointsGivenInOneVolley: 0, currentVolleyPointsGiven: 0, doublesCount: {}, triplesCount: {} };
-    cricketState.targets.forEach(t => { cricketState.statsDetails[p.id].touchesNum[t] = 0; cricketState.statsDetails[p.id].pointsGiv[t] = 0; cricketState.statsDetails[p.id].doublesCount[t] = 0; cricketState.statsDetails[p.id].triplesCount[t] = 0; });
-  });
-  lancerInterfaceJeu("cricket");
-}
-
-function demarrerMatchX01(listeJoueurs) {
-  cricketState.gameMode = "x01"; initVariablesMatchGenerales(listeJoueurs);
-  cricketState.x01StartPoints = parseInt(document.getElementById("x01StartPointsSelect").value, 10);
-  cricketState.x01Checkout = document.getElementById("x01CheckoutSelect").value;
-  cricketState.maxTurns = 999;
-
-  cricketState.players.forEach(p => {
-    const key = cricketState.isTeamMode ? p.teamId : p.id;
-    cricketState.scores[key] = cricketState.x01StartPoints;
-    cricketState.statsDetails[p.id] = { dartsThrown: 0, totalScoreScored: 0, bustsCount: 0, maxVolleyScore: 0, currentVolleyScore: 0, first9DartsScore: 0, scoreFamily50: 0, scoreFamily100: 0, scoreFamily140: 0, scoreFamily180: 0, checkoutHits: 0, touchesNum: {} };
-    for (let i = 1; i <= 20; i++) cricketState.statsDetails[p.id].touchesNum[i] = 0;
-    cricketState.statsDetails[p.id].touchesNum[25] = 0;
-  });
-  lancerInterfaceJeu("x01");
-}
-
-function demarrerMatchWorld(listeJoueurs) {
-  cricketState.gameMode = "world"; initVariablesMatchGenerales(listeJoueurs);
-  cricketState.maxTurns = 999;
-  cricketState.worldStartNum = parseInt(document.getElementById("worldStartSelect").value, 10);
-  cricketState.worldEndNum = parseInt(document.getElementById("worldEndSelect").value, 10);
-  cricketState.worldJump = document.getElementById("worldJumpCheckbox").checked;
-
-  cricketState.players.forEach(p => {
-    const key = cricketState.isTeamMode ? p.teamId : p.id;
-    cricketState.scores[key] = cricketState.worldStartNum;
-    cricketState.statsDetails[p.id] = { dartsThrown: 0, totalTargetsHit: 0, dartsPerTarget: {}, triplesHitCount: 0 };
-    for(let i = 1; i <= 25; i++) cricketState.statsDetails[p.id].dartsPerTarget[i] = 0;
-  });
-  lancerInterfaceJeu("world");
-}
-
-function lancerInterfaceJeu(mode) {
-  showScreen(screens.cricket);
-  cricketState.startTime = Date.now(); cricketState.elapsedTime = 0; cricketState.isPaused = false;
-  document.getElementById("btnPauseGame").innerText = "⏸️";
-  clearInterval(cricketState.timerInterval);
-  cricketState.timerInterval = setInterval(updateTimer, 1000);
-
-  resetModifierUI(); 
-  if (mode === "x01") { renderKeyboardX01(); renderGridX01(); }
-  else if (mode === "world") { renderKeyboardX01(); renderGridWorld(); }
-  else { renderKeyboard(); renderGrid(); }
-  updateTurnHeader();
-}
-
-function updateTimer() {
-  if (cricketState.isPaused) return;
-  cricketState.elapsedTime = Math.floor((Date.now() - cricketState.startTime) / 1000);
-  const m = String(Math.floor(cricketState.elapsedTime / 60)).padStart(2, "0");
-  const s = String(cricketState.elapsedTime % 60).padStart(2, "0");
-  document.getElementById("gameTimerDisplay").innerText = `${m}:${s}`;
-}
-
-document.getElementById("btnPauseGame").onclick = () => {
-  cricketState.isPaused = !cricketState.isPaused;
-  const kb = document.getElementById("cricketKeyboardZone");
-  if (cricketState.isPaused) {
-    document.getElementById("btnPauseGame").innerText = "▶️";
-    kb.style.pointerEvents = "none"; kb.style.opacity = "0.4";
-  } else {
-    document.getElementById("btnPauseGame").innerText = "⏸️";
-    kb.style.pointerEvents = "auto"; kb.style.opacity = "1";
-    cricketState.startTime = Date.now() - (cricketState.elapsedTime * 1000);
-  }
-};
-
-function updateTurnHeader() {
-  const p = cricketState.players[cricketState.currentPlayerIdx];
-  if (!p) return;
-  document.getElementById("cricketCurrentPlayerName").innerText = cricketState.isTeamMode ? `${p.name} (${p.teamName})` : p.name;
-  document.getElementById("dartsHistoryText").innerText = cricketState.currentTurnDartsText.join(" / ") || "En attente...";
-  document.getElementById("gameTurnIndicator").innerText = `Tour ${cricketState.currentTurn}/${cricketState.maxTurns === 999 ? "∞" : cricketState.maxTurns}`;
-  document.getElementById("lastTurnHistoryText").innerText = `Coup précédent : ${cricketState.lastTurnText}`;
-
-  const helpZone = document.getElementById("x01CheckoutHelpZone");
-  if (cricketState.gameMode === "x01") {
-    const key = cricketState.isTeamMode ? p.teamId : p.id;
-    const aide = obtenirSuggestionCheckout(cricketState.scores[key], 4 - cricketState.currentDart, cricketState.x01Checkout);
-    if (aide) { helpZone.innerText = `🎯 ${aide}`; helpZone.classList.remove("hidden"); } else { helpZone.classList.add("hidden"); }
-  } else { helpZone.classList.add("hidden"); }
-}
-
-function obtenirSuggestionCheckout(score, dartsCount, modeCheckout) {
-  if (score <= 1 || score > 170) return null;
-  if (modeCheckout === "double") {
-    if (dartsCount === 1 && score <= 40 && score % 2 === 0) return `D${score/2}`;
-    if (dartsCount === 1 && score === 50) return "DBull";
-    if (dartsCount === 3 && score === 170) return "T20 - T20 - DBull";
-    if (score === 40) return "D20";
-  } else {
-    if (score <= 20) return `${score}`;
-  }
-  return null;
-}
-
-function renderGrid() {
-  const table = document.getElementById("cricketGridTable"); table.innerHTML = "";
-  const headerRow = document.createElement("tr");
-  let html = `<th style="text-align:left; padding:10px 4px;">Ligne</th>`;
-  cricketState.targets.forEach(t => { html += `<th style="padding:10px 2px; border-left:1px solid var(--divider);">${(cricketState.isBlind && !cricketState.revealedTargets.includes(t)) ? '❓' : (t === 25 ? 'B' : t)}</th>`; });
-  html += `<th style="padding:10px 4px; border-left:1px solid var(--divider);">Score</th>`;
-  headerRow.innerHTML = html; table.appendChild(headerRow);
-
-  const curP = cricketState.players[cricketState.currentPlayerIdx];
-  const keys = cricketState.isTeamMode ? listeEquipesFormees : cricketState.players;
-
-  keys.forEach(entite => {
-    const row = document.createElement("tr"); row.style.borderBottom = "1px solid var(--divider)";
-    if (cricketState.isTeamMode ? (curP.teamId === entite.id) : (curP.id === entite.id)) row.style.backgroundColor = "rgba(192,101,42,0.15)";
-    
-    let cHtml = `<td style="text-align:left; padding:12px 4px; font-weight:700;">${entite.name}</td>`;
-    cricketState.targets.forEach(t => {
-      const mark = cricketState.marks[entite.id][t];
-      let sym = mark === 1 ? "\\" : mark === 2 ? "X" : mark >= 3 ? "⭕" : "-";
-      cHtml += `<td style="border-left:1px solid var(--divider);">${sym}</td>`;
-    });
-    cHtml += `<td style="font-weight:800; border-left:1px solid var(--divider);">${cricketState.scores[entite.id]}</td>`;
-    row.innerHTML = cHtml; table.appendChild(row);
-  });
-}
-
-function renderGridX01() {
-  const table = document.getElementById("cricketGridTable"); table.innerHTML = "";
-  const headerRow = document.createElement("tr");
-  headerRow.innerHTML = `<th style="text-align:left; padding:12px 6px;">Joueurs</th><th style="padding:12px 4px; border-left:1px solid var(--divider);">Moyenne</th><th style="padding:12px 6px; border-left:1px solid var(--divider);">Score</th>`;
-  table.appendChild(headerRow);
-
-  const curP = cricketState.players[cricketState.currentPlayerIdx];
-  const items = cricketState.isTeamMode ? listeEquipesFormees : cricketState.players;
-
-  items.forEach(entite => {
-    const row = document.createElement("tr"); row.style.borderBottom = "1px solid var(--divider)";
-    if (cricketState.isTeamMode ? (curP.teamId === entite.id) : (curP.id === entite.id)) row.style.backgroundColor = "rgba(192,101,42,0.15)";
-    row.innerHTML = `<td style="text-align:left; padding:14px 6px; font-weight:700;">${entite.name}</td><td style="border-left:1px solid var(--divider);">0.0</td><td style="font-weight:800; border-left:1px solid var(--divider); font-size:18px;">${cricketState.scores[entite.id]}</td>`;
-    table.appendChild(row);
-  });
-}
-
-function renderGridWorld() {
-  const table = document.getElementById("cricketGridTable"); table.innerHTML = "";
-  const headerRow = document.createElement("tr");
-  headerRow.innerHTML = `<th style="text-align:left; padding:12px 6px;">Joueurs</th><th style="padding:12px 4px; border-left:1px solid var(--divider);">Cible</th><th style="padding:12px 6px; border-left:1px solid var(--divider);">Progression</th>`;
-  table.appendChild(headerRow);
-
-  const curP = cricketState.players[cricketState.currentPlayerIdx];
-  const items = cricketState.isTeamMode ? listeEquipesFormees : cricketState.players;
-
-  items.forEach(entite => {
-    const row = document.createElement("tr"); row.style.borderBottom = "1px solid var(--divider)";
-    if (cricketState.isTeamMode ? (curP.teamId === entite.id) : (curP.id === entite.id)) row.style.backgroundColor = "rgba(192,101,42,0.15)";
-    row.innerHTML = `<td style="text-align:left; padding:14px 6px; font-weight:700;">${entite.name}</td><td style="font-weight:800; border-left:1px solid var(--divider);">${cricketState.scores[entite.id] === 25 ? "🎯 BULL" : cricketState.scores[entite.id]}</td><td style="border-left:1px solid var(--divider);">${cricketState.scores[entite.id]}/${cricketState.worldEndNum}</td>`;
-    table.appendChild(row);
-  });
-}
-
-function renderKeyboard() {
-  const container = document.getElementById("cricketDynamicRows"); container.innerHTML = "";
-  const row = document.createElement("div"); row.style.display = "grid"; row.style.gridTemplateColumns = `repeat(7, 1fr)`; row.style.gap = "5px";
-  cricketState.targets.forEach(num => { row.appendChild(creerBoutonClavier(num === 25 ? "🎯 B" : num, num)); });
-  container.appendChild(row);
-}
-
-function renderKeyboardX01() {
-  const container = document.getElementById("cricketDynamicRows"); container.innerHTML = "";
-  for (let r = 0; r < 3; r++) {
-    const row = document.createElement("div"); row.style.display = "grid"; row.style.gridTemplateColumns = "repeat(7, 1fr)"; row.style.gap = "5px";
-    for (let i = 1; i <= 7; i++) {
-      let val = r * 7 + i;
-      if (val <= 20) row.appendChild(creerBoutonClavier(val, val));
-      else if (val === 21) row.appendChild(creerBoutonClavier("🎯 B", 25));
-    }
-    container.appendChild(row);
-  }
-}
-
-function creerBoutonClavier(libelle, valeur) {
-  const btn = document.createElement("button"); btn.className = "ghost"; btn.innerText = libelle;
-  btn.onclick = () => taperChiffre(valeur);
-  if (valeur === 25) btn.id = "btnKeyBull";
-  return btn;
-}
-
-function taperChiffre(valeurBouton) {
-  if (cricketState.isPaused) return;
-  const jp = cricketState.players[cricketState.currentPlayerIdx];
-  const key = cricketState.isTeamMode ? jp.teamId : jp.id;
-  
-  cricketState.history.push({
-    scores: JSON.parse(JSON.stringify(cricketState.scores)),
-    marks: cricketState.marks ? JSON.parse(JSON.stringify(cricketState.marks)) : null,
-    revealedTargets: [...cricketState.revealedTargets],
-    currentTurnDartsText: [...cricketState.currentTurnDartsText],
-    statsDetails: JSON.parse(JSON.stringify(cricketState.statsDetails)),
-    currentPlayerIdx: cricketState.currentPlayerIdx, currentDart: cricketState.currentDart, currentTurn: cricketState.currentTurn, lastTurnText: cricketState.lastTurnText
-  });
-
-  cricketState.currentTurnDartsText.push((modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "") + (valeurBouton === 25 ? "Bull" : valeurBouton));
-  cricketState.statsDetails[jp.id].dartsThrown++;
-
-  if (cricketState.gameMode === "x01") {
-    let pts = (valeurBouton === 25 ? 25 : valeurBouton) * modificateurEnCours;
-    if (valeurBouton === 25 && modificateurEnCours === 2) pts = 50;
-    if (cricketState.scores[key] - pts >= 0) cricketState.scores[key] -= pts; else showPopup("💥 Bust", true);
-  } else if (cricketState.gameMode === "world") {
-    if (valeurBouton === cricketState.scores[key]) cricketState.scores[key] += cricketState.worldJump ? modificateurEnCours : 1;
-  } else {
-    if (cricketState.targets.includes(valeurBouton)) {
-      if(!cricketState.revealedTargets.includes(valeurBouton)) cricketState.revealedTargets.push(valeurBouton);
-      if (cricketState.marks[key][valeurBouton] < 3) cricketState.marks[key][valeurBouton] += Math.min(modificateurEnCours, 3 - cricketState.marks[key][valeurBouton]);
-      else cricketState.scores[key] += valeurBouton * modificateurEnCours;
-    }
-  }
-
-  cricketState.currentDart++;
-  if (cricketState.currentDart > 3) {
-    cricketState.lastTurnText = `${jp.name}: ${cricketState.currentTurnDartsText.join('/')}`;
-    cricketState.currentDart = 1; cricketState.currentTurnDartsText = [];
-    cricketState.currentPlayerIdx = (cricketState.currentPlayerIdx + 1) % cricketState.players.length;
-    if (cricketState.currentPlayerIdx === 0) cricketState.currentTurn++;
-  }
-
-  resetModifierUI();
-  if (cricketState.gameMode === "x01") { renderKeyboardX01(); renderGridX01(); }
-  else if (cricketState.gameMode === "world") { renderKeyboardX01(); renderGridWorld(); }
-  else { renderKeyboard(); renderGrid(); }
-  updateTurnHeader();
-  verifierConditionsFinMatch();
-}
-
-document.getElementById("btnKeyUndo").onclick = () => {
-  if (cricketState.history.length === 0) return;
-  const p = cricketState.history.pop();
-  cricketState.scores = p.scores; cricketState.marks = p.marks; cricketState.revealedTargets = p.revealedTargets;
-  cricketState.currentTurnDartsText = p.currentTurnDartsText; cricketState.statsDetails = p.statsDetails;
-  cricketState.currentPlayerIdx = p.currentPlayerIdx; cricketState.currentDart = p.currentDart;
-  cricketState.currentTurn = p.currentTurn; cricketState.lastTurnText = p.lastTurnText;
-  resetModifierUI();
-  if (cricketState.gameMode === "x01") { renderKeyboardX01(); renderGridX01(); }
-  else if (cricketState.gameMode === "world") { renderKeyboardX01(); renderGridWorld(); }
-  else { renderKeyboard(); renderGrid(); }
-  updateTurnHeader();
-};
-
-function verifierConditionsFinMatch() {
-  let g = null;
-  Object.keys(cricketState.scores).forEach(k => {
-    if (cricketState.gameMode === "x01" && cricketState.scores[k] === 0) g = k;
-    if (cricketState.gameMode === "world" && cricketState.scores[k] > cricketState.worldEndNum) g = k;
-  });
-
-  if (g) {
-    clearInterval(cricketState.timerInterval);
-    showPopup("Partie terminée !");
-    showScreen(screens.home);
-  }
-}
-
-document.getElementById("btnLeaveGame").onclick = async () => {
-  if (await openCustomModal("🏃‍♂️ Abandonner ?", "Quitter la partie ?")) { clearInterval(cricketState.timerInterval); showScreen(screens.home); }
-};
-
-// =========================================================================
-// GESTION ET COMMANDE AVANCÉE DES COMMUNAUTÉS
-// =========================================================================
-let modeActionCommu = "creer";
-let currentCommuModalId = null;
-
-document.getElementById("btnDeclencherCreerCommu").onclick = () => {
-  modeActionCommu = "creer";
-  document.getElementById("zoneFormulaireCommu").classList.remove("hidden");
-  document.getElementById("titreActionCommu").innerText = "Créer une communauté :";
-  document.getElementById("inputNomCodeCommu").placeholder = "Nom de la communauté";
-  document.getElementById("inputNomCodeCommu").value = "";
-};
-
-document.getElementById("btnDeclencherRejoindreCommu").onclick = () => {
-  modeActionCommu = "rejoindre";
-  document.getElementById("zoneFormulaireCommu").classList.remove("hidden");
-  document.getElementById("titreActionCommu").innerText = "Rejoindre via le Code unique :";
-  document.getElementById("inputNomCodeCommu").placeholder = "Ex : AX38Y9";
-  document.getElementById("inputNomCodeCommu").value = "";
-};
-
-document.getElementById("btnValiderActionCommu").onclick = async () => {
-  const user = auth.currentUser; if (!user) return;
-  const text = document.getElementById("inputNomCodeCommu").value.trim();
-  if (!text) return showPopup("Le champ ne doit pas être vide.", true);
-
-  if (modeActionCommu === "creer") {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    try {
-      await db.collection("communities").doc(code).set({ name: text, adminId: user.uid, memberIds: [user.uid], createdAt: Date.now() });
-      await db.collection("players").doc(user.uid).update({ communityIds: firebase.firestore.FieldValue.arrayUnion(code) });
-      if (!communautéActiveId) {
-        await db.collection("players").doc(user.uid).update({ defaultCommunity: code });
-        communautéActiveId = code;
-      }
-      showPopup(`Ligue créée ! Code : ${code}`);
-      document.getElementById("zoneFormulaireCommu").classList.add("hidden");
-      await chargerCommunautesUtilisateur(user.uid, communautéActiveId || code);
-      renderGestionCommunautes();
-    } catch(e) { showPopup(e.message, true); }
-  } else {
-    const code = text.toUpperCase();
-    try {
-      const doc = await db.collection("communities").doc(code).get();
-      if (!doc.exists) return showPopup("Code introuvable.", true);
-      if (doc.data().memberIds.includes(user.uid)) return showPopup("Tu en fais déjà partie !", true);
-
-      await db.collection("communities").doc(code).update({ memberIds: firebase.firestore.FieldValue.arrayUnion(user.uid) });
-      await db.collection("players").doc(user.uid).update({ communityIds: firebase.firestore.FieldValue.arrayUnion(code) });
-      
-      showPopup("Ligue rejointe avec succès !");
-      document.getElementById("zoneFormulaireCommu").classList.add("hidden");
-      await chargerCommunautesUtilisateur(user.uid, code);
-      renderGestionCommunautes();
-    } catch(e) { showPopup(e.message, true); }
-  }
-};
-
-async function renderGestionCommunautes() {
-  const user = auth.currentUser; if (!user) return;
-  const container = document.getElementById("listeCommunautesContainer");
-  container.innerHTML = "";
-
-  if (listeMesCommunautes.length === 0) {
-    container.innerHTML = "<p class='hint'>Aucune communauté active.</p>"; return;
-  }
-
-  listeMesCommunautes.forEach(commu => {
-    const card = document.createElement("div"); card.className = "card subtle";
-    const act = commu.id === communautéActiveId;
-
-    card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <strong>${commu.name}</strong><span class="badge" style="font-family:monospace;">${commu.id}</span>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>DART LEGENDS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="theme-color" content="#0F0F11">
+</head>
+<body>
+  <div class="game">
+
+    <div id="loadingScreen" class="loading">
+      <div class="loading-card">
+        <div class="spinner"></div>
+        <div class="loading-text">Chargement…</div>
       </div>
-      <button class="primary btn-block" style="font-size:12px; padding:8px; margin-top:8px;" onclick="ouvrirFenetreAdminCommu('${commu.id}')">⚙️ Gérer l'organisation</button>
-      ${!act ? `<button class="ghost btn-block" style="font-size:11px; padding:6px; margin-top:6px;" onclick="definirCommunauteParDefaut('${commu.id}')">📌 Mettre active</button>` : `<div style="color:#28a745; font-size:11px; font-weight:bold; margin-top:6px; text-align:center;">Ligue active</div>`}
-    `;
-    container.appendChild(card);
-  });
-}
+    </div>
 
-async function ouvrirFenetreAdminCommu(commuId) {
-  currentCommuModalId = commuId;
-  const user = auth.currentUser; if (!user) return;
-  const doc = await db.collection("communities").doc(commuId).get();
-  if(!doc.exists) return;
+    <div id="loginScreen" class="hidden">
+      <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
+      <div class="card">
+        <h2>Connexion</h2>
+        <input type="email" id="authEmail" placeholder="Email">
+        <div style="position: relative; width: 100%;">
+          <input type="password" id="authPassword" placeholder="Mot de passe" style="padding-right: 40px;">
+          <button id="btnTogglePassword" type="button" style="position: absolute; right: 5px; top: 6px; background: transparent; border: none; padding: 6px 8px; font-size: 16px; cursor: pointer; color: var(--text-soft); box-shadow: none;">👁️</button>
+        </div>
+        <div class="actions" style="display: flex; gap: 10px; margin-top: 12px;">
+          <button id="btnLogin" class="primary" style="flex: 1;">Se connecter</button>
+          <button id="btnSignup" class="ghost" style="flex: 1;">Créer un compte</button>
+        </div>
+        <p class="hint" id="authStatus" style="margin-top: 12px; text-align: center;">Il faut être connecté à un compte pour pouvoir utiliser l'app</p>
+      </div>
+    </div>
 
-  const data = doc.data();
-  document.getElementById("commuModalTitle").innerText = data.name;
-  document.getElementById("commuModalCodeBadge").innerText = `Code : ${commuId}`;
-  document.getElementById("btnCommuDelete").style.display = (data.adminId === user.uid) ? "block" : "none";
+    <div id="communityAdminModalOverlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); z-index: 2500; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+      <div class="card" style="width: min(420px, calc(100% - 24px)); margin: 0; padding: 20px; max-height: 85vh; overflow-y: auto;">
+        <h3 id="commuModalTitle" style="color: var(--primary-strong); margin-bottom: 4px;">Option Communauté</h3>
+        <p id="commuModalCodeBadge" class="badge" style="display: inline-block; margin-bottom: 12px; font-family: monospace;"></p>
+        
+        <div class="stack" style="gap: 14px; text-align: left;">
+          <div style="background: #F8F6F0; padding: 10px; border-radius: var(--r-1); border: 1px solid var(--divider);">
+            <label><strong>➕ Inviter / Ajouter un membre</strong></label>
+            <p class="hint" style="margin-bottom: 6px; justify-content: flex-start;">Inscrivez son nom. Si vous liez son email, son compte fusionnera automatiquement à sa future inscription.</p>
+            <input type="text" id="commuAddMemberName" placeholder="Nom du joueur" style="margin-top:0;">
+            <input type="email" id="commuAddMemberEmail" placeholder="Email (Optionnel, pour liaison)" style="margin-top:6px;">
+            <button id="btnCommuValidateAddMember" class="primary btn-block" style="padding: 8px; font-size: 13px; margin-top: 8px;">Ajouter à la communauté</button>
+          </div>
 
-  await actualiserListeMembresModal(data, user.uid, data.adminId === user.uid);
-  document.getElementById("communityAdminModalOverlay").classList.remove("hidden");
-}
+          <div>
+            <label><strong>👥 Membres de la communauté</strong></label>
+            <div id="commuModalMembersList" class="stack" style="gap: 6px; margin-top: 6px; max-height: 160px; overflow-y: auto; background: #fff; padding: 4px; border: 1px solid var(--divider); border-radius: 8px;"></div>
+          </div>
 
-async function actualiserListeMembresModal(dataCommu, monUid, jeSuisAdmin) {
-  const container = document.getElementById("commuModalMembersList"); container.innerHTML = "";
+          <div style="border-top: 1px solid var(--divider); padding-top: 12px;" class="stack" style="gap: 8px;">
+            <button id="btnCommuLeave" class="danger-btn btn-block" style="padding: 10px; font-size: 13px; margin-top:0;">🏃 Quitter la communauté</button>
+            <button id="btnCommuDelete" class="danger-btn btn-block" style="padding: 10px; font-size: 13px; margin-top: 4px; display: none;">🗑️ Dissoudre la communauté (Admin)</button>
+          </div>
+        </div>
 
-  for (const uid of (dataCommu.memberIds || [])) {
-    const docP = await db.collection("players").doc(uid).get();
-    if (!docP.exists) continue;
-    const pData = docP.data();
+        <button id="btnCloseCommuAdminModal" class="ghost btn-block" style="margin-top: 15px; padding: 8px;">Fermer</button>
+      </div>
+    </div>
 
-    const row = document.createElement("div"); row.className = "stat-row"; row.style.padding = "6px";
-    let acts = "";
+    <section id="homeScreen" class="hidden stack">
+      <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
+      <div style="text-align: center; margin-bottom: 5px;">
+        <span class="badge">Joueur connecté : <span id="playerNameDisplay">—</span></span>
+      </div>
 
-    if (jeSuisAdmin && uid !== monUid) {
-      acts = `<div style="display:flex; gap:4px;"><button class="ghost btn-action-soft" onclick="transmettreDroitsAdmin('${uid}', '${pData.name}')">Admin</button><button class="ghost btn-action-soft" style="color:var(--danger)!important;" onclick="exclureMembreCommu('${uid}', '${pData.name}')">Exclure</button></div>`;
-    } else if (!jeSuisAdmin && uid !== monUid) {
-      acts = `<span style="font-size:11px; color:#888;">Joueur</span>`;
-    } else {
-      acts = `<span style="font-size:11px; color:var(--accent); font-weight:bold;">${dataCommu.adminId === monUid ? 'Chef' : 'Moi'}</span>`;
-    }
+      <div class="worlds-grid">
+        <button class="world-btn" id="menuNewGame">
+          <div class="world-row">
+            <div class="world-icon-big">🎯</div>
+            <div class="world-right"><div class="world-name">Nouvelle Partie</div></div>
+          </div>
+        </button>
 
-    row.innerHTML = `<div style="text-align:left;"><span style="font-size:13px; font-weight:600;">${pData.name}</span></div>${acts}`;
-    container.appendChild(row);
-  }
-}
+        <button class="world-btn" id="menuPlayers">
+          <div class="world-row">
+            <div class="world-icon-big">🎮</div>
+            <div class="world-right"><div class="world-name">Joueurs</div></div>
+          </div>
+        </button>
 
-document.getElementById("btnCommuValidateAddMember").onclick = async () => {
-  const name = document.getElementById("commuAddMemberName").value.trim();
-  const email = document.getElementById("commuAddMemberEmail").value.trim().toLowerCase();
-  if (!name || !currentCommuModalId) return showPopup("Nom requis.", true);
+        <button class="world-btn" id="menuHistory">
+          <div class="world-row">
+            <div class="world-icon-big">📜</div>
+            <div class="world-right"><div class="world-name">Historique</div></div>
+          </div>
+        </button>
 
-  try {
-    const id = "guest-" + Date.now();
-    await db.collection("players").doc(id).set({ name: name, email: email || null, createdAt: Date.now(), communityIds: [currentCommuModalId] });
-    await db.collection("communities").doc(currentCommuModalId).update({ memberIds: firebase.firestore.FieldValue.arrayUnion(id) });
-    showPopup(`Membre ${name} ajouté !`);
-    ouvrirFenetreAdminCommu(currentCommuModalId);
-  } catch(e) { showPopup(e.message, true); }
-};
+        <button class="world-btn" id="menuRanking">
+          <div class="world-row">
+            <div class="world-icon-big">🏆</div>
+            <div class="world-right"><div class="world-name">Classement</div></div>
+          </div>
+        </button>
 
-async function transmettreDroitsAdmin(uid, name) {
-  if (await openCustomModal("Transmettre ?", `Céder votre rôle de chef à ${name} ?`)) {
-    await db.collection("communities").doc(currentCommuModalId).update({ adminId: uid });
-    showPopup("Droits transférés."); ouvrirFenetreAdminCommu(currentCommuModalId);
-  }
-}
+        <button class="world-btn" id="menuTraining">
+          <div class="world-row">
+            <div class="world-icon-big">🏋🏼‍♀️</div>
+            <div class="world-right"><div class="world-name">Entraînement</div></div>
+          </div>
+        </button>
 
-async function exclureMembreCommu(uid, name) {
-  if (await openCustomModal("Exclure ?", `Retirer ${name} de cette ligue ?`)) {
-    await db.collection("communities").doc(currentCommuModalId).update({ memberIds: firebase.firestore.FieldValue.arrayRemove(uid) });
-    await db.collection("players").doc(uid).update({ communityIds: firebase.firestore.FieldValue.arrayRemove(currentCommuModalId) });
-    showPopup("Membre exclu."); ouvrirFenetreAdminCommu(currentCommuModalId);
-  }
-}
+        <button class="world-btn" id="menuTournament">
+          <div class="world-row">
+            <div class="world-icon-big">⚔️</div>
+            <div class="world-right"><div class="world-name">Tournoi</div></div>
+          </div>
+        </button>
 
-document.getElementById("btnCommuLeave").onclick = async () => {
-  const u = auth.currentUser; const c = currentCommuModalId; if (!u || !c) return;
-  const doc = await db.collection("communities").doc(c).get();
-  
-  if (doc.data().adminId === u.uid) {
-    const restants = doc.data().memberIds.filter(x => x !== u.uid);
-    if (restants.length > 0) return showPopup("Désigne un autre administrateur avant de partir !", true);
-    if (!await openCustomModal("Dissoudre ?", "Tu es seul, cela va supprimer la ligue. Confirmer ?")) return;
-    await db.collection("communities").doc(c).delete();
-  } else {
-    if (!await openCustomModal("Quitter ?", "Quitter cette ligue ?")) return;
-    await db.collection("communities").doc(c).update({ memberIds: firebase.firestore.FieldValue.arrayRemove(u.uid) });
-  }
+        <button class="world-btn" id="menuAccount" style="grid-column: span 2;">
+          <div class="world-row">
+            <div class="world-icon-big">⚙️</div>
+            <div class="world-right"><div class="world-name">Mon Compte</div></div>
+          </div>
+        </button>
+      </div>
+    </section>
 
-  await db.collection("players").doc(u.uid).update({ communityIds: firebase.firestore.FieldValue.arrayRemove(c) });
-  document.getElementById("communityAdminModalOverlay").classList.add("hidden");
-  await chargerCommunautesUtilisateur(u.uid, null); renderGestionCommunautes();
-};
+    <section id="accountScreen" class="hidden stack">
+      <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
+      <header class="topbar">
+        <button id="backHomeFromAccountBtn" class="icon-btn">⬅️</button>
+        <h2>Mon Compte</h2>
+        <div style="width:40px;"></div>
+      </header>
 
-document.getElementById("btnCommuDelete").onclick = async () => {
-  if (await openCustomModal("⚠️ Dissolution", "Détruire la communauté et exclure tous les membres ?")) {
-    await db.collection("communities").doc(currentCommuModalId).delete();
-    document.getElementById("communityAdminModalOverlay").classList.add("hidden");
-    await chargerCommunautesUtilisateur(auth.currentUser.uid, null); renderGestionCommunautes();
-  }
-};
+      <div class="card form-card">       
+        <label><strong>Nom</strong></label>
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+          <input type="text" id="accountProfileName" placeholder="Ton pseudo" maxlength="24" style="margin-top: 0;">
+          <button id="btnUpdateProfileName" class="primary" style="padding: 11px 16px;">Modifier</button>
+        </div>
 
-document.getElementById("btnCloseCommuAdminModal").onclick = () => {
-  document.getElementById("communityAdminModalOverlay").classList.add("hidden");
-};
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider);">
+          <label><strong>Email</strong></label>
+          <p id="accountProfileEmail" style="font-size: 15px; color: var(--text-soft); padding: 8px 0; border: none; justify-content: flex-start;"></p>
+        </div>
+      </div>
+
+      <div class="card form-card" style="margin-top: 10px;">
+        <h3>👥 Gestion des Communautés</h3>
+        <div id="listeCommunautesContainer" class="stack" style="gap: 12px; margin-top: 10px;"></div>
+
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--divider); display: flex; gap: 10px;">
+          <button id="btnDeclencherCreerCommu" class="primary" style="flex:1; font-size:13px; padding:10px 4px;">➕ Créer</button>
+          <button id="btnDeclencherRejoindreCommu" class="ghost" style="flex:1; font-size:13px; padding:10px 4px;">🔍 Rejoindre</button>
+        </div>
+
+        <div id="zoneFormulaireCommu" class="hidden card subtle form-card" style="padding: 10px; margin-top: 10px;">
+          <h4 id="titreActionCommu" style="font-size: 14px; color: var(--primary);">Créer une communauté</h4>
+          <input type="text" id="inputNomCodeCommu" placeholder="Nom de la communauté ou Code">
+          <button id="btnValiderActionCommu" class="primary btn-block" style="padding: 8px;">Valider</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 10px; padding: 12px;">
+        <button id="btnLogout" class="danger-btn btn-block" style="margin-top: 0;">❌ Déconnexion</button>
+      </div>
+    </section>
+
+    <section id="historyScreen" class="hidden" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background-color: var(--bg-main);">
+      <header class="topbar" style="padding: 10px 14px; flex-shrink: 0;">
+        <button id="backHomeFromHistoryBtn" class="icon-btn">⬅️</button>
+        <h2>📜 Historique</h2>
+        <div style="width:40px;"></div>
+      </header>
+
+      <div style="margin: 0 12px 12px 12px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; background: var(--card-bg); padding: 8px 12px; border-radius: var(--r-1); border: 1px solid var(--card-border);">
+        <label for="selectFiltreHistorique" style="font-size: 13px; font-weight: 700; color: var(--text-main); white-space: nowrap;">🔍 Filtrer :</label>
+        <select id="selectFiltreHistorique" style="margin-top: 0; padding: 6px 10px; font-size: 13px; font-weight: 600; border-radius: 8px; border: 1px solid var(--divider); color: var(--primary);"></select>
+      </div>
+
+      <div id="historyContainer" style="flex: 1; overflow-y: auto; padding: 0 0 30px 0; display: flex; flex-direction: column; gap: 14px; -webkit-overflow-scrolling: touch;"></div>
+    </section>
+    
+    <section id="newGameScreen" class="hidden stack">
+      <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
+      <header class="topbar">
+        <button id="backHomeBtn" class="icon-btn">⬅️</button>
+        <h2>Nouvelle Partie</h2>
+        <div style="width:40px;"></div>
+      </header>
+
+      <div class="card form-card">
+        <h3>🎮 Joueurs</h3>
+        <div style="background: #F8F6F0; padding: 10px; border-radius: var(--r-1); border: 1px solid var(--divider); margin-bottom: 6px;">
+          <label for="selectCommuMatch" style="font-size: 13px; font-weight: 700; color: var(--text-main); display: block;">👥 Communauté :</label>
+          <select id="selectCommuMatch" style="margin-top: 6px; padding: 10px; font-size: 13px; font-weight: 600; color: var(--primary); width: 100%; border-radius: 8px; border: 1px solid var(--divider); background: #FFFFFF;"></select>
+        </div>
+
+        <div class="actions" style="margin-top: 0; display: flex; gap: 8px;">
+          <button id="btnOpenSearchPlayer" class="ghost" style="flex:1;">🔍 Ajouter</button>
+          <button id="btnOpenCreatePlayer" class="ghost" style="flex:1;">➕ Créer</button>
+        </div>
+
+        <div id="zoneSearchPlayer" class="hidden card subtle form-card" style="padding: 10px;">
+          <input type="text" id="searchPlayerInput" placeholder="Joueur à ajouter...">
+          <div id="searchResultsList" style="max-height: 120px; overflow-y: auto; margin-top: 5px;"></div>
+        </div>
+
+        <div id="zoneCreatePlayer" class="hidden card subtle form-card" style="padding: 10px;">
+          <input type="text" id="createPlayerName" placeholder="Nom du joueur">
+          <input type="email" id="createPlayerEmail" placeholder="Adresse email (optionnel)">
+          <button id="btnValidateCreatePlayer" class="primary btn-block">💾 Enregistrer</button>
+        </div>
+
+        <h4 style="margin-top: 10px; opacity: 0.8; font-size: 14px; text-align: left !important;">Joueurs sur la ligne de tir :</h4>
+        <div id="selectedPlayersMatchList"></div>
+      </div>
+
+      <div class="card form-card">
+        <h3>🛠️ Paramètres du jeu</h3>
+        <div>
+          <label><strong>Mode de jeu</strong></label>
+          <select id="gameModeSelect">
+            <option value="cricket" selected>🏏 Cricket</option>
+            <option value="x01">💯 X01</option>
+            <option value="world">🌍 Tour du Monde</option>
+          </select>
+        </div>
+
+        <div id="cricketParamsGroup">
+          <div style="margin-top: 12px;">
+            <label><strong>Nombre de tours</strong></label>
+            <select id="gameTurnsSelect">
+              <option value="10">10 tours</option>
+              <option value="12">12 tours</option>
+              <option value="14">14 tours</option>
+              <option value="16">16 tours</option>
+              <option value="18">18 tours</option>
+              <option value="20" selected>20 tours</option>
+              <option value="30">30 tours</option>
+              <option value="999">Sans limite</option>
+            </select>
+          </div>
+
+          <div style="margin-top: 12px;">
+            <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
+              <span class="stat-label"><strong>Mode n'a qu'un œil</strong></span>
+              <input type="checkbox" id="blindModeCheckbox" style="width: auto; margin-top: 0;">
+            </div>
+            <p class="hint" style="margin-top: 2px;">Dans ce mode, les numéros sont masqués et se révèlent au premier impact.</p>
+          </div>
+        </div>
+
+        <div id="x01ParamsGroup" class="hidden">
+          <div style="margin-top: 12px;">
+            <label><strong>Points de départ</strong></label>
+            <select id="x01StartPointsSelect">
+              <option value="301" selected>301</option>
+              <option value="501">501</option>
+              <option value="701">701</option>
+              <option value="1001">1001</option>
+            </select>
+          </div>
+          <div style="margin-top: 12px;">
+            <label><strong>Checkout</strong></label>
+            <select id="x01CheckoutSelect">
+              <option value="double" selected>Double-out</option>
+              <option value="single">Sans contrainte</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="worldParamsGroup" class="hidden">
+          <div style="margin-top: 12px;">
+            <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
+              <span class="stat-label"><strong>Sauter les numéros (Multiplicateurs)</strong></span>
+              <input type="checkbox" id="worldJumpCheckbox" style="width: auto; margin-top: 0;" checked>
+            </div>
+          </div>
+          <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label><strong>Départ</strong></label>
+              <select id="worldStartSelect">
+                <option value="1" selected>1</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+              </select>
+            </div>
+            <div>
+              <label><strong>Arrivée</strong></label>
+              <select id="worldEndSelect">
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="25" selected>🎯 Bull</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="teamModeBlock" class="card form-card hidden">
+        <h3>🫂 Mode équipe</h3>
+        <div class="stat-row" style="border:none; padding:0; display:flex; justify-content:space-between; align-items:center;">
+          <span class="stat-label"><strong>Activer le mode équipe</strong></span>
+          <input type="checkbox" id="teamModeCheckbox" style="width:auto; margin-top:0;">
+        </div>
+        <div id="teamModeConfig" class="hidden" style="margin-top: 12px; border-top: 1px solid var(--divider); padding-top: 12px;">
+          <label><strong>Nombre d'équipes</strong></label>
+          <select id="teamCountSelect"><option value="2" selected>2 équipes</option><option value="3">3 équipes</option><option value="4">4 équipes</option></select>
+          <button id="btnReshuffleTeams" class="ghost btn-block" style="font-size:13px; padding:6px; margin-top:10px;">🔄 Re-mélanger</button>
+          <div id="teamsContainer" style="margin-top:12px; display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+      </div>
+
+      <button id="startGameBtn" class="primary btn-block" style="margin-top: 10px; margin-bottom: 20px; font-size: 18px;">🎯 DÉMARRER LA PARTIE</button>
+    </section>
+
+    <section id="cricketScreen" class="hidden" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background-color: var(--bg-main);">
+      <header class="topbar" style="padding: 10px 14px; flex-shrink: 0;">
+        <button id="btnLeaveGame" class="icon-btn">❌</button>
+        <div class="topbar-center">
+          <span id="gameTimerDisplay" style="font-family: 'Space Grotesk', sans-serif; font-weight: bold; font-size: 20px; color: var(--accent);">00:00</span>
+          <button id="btnPauseGame" class="icon-btn" style="background: transparent; border: none; font-size: 16px; margin-left: 5px;">⏸️</button>
+        </div>
+        <div id="gameTurnIndicator" class="badge">Tour 1/20</div>
+      </header>
+
+      <div style="text-align: center; padding: 10px; width: 100%; background: var(--card-bg); border-bottom: 1px solid var(--divider); flex-shrink: 0;">
+        <p class="hint" style="justify-content: center; margin-bottom: 2px;">Tireur actuel</p>
+        <h2 id="cricketCurrentPlayerName" style="color: var(--primary-strong); margin: 0; font-size: 22px;">—</h2>
+        <div id="dartsHistoryText" style="font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 16px; color: var(--accent); margin-top: 4px; letter-spacing: 1px;">En attente...</div>
+        <div id="lastTurnHistoryText" style="font-size: 13px; color: #6c757d; margin-top: 5px; font-weight: 600;">Coup précédent : Aucun</div>
+      </div>
+
+      <div style="flex: 1; width: 100%; overflow-x: auto; overflow-y: hidden; display: block; background: var(--card-bg);">
+        <table id="cricketGridTable" style="width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 13px;"></table>
+      </div>
+
+      <div id="x01CheckoutHelpZone" class="hidden"></div>
+
+      <div id="cricketKeyboardZone">
+        <div id="cricketDynamicRows" class="stack" style="gap: 6px; width: 100%;"></div>
+        <div style="display: grid; grid-template-columns: 0.8fr 1.1fr 1.1fr 1fr; gap: 6px; width: 100%; margin-top: 8px;">
+          <button class="ghost" id="btnKeyZero" style="padding: 12px 2px; font-size: 15px;">0</button>
+          <button class="ghost mod-btn" id="btnModDouble" style="padding: 12px 2px; font-size: 14px;">Double</button>
+          <button class="ghost mod-btn" id="btnModTriple" style="padding: 12px 2px; font-size: 14px;">Triple</button>
+          <button class="danger-btn" id="btnKeyUndo" style="padding: 12px 2px; font-size: 14px;">Retour</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="gameOverScreen" class="hidden stack" style="width: 100%; padding: 10px 6px;">
+      <div class="card" style="text-align: center; border-color: var(--primary);">
+        <h1 style="font-size: 36px; margin: 0;">👑</h1>
+        <h2 style="color: var(--primary-strong); margin: 0 0 10px;" id="victoryTitle">Victoire !</h2>
+        <p class="hint" id="victorySubtitle" style="justify-content: center;">Le match est terminé.</p>
+      </div>
+      <div class="card form-card">
+        <h3>🏆 Classement Final</h3>
+        <div id="finalRankingList" class="stack" style="gap: 8px;"></div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button id="btnGoToStats" class="ghost" style="padding: 14px 2px;">📊 Statistiques</button>
+        <button id="btnRematch" class="primary" style="padding: 14px 2px;">🔄 Revanche</button>
+      </div>
+      <button id="btnGoHomeAfterMatch" class="ghost btn-block" style="margin-top: 4px;">Retour à l'accueil</button>
+    </section>
+
+    <section id="statsMatchScreen" class="hidden stack" style="width: 100%; padding: 10px 0px;">
+      <header class="topbar" style="padding: 10px 8px;">
+        <button id="btnBackToPodium" class="icon-btn">⬅️</button>
+        <h2>📊 Statistiques Match</h2>
+        <div style="width:40px;"></div>
+      </header>
+      <div style="width: 100%; overflow-x: auto; background: var(--card-bg); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); padding: 8px 0px;">
+        <table id="matchStatsTable" style="min-width: 480px; width: 100%; border-collapse: collapse; text-align: center; font-size: 13px;"></table>
+      </div>
+      <div style="padding: 0 8px;"><button id="btnGoHomeAfterStats" class="ghost btn-block">Retour à l'accueil</button></div>
+    </section>
+
+    <div id="popup"></div>
+
+    <div id="customModalOverlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 3000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+      <div class="card" style="width: min(340px, calc(100% - 32px)); margin: 0; padding: 24px; text-align: center; box-shadow: 0 12px 36px rgba(0,0,0,0.25);">
+        <h3 id="customModalTitle" style="color: var(--primary-strong); font-size: 19px; margin-bottom: 12px;">Confirmation</h3>
+        <p id="customModalMessage" style="color: var(--text-main); font-size: 14px; border: none; padding: 0; margin-bottom: 20px; justify-content: center; text-align: center; line-height: 1.4;">Voulez-vous valider cette action ?</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <button id="customModalBtnCancel" class="ghost" style="padding: 10px; font-size: 14px;">Annuler</button>
+          <button id="customModalBtnConfirm" class="primary" style="padding: 10px; font-size: 14px;">Confirmer</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCstR2h9HHPhOf2uORC2vuZWbET-KQaZrc",
+      authDomain: "dart-quest.firebaseapp.com",
+      projectId: "dart-quest",
+      storageBucket: "dart-quest.firebasestorage.app",
+      messagingSenderId: "375388542262",
+      appId: "1:375388542262:web:0b519dc43c4e63a6334f97"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+  <script src="js/main.js"></script>
+</body>
+</html>
