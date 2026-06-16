@@ -91,7 +91,7 @@ document.getElementById("gameModeSelect").addEventListener("change", (e) => {
     document.getElementById("cricketParamsGroup").classList.remove("hidden");
   }
 });
-
+let worldStartListenerSet = false;
 // Contrainte adaptative : min <= max - 10
 const worldStart = document.getElementById("worldStartSelect");
 const worldEnd = document.getElementById("worldEndSelect");
@@ -356,22 +356,17 @@ async function initPageNouvellePartie() {
     const opt = document.createElement("option");
     opt.value = c.id;
     opt.innerText = c.name;
-    // On pré-sélectionne la communauté active
     if (c.id === communautéActiveId) opt.selected = true;
     selectCommu.appendChild(opt);
   });
 
-  // Si l'utilisateur change manuellement de communauté dans le menu déroulant :
   selectCommu.onchange = async (e) => {
     communauteCibleMatchId = e.target.value;
-    // On recharge instantanément les joueurs de la NOUVELLE communauté sélectionnée !
     await chargerJoueursCommunauteCible(); 
-    // On vide la liste des joueurs sélectionnés pour éviter de mélanger des joueurs de commus différentes
     joueursSelectionnesMatch = []; 
     renderSelectedPlayers();
   };
 
-  // Ajout automatique du joueur connecté sur la ligne de tir
   const user = auth.currentUser;
   if (user) {
     try {
@@ -384,6 +379,40 @@ async function initPageNouvellePartie() {
   }
   
   renderSelectedPlayers();
+
+  // =========================================================================
+  // ON COINCE LA LOGIQUE ICI POUR QU'ELLE S'EXÉCUTE AU BON MOMENT SANS PLANTER
+  // =========================================================================
+  const worldStart = document.getElementById("worldStartSelect");
+  const worldEnd = document.getElementById("worldEndSelect");
+
+  if (worldStart && worldEnd && !worldStartListenerSet) {
+    worldStart.addEventListener("change", () => {
+      const minVal = parseInt(worldStart.value, 10);
+      const maxVal = parseInt(worldEnd.value, 10);
+      
+      if (minVal > maxVal - 10) {
+        if (minVal === 1) worldEnd.value = "15";
+        else if (minVal === 5) worldEnd.value = "15";
+        else if (minVal === 10) worldEnd.value = "20";
+        else if (minVal === 15) worldEnd.value = "25";
+      }
+    });
+
+    worldEnd.addEventListener("change", () => {
+      const minVal = parseInt(worldStart.value, 10);
+      const maxVal = parseInt(worldEnd.value, 10);
+      
+      if (maxVal < minVal + 10) {
+        if (maxVal === 25) worldStart.value = "15";
+        else if (maxVal === 20) worldStart.value = "10";
+        else if (maxVal === 15) worldStart.value = "5";
+        else if (maxVal === 10) worldStart.value = "1";
+      }
+    });
+    
+    worldStartListenerSet = true; 
+  }
 }
 
 // LA VOICI : Elle récupère uniquement les joueurs qui ont joué dans cette commu OU qui y sont liés
