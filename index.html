@@ -392,6 +392,16 @@
     };
     firebase.initializeApp(firebaseConfig);
   </script>
-  <script src="js/main.js"></script>
+<script src="js/main.js"></script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('🎯 Dart Legends PWA : Service Worker Enregistré avec succès !', reg.scope))
+          .catch(err => console.error('❌ Échec de l\'enregistrement du Service Worker PWA :', err));
+      });
+    }
+  </script>
 </body>
 </html>
