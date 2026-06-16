@@ -2373,13 +2373,90 @@ async function executerRenduHistoriqueFiltre(typeFiltre) {
   }
 }
 
-// Variable pour savoir si le mini-formulaire est en mode "creation" ou "rejoindre"
-let modeActionCommu = "creer"; 
-
-// On intercepte l'ouverture de l'écran compte pour charger le listing des communautés
-document.getElementById("menuAccount").addEventListener("click", () => {
-  renderGestionCommunautes();
+// =========================================================================
+// OPTION : BASCULE VISIBILITÉ DU MOT DE PASSE (ŒIL)
+// =========================================================================
+document.getElementById("btnTogglePassword").addEventListener("click", function() {
+  const passwordInput = document.getElementById("authPassword");
+  if (passwordInput.type === "password") {
+    passwordInput.type = "text";
+    this.innerText = "🙈";
+  } else {
+    passwordInput.type = "password";
+    this.innerText = "👁️";
+  }
 });
+
+
+// =========================================================================
+// CORRECTION INCRIPTION ET LIAISON AUTOMATIQUE COMPTE INVITÉ (GUEST)
+// =========================================================================
+document.getElementById("btnSignup").onclick = async () => {
+  const email = document.getElementById("authEmail").value.trim().toLowerCase();
+  const password = document.getElementById("authPassword").value.trim();
+  if (!email || !password) return showPopup("Champs obligatoires.", true);
+  
+  try {
+    const defaultName = email.split('@')[0];
+    
+    // 1. Avant de créer, on regarde s'il existe un profil "Guest" créé au préalable avec cet email précis
+    const snapshotGuest = await db.collection("players")
+                                  .where("email", "==", email)
+                                  .get();
+    
+    let commusAssociees = [];
+    let ancienDocGuestId = null;
+    let nomConserve = defaultName;
+
+    snapshotGuest.forEach(doc => {
+      if (doc.id.startsWith("guest-")) {
+        ancienDocGuestId = doc.id;
+        const dataG = doc.data();
+        if (dataG.communityIds) commusAssociees = dataG.communityIds;
+        if (dataG.name) nomConserve = dataG.name;
+      }
+    });
+
+    // 2. Création de l'utilisateur dans l'Authentication Firebase
+    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    
+    // 3. Écriture du profil réel et définitif (on fusionne les commus du guest s'il y en a)
+    await db.collection("players").doc(cred.user.uid).set({
+      email: email, 
+      name: nomConserve, 
+      createdAt: Date.now(),
+      communityIds: commusAssociees,
+      defaultCommunity: commusAssociees.length > 0 ? commusAssociees[0] : null,
+      isRealAccount: true
+    });
+
+    // 4. Si un ancien compte invité existait, on met à jour les documents des communautés concernées 
+    //    pour remplacer l'ancien ID "guest-xxx" par le nouvel UID Firebase réel dans le tableau 'memberIds'
+    if (ancienDocGuestId) {
+      for (const idCommu of commusAssociees) {
+        await db.collection("communities").doc(idCommu).update({
+          memberIds: firebase.firestore.FieldValue.arrayUnion(cred.user.uid)
+        });
+        // On retire l'identifiant invité pour ne pas polluer la communauté
+        await db.collection("communities").doc(idCommu).update({
+          memberIds: firebase.firestore.FieldValue.arrayRemove(ancienDocGuestId)
+        });
+      }
+      // Enfin, on supprime l'ancien document invité devenu inutile
+      await db.collection("players").doc(ancienDocGuestId).delete();
+    }
+    
+    showPopup("Compte créé et synchronisé avec succès ! 🎯");
+  } catch (e) { 
+    showPopup(e.message, true); 
+  }
+};
+
+
+// =========================================================================
+// CORRECTION & GESTION DES COMMUNAUTÉS (CRÉER / REJOINDRE)
+// =========================================================================
+let modeActionCommu = "creer"; 
 
 document.getElementById("btnDeclencherCreerCommu").onclick = () => {
   modeActionCommu = "creer";
@@ -2407,7 +2484,6 @@ document.getElementById("btnValiderActionCommu").onclick = async () => {
   if (!valeurInput) return showPopup("Ce champ ne peut pas être vide.", true);
 
   if (modeActionCommu === "creer") {
-    // 1. Génération d'un code unique à 6 caractères majuscules
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let codeUnique = "";
     for (let i = 0; i < 6; i++) {
@@ -2415,6 +2491,7 @@ document.getElementById("btnValiderActionCommu").onclick = async () => {
     }
 
     try {
+      // Ajout de l'admin dans la table 'communities'
       await db.collection("communities").doc(codeUnique).set({
         name: valeurInput,
         adminId: user.uid,
@@ -2422,71 +2499,73 @@ document.getElementById("btnValiderActionCommu").onclick = async () => {
         createdAt: Date.now()
       });
 
-      // Si c'est sa première communauté, on la met automatiquement par défaut
+      // Ajout du code dans la liste de l'utilisateur
+      await db.collection("players").doc(user.uid).update({
+        communityIds: firebase.firestore.FieldValue.arrayUnion(codeUnique)
+      });
+
       if (!communautéActiveId) {
         await db.collection("players").doc(user.uid).update({ defaultCommunity: codeUnique });
+        communautéActiveId = codeUnique;
       }
 
       showPopup(`Communauté "${valeurInput}" créée ! Code : ${codeUnique}`);
       document.getElementById("zoneFormulaireCommu").classList.add("hidden");
       
-      // Rechargement général
       await chargerCommunautesUtilisateur(user.uid, communautéActiveId || codeUnique);
       renderGestionCommunautes();
     } catch (e) {
       showPopup("Erreur de création : " + e.message, true);
     }
 
-    } else {
-    // 2. Mode REJOINDRE via le code
-    // Dans l'écouteur du bouton de validation (quand actionMode === "rejoindre") :
-const codeSaisi = valeurInput.toUpperCase();
-try {
-  const docCommu = await db.collection("communities").doc(codeSaisi).get();
-  if (!docCommu.exists) {
-    return showPopup("Code communauté introuvable.", true);
-  }
+  } else {
+    // CORRECTION DU MODE REJOINDRE
+    const codeSaisi = valeurInput.toUpperCase();
+    try {
+      const docCommu = await db.collection("communities").doc(codeSaisi).get();
+      if (!docCommu.exists) {
+        return showPopup("Code communauté introuvable.", true);
+      }
 
-  const donnees = docCommu.data();
-  if (donnees.memberIds.includes(user.uid)) {
-    return showPopup("Tu fais déjà partie de cette communauté !", true);
-  }
+      const donnees = docCommu.data();
+      const tabMembres = donnees.memberIds || [];
+      if (tabMembres.includes(user.uid)) {
+        return showPopup("Tu fais déjà partie de cette communauté !", true);
+      }
 
-  // 1. Ajouter le joueur dans la communauté
-  await db.collection("communities").doc(codeSaisi).update({
-    memberIds: firebase.firestore.FieldValue.arrayUnion(user.uid)
-  });
+      // 1. Ajouter l'UID dans le document de la communauté
+      await db.collection("communities").doc(codeSaisi).update({
+        memberIds: firebase.firestore.FieldValue.arrayUnion(user.uid)
+      });
 
-  // 2. Mettre à jour le profil du joueur (Ajout de la commu dans sa liste)
-  const joueurDoc = await db.collection("players").doc(user.uid).get();
-  const joueurData = joueurDoc.data() || {};
-  
-  let majJoueur = {
-    communityIds: firebase.firestore.FieldValue.arrayUnion(codeSaisi)
-  };
+      // 2. Ajouter le code dans le document du joueur
+      await db.collection("players").doc(user.uid).update({
+        communityIds: firebase.firestore.FieldValue.arrayUnion(codeSaisi)
+      });
 
-  // RÈGLE : Si le joueur n'a AUCUNE communauté par défaut définie actuellement, on lui met celle-ci
-  if (!joueurData.defaultCommunity) {
-    majJoueur.defaultCommunity = codeSaisi;
-    communautéActiveId = codeSaisi; // On l'active immédiatement en local
-  }
+      const joueurDoc = await db.collection("players").doc(user.uid).get();
+      const joueurData = joueurDoc.data() || {};
+      
+      if (!joueurData.defaultCommunity) {
+        await db.collection("players").doc(user.uid).update({ defaultCommunity: codeSaisi });
+        communautéActiveId = codeSaisi;
+      }
 
-  await db.collection("players").doc(user.uid).update(majJoueur);
+      showPopup(`Bienvenue dans la communauté : ${donnees.name} ! 👥`);
+      document.getElementById("zoneFormulaireCommu").classList.add("hidden");
 
-  showPopup(`Bienvenue dans la communauté : ${donnees.name} ! 👥`);
-  document.getElementById("zoneFormulaireCommu").classList.add("hidden");
+      await chargerCommunautesUtilisateur(user.uid, communautéActiveId || joueurData.defaultCommunity);
+      renderGestionCommunautes();
 
-  // Recharger les informations de l'utilisateur
-  await chargerCommunautesUtilisateur(user.uid, communautéActiveId || joueurData.defaultCommunity);
-  renderGestionCommunautes();
-
-} catch (e) {
-  showPopup("Erreur : " + e.message, true);
-}
+    } catch (e) {
+      showPopup("Erreur : " + e.message, true);
+    }
   }
 };
 
-// Fonction de rendu graphique du gros bloc des communautés dans Mon Compte
+// =========================================================================
+// RENDU DU MINI-PANEL DES COMMUNAUTÉS (SUR MON COMPTE)
+// =========================================================================
 async function renderGestionCommunautes() {
   const user = auth.currentUser;
   if (!user) return;
@@ -2506,78 +2585,350 @@ async function renderGestionCommunautes() {
     card.style.margin = "0";
     card.style.background = "rgba(0,0,0,0.01)";
 
-    const estAdmin = commu.adminId === user.uid;
     const estParDefaut = commu.id === communautéActiveId;
-
-    let htmlButtonsAdmin = "";
-    if (estAdmin) {
-      htmlButtonsAdmin = `
-        <div style="display:flex; gap:6px; margin-top:8px;">
-          <button class="ghost btn-action-soft" style="flex:1; font-size:11px !important;" onclick="declencherAjoutMembre('${commu.id}')">👥 Gérer / Fusion</button>
-          <button class="ghost btn-action-soft" style="flex:1; font-size:11px !important; color:var(--danger) !important;" onclick="declencherSuppressionMembre('${commu.id}')">❌ Exclure</button>
-        </div>
-      `;
-    }
-
-    let boutonDefautHtml = "";
-    if (!estParDefaut) {
-      boutonDefautHtml = `
-        <button class="primary btn-block" style="font-size:11px; padding:6px; margin-top:8px; background-color:var(--accent); border-color:var(--accent);" onclick="definirCommunauteParDefaut('${commu.id}')">
-          📌 Choisir comme communauté par défaut
-        </button>
-      `;
-    } else {
-      boutonDefautHtml = `
-        <div style="text-align:center; font-size:11px; color:#28a745; font-weight:bold; margin-top:8px; padding:4px; background:rgba(40,167,69,0.05); border-radius:4px;">
-          ✅ Communauté active par défaut
-        </div>
-      `;
-    }
 
     card.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <strong style="color:var(--primary-strong); font-size:15px;">${commu.name}</strong>
         <span class="badge" style="background:var(--bg-secondary); color:var(--text-main); font-family:monospace; font-size:13px; padding:2px 6px;">${commu.id}</span>
       </div>
-      ${htmlButtonsAdmin}
-      ${boutonDefautHtml}
+      <div style="display:flex; gap:6px; margin-top:8px;">
+        <button class="primary style="flex:1; font-size:11px !important; padding:6px;" onclick="ouvrirFenetreAdminCommu('${commu.id}')">⚙️ Gérer la communauté</button>
+      </div>
+      ${!estParDefaut ? `
+        <button class="primary btn-block" style="font-size:11px; padding:6px; margin-top:6px; background-color:var(--accent); border-color:var(--accent);" onclick="definirCommunauteParDefaut('${commu.id}')">
+          📌 Choisir comme active par défaut
+        </button>
+      ` : `
+        <div style="text-align:center; font-size:11px; color:#28a745; font-weight:bold; margin-top:6px; padding:4px; background:rgba(40,167,69,0.05); border-radius:4px;">
+          ✅ Communauté active configurée
+        </div>
+      `}
     `;
-
     container.appendChild(card);
   });
 }
 
-// Assigner une communauté par défaut dans le profil Firestore
 async function definirCommunauteParDefaut(commuId) {
   const user = auth.currentUser;
   if (!user) return;
+  try {
+    await db.collection("players").doc(user.uid).update({ defaultCommunity: commuId });
+    communautéActiveId = commuId;
+    communauteCibleMatchId = commuId;
+    showPopup("Communauté active par défaut mise à jour ! 🎯");
+    await chargerJoueursCommunauteCible();
+    renderGestionCommunautes();
+  } catch (e) { showPopup(e.message, true); }
+}
+
+
+// =========================================================================
+// MOTEUR COMPLET D'ADMINISTRATION DES MEMBRES & LOGIQUE AVANCÉE
+// =========================================================================
+let currentCommuModalId = null;
+
+async function ouvrirFenetreAdminCommu(commuId) {
+  currentCommuModalId = commuId;
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const overlay = document.getElementById("communityAdminModalOverlay");
+  const titleEl = document.getElementById("commuModalTitle");
+  const badgeEl = document.getElementById("commuModalCodeBadge");
+  const btnDelete = document.getElementById("btnCommuDelete");
 
   try {
-    // Écriture dans Firestore pour mémoriser le choix permanent
-    await db.collection("players").doc(user.uid).update({
-      defaultCommunity: commuId
-    });
-    
-    // Synchronisation des variables d'état globales
-    communautéActiveId = commuId;
-    communauteCibleMatchId = commuId; // IMPORTANT pour l'écran de configuration du match
+    const docC = await db.collection("communities").doc(commuId).get();
+    if (!docC.exists) return;
+    const dataC = docC.data();
 
-    showPopup("Communauté active par défaut mise à jour ! 🎯");
-    
-    // Forcer le rechargement immédiat de la liste des joueurs de cette communauté
-    await chargerJoueursCommunauteCible();
-    
-    // Rafraîchir les interfaces
-    renderGestionCommunautes();
+    titleEl.innerText = dataC.name;
+    badgeEl.innerText = `Code unique : ${commuId}`;
+
+    const estAdmin = dataC.adminId === user.uid;
+    btnDelete.style.display = estAdmin ? "block" : "none";
+
+    // Reset du formulaire d'ajout interne
+    document.getElementById("commuAddMemberName").value = "";
+    document.getElementById("commuAddMemberEmail").value = "";
+
+    // Chargement dynamique et croisé des membres de la communauté
+    await actualiserListeMembresModal(dataC, user.uid, estAdmin);
+
+    overlay.classList.remove("hidden");
   } catch (e) {
-    showPopup(e.message, true);
+    showPopup("Erreur : " + e.message, true);
   }
 }
 
-// Placeholders pour les actions admin avancées (On les codera en détail à l'étape 4)
-function declencherAjoutMembre(commuId) {
-  showPopup("Gestion des fusions et des demandes d'approbation (Étape 4)");
+async function actualiserListeMembresModal(dataCommu, monUid, jeSuisAdmin) {
+  const containerList = document.getElementById("commuModalMembersList");
+  containerList.innerHTML = "";
+
+  const idsMembres = dataCommu.memberIds || [];
+  const adminId = dataCommu.adminId;
+
+  // 1. Récupération des membres ayant un compte réel
+  for (const uid of idsMembres) {
+    if (uid.startsWith("guest-")) continue; // Traités juste après
+    
+    const docP = await db.collection("players").doc(uid).get();
+    if (docP.exists) {
+      const pData = docP.data();
+      const divM = document.createElement("div");
+      divM.className = "stat-row";
+      divM.style.padding = "6px";
+      divM.style.borderBottom = "1px solid var(--divider)";
+
+      const labelRole = (uid === adminId) ? "⭐ Admin" : "👤 Membre";
+      let actionsHtml = "";
+
+      // Si je suis admin, je peux modifier les droits des autres membres réels
+      if (jeSuisAdmin && uid !== monUid) {
+        actionsHtml = `
+          <div style="display:flex; gap:4px;">
+            <button class="ghost btn-action-soft" style="color:var(--accent)!important;" onclick="transmettreDroitsAdmin('${uid}', '${pData.name}')">Donner Admin</button>
+            <button class="ghost btn-action-soft" style="color:var(--danger)!important;" onclick="exclureMembreCommu('${uid}', '${pData.name}')">Exclure</button>
+          </div>
+        `;
+      }
+
+      divM.innerHTML = `
+        <div style="display:flex; flex-direction:column; text-align:left;">
+          <span style="font-weight:600; font-size:13px;">${pData.name} ${uid === monUid ? '(Moi)' : ''}</span>
+          <span style="font-size:10px; color:var(--text-soft); font-weight:700;">${labelRole}</span>
+        </div>
+        ${actionsHtml}
+      `;
+      containerList.appendChild(divM);
+    }
+  }
+
+  // 2. Récupération des invités (Guests) rattachés à cette communauté
+  const snapGuests = await db.collection("players")
+                              .where("communityIds", "array-contains", currentCommuModalId)
+                              .get();
+
+  snapGuests.forEach(docG => {
+    if (docG.id.startsWith("guest-")) {
+      const gData = docG.data();
+      const divG = document.createElement("div");
+      divG.className = "stat-row";
+      divG.style.padding = "6px";
+      divG.style.borderBottom = "1px solid var(--divider)";
+
+      let boutonExclureGuest = "";
+      // Un admin OU un membre simple a le droit de retirer un compte invité qu'il a créé par erreur
+      boutonExclureGuest = `<button class="ghost btn-action-soft" style="color:var(--danger)!important;" onclick="supprimerCompteInvite('${docG.id}', '${gData.name}')">Retirer</button>`;
+
+      divG.innerHTML = `
+        <div style="display:flex; flex-direction:column; text-align:left;">
+          <span style="font-weight:600; font-size:13px;">✨ ${gData.name}</span>
+          <span style="font-size:10px; color:#a19672; font-weight:700;">Invite (En attente d'inscription)</span>
+        </div>
+        ${boutonExclureGuest}
+      `;
+      containerList.appendChild(divG);
+    }
+  });
 }
-function declencherSuppressionMembre(commuId) {
-  showPopup("Sélection et exclusion des membres (Étape 4)");
+
+// ACTION : AJOUTER UN MEMBRE/INVITÉ DEPUIS LA MODALE
+document.getElementById("btnCommuValidateAddMember").onclick = async () => {
+  const name = document.getElementById("commuAddMemberName").value.trim();
+  const email = document.getElementById("commuAddMemberEmail").value.trim().toLowerCase();
+
+  if (!name) return showPopup("Le nom est obligatoire pour ajouter un membre.", true);
+  if (!currentCommuModalId) return;
+
+  try {
+    // Si un email est renseigné, on vérifie si un utilisateur possède déjà ce compte réel
+    let uidCible = null;
+    if (email) {
+      const snapReel = await db.collection("players").where("email", "==", email).get();
+      snapReel.forEach(doc => { uidCible = doc.id; });
+    }
+
+    if (uidCible) {
+      // Cas 1 : L'utilisateur existe déjà, on l'ajoute directement dans la communauté
+      await db.collection("communities").doc(currentCommuModalId).update({
+        memberIds: firebase.firestore.FieldValue.arrayUnion(uidCible)
+      });
+      await db.collection("players").doc(uidCible).update({
+        communityIds: firebase.firestore.FieldValue.arrayUnion(currentCommuModalId)
+      });
+      showPopup(`L'utilisateur existant "${name}" a été ajouté !`);
+    } else {
+      // Cas 2 : L'utilisateur n'a pas encore de compte, on crée un document Guest lié
+      const guestId = "guest-" + Date.now();
+      await db.collection("players").doc(guestId).set({
+        name: name,
+        email: email || null,
+        createdAt: Date.now(),
+        communityIds: [currentCommuModalId]
+      });
+      showPopup(`Invité "${name}" créé et associé !`);
+    }
+
+    // Actualisation de l'interface
+    const docC = await db.collection("communities").doc(currentCommuModalId).get();
+    await actualiserListeMembresModal(docC.data(), auth.currentUser.uid, docC.data().adminId === auth.currentUser.uid);
+    await chargerJoueursCommunauteCible();
+
+  } catch (e) {
+    showPopup("Erreur d'ajout : " + e.message, true);
+  }
+};
+
+// ACTION : TRANSMETTRE LES DROITS ADMIN
+async function transmettreDroitsAdmin(nouvelAdminUid, nomNouvelAdmin) {
+  const confirmation = await openCustomModal("👑 Transmettre les clés ?", `Voulez-vous céder votre rôle d'administrateur à ${nomNouvelAdmin} ?`);
+  if (!confirmation) return;
+
+  try {
+    await db.collection("communities").doc(currentCommuModalId).update({
+      adminId: nouvelAdminUid
+    });
+    showPopup(`Félicitations à ${nomNouvelAdmin}, nouveau chef de la ligue !`);
+    document.getElementById("communityAdminModalOverlay").classList.add("hidden");
+    
+    await chargerCommunautesUtilisateur(auth.currentUser.uid, communautéActiveId);
+    renderGestionCommunautes();
+  } catch (e) { showPopup(e.message, true); }
 }
+
+// ACTION : EXCLURE UN MEMBRE RÉEL (PAR L'ADMIN)
+async function exclureMembreCommu(uidMembre, nomMembre) {
+  const confirmation = await openCustomModal("❌ Exclure ce joueur ?", `Confirmez-vous l'exclusion de ${nomMembre} de la communauté ?`);
+  if (!confirmation) return;
+
+  try {
+    await db.collection("communities").doc(currentCommuModalId).update({
+      memberIds: firebase.firestore.FieldValue.arrayRemove(uidMembre)
+    });
+    await db.collection("players").doc(uidMembre).update({
+      communityIds: firebase.firestore.FieldValue.arrayRemove(currentCommuModalId)
+    });
+
+    // Si la communauté était celle par défaut du joueur exclu, on nettoie
+    const docP = await db.collection("players").doc(uidMembre).get();
+    if(docP.exists && docP.data().defaultCommunity === currentCommuModalId) {
+      await db.collection("players").doc(uidMembre).update({ defaultCommunity: null });
+    }
+
+    showPopup(`${nomMembre} a été retiré de la communauté.`);
+    const docC = await db.collection("communities").doc(currentCommuModalId).get();
+    await actualiserListeMembresModal(docC.data(), auth.currentUser.uid, true);
+  } catch (e) { showPopup(e.message, true); }
+}
+
+// ACTION : RETIRER UN COMPTE INVITÉ
+async function supprimerCompteInvite(guestId, nomInvite) {
+  const confirmation = await openCustomModal("🗑️ Retirer l'invité ?", `Supprimer définitivement la fiche de l'invité "${nomInvite}" ?`);
+  if (!confirmation) return;
+
+  try {
+    await db.collection("players").doc(guestId).delete();
+    showPopup(`L'invité "${nomInvite}" a été supprimé.`);
+    const docC = await db.collection("communities").doc(currentCommuModalId).get();
+    await actualiserListeMembresModal(docC.data(), auth.currentUser.uid, docC.data().adminId === auth.currentUser.uid);
+  } catch (e) { showPopup(e.message, true); }
+}
+
+// ACTION : LE MEMBRE QUITTE DE LUI-MÊME LA COMMUNAUTÉ
+document.getElementById("btnCommuLeave").onclick = async () => {
+  const user = auth.currentUser;
+  if (!user || !currentCommuModalId) return;
+
+  try {
+    const docC = await db.collection("communities").doc(currentCommuModalId).get();
+    const dataC = docC.data();
+
+    if (dataC.adminId === user.uid) {
+      // Règle d'or : Si l'admin s'en va, il doit nommer quelqu'un d'autre ou dissoudre si seul
+      const autresMembresReels = (dataC.memberIds || []).filter(uid => uid !== user.uid && !uid.startsWith("guest-"));
+      if (autresMembresReels.length > 0) {
+        return showPopup("👑 Tu es l'administrateur ! Transmets tes droits à un autre membre avant de quitter.", true);
+      } else {
+        const confDissolution = await openCustomModal("💥 Tu es seul !", "En quittant cette communauté, elle sera automatiquement dissoute car il n'y a pas d'autres membres réels. Valider ?");
+        if (!confDissolution) return;
+        await dissoudreCommunauteLogique(currentCommuModalId);
+        return;
+      }
+    }
+
+    const confQuitter = await openCustomModal("🏃 Quitter ?", `Voulez-vous vraiment quitter la communauté "${dataC.name}" ?`);
+    if (!confQuitter) return;
+
+    await db.collection("communities").doc(currentCommuModalId).update({
+      memberIds: firebase.firestore.FieldValue.arrayRemove(user.uid)
+    });
+    await db.collection("players").doc(user.uid).update({
+      communityIds: firebase.firestore.FieldValue.arrayRemove(currentCommuModalId)
+    });
+
+    if (communautéActiveId === currentCommuModalId) {
+      communautéActiveId = null;
+      await db.collection("players").doc(user.uid).update({ defaultCommunity: null });
+    }
+
+    showPopup("Vous avez quitté la communauté.");
+    document.getElementById("communityAdminModalOverlay").classList.add("hidden");
+
+    await chargerCommunautesUtilisateur(user.uid, communautéActiveId);
+    renderGestionCommunautes();
+
+  } catch (e) { showPopup(e.message, true); }
+};
+
+// ACTION : DISSOUDRE LA COMMUNAUTÉ (PAR L'ADMIN)
+document.getElementById("btnCommuDelete").onclick = async () => {
+  if (!currentCommuModalId) return;
+  const confirmation = await openCustomModal("🚨 DISSOLUTION CRITIQUE 🚨", "Êtes-vous absolument sûr de vouloir détruire cette communauté ? Tous les membres réels en seront expulsés.");
+  if (!confirmation) return;
+  await dissoudreCommunauteLogique(currentCommuModalId);
+};
+
+async function dissoudreCommunauteLogique(commuId) {
+  try {
+    const docC = await db.collection("communities").doc(commuId).get();
+    const dataC = docC.data();
+    const membresAExpulser = dataC.memberIds || [];
+
+    // 1. On nettoie les profils de tous les joueurs réels liés
+    for (const uid of membresAExpulser) {
+      if(!uid.startsWith("guest-")) {
+        await db.collection("players").doc(uid).update({
+          communityIds: firebase.firestore.FieldValue.arrayRemove(commuId)
+        });
+        const checkP = await db.collection("players").doc(uid).get();
+        if(checkP.exists && checkP.data().defaultCommunity === commuId) {
+          await db.collection("players").doc(uid).update({ defaultCommunity: null });
+        }
+      }
+    }
+
+    // 2. Suppression de tous les invités (guests) rattachés à ce code
+    const snapG = await db.collection("players").where("communityIds", "array-contains", commuId).get();
+    snapG.forEach(async d => {
+      if(d.id.startsWith("guest-")) await db.collection("players").doc(d.id).delete();
+    });
+
+    // 3. Suppression définitive de la communauté
+    await db.collection("communities").doc(commuId).delete();
+
+    showPopup("Communauté détruite avec succès.");
+    document.getElementById("communityAdminModalOverlay").classList.add("hidden");
+
+    if (communautéActiveId === commuId) communautéActiveId = null;
+
+    await chargerCommunautesUtilisateur(auth.currentUser.uid, communautéActiveId);
+    renderGestionCommunautes();
+
+  } catch (e) { showPopup("Erreur lors de la suppression : " + e.message, true); }
+}
+
+document.getElementById("btnCloseCommuAdminModal").onclick = () => {
+  document.getElementById("communityAdminModalOverlay").classList.add("hidden");
+};
