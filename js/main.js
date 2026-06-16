@@ -1474,11 +1474,14 @@ if (cricketState.gameMode === "x01") {
 
   resetModifierUI(); 
   if (cricketState.gameMode === "x01") {
-    renderKeyboardX01(); renderGridX01();
+    renderKeyboardX01(); 
+    renderGridX01();
   } else if (cricketState.gameMode === "world") {
-    renderKeyboardX01(); renderGridWorld(); 
+    renderKeyboardX01(); 
+    renderGridWorld(); 
   } else {
-    renderKeyboard(); renderGrid();
+    renderKeyboard(); 
+    renderGrid();
   }
   gererEtatBoutonBull();
   updateTurnHeader(); 
@@ -1672,11 +1675,18 @@ function annulerDernierCoup() {
   cricketState.lastTurnText = precedentState.lastTurnText;
   
   resetModifierUI(); 
+
   if (cricketState.gameMode === "x01") {
-    renderKeyboardX01(); renderGridX01();
+    renderKeyboardX01(); 
+    renderGridX01();
+  } else if (cricketState.gameMode === "world") {
+    renderKeyboardX01(); 
+    renderGridWorld();
   } else {
-    renderKeyboard(); renderGrid();
+    renderKeyboard(); 
+    renderGrid();
   }
+  
   updateTurnHeader();
 }
 
@@ -1811,6 +1821,8 @@ document.getElementById("btnRematch").onclick = () => {
   // Réordonner la ligne de tir selon la configuration précédente
   if (cricketState.gameMode === "x01") {
     demarrerMatchX01(cricketState.players);
+  } else if (cricketState.gameMode === "world") {
+    demarrerMatchWorld(cricketState.players); 
   } else {
     demarrerMatchCricket(cricketState.players);
   }
