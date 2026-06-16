@@ -204,6 +204,7 @@
           <select id="gameModeSelect">
             <option value="cricket" selected>🏏 Cricket</option>
             <option value="x01">💯​ X01</option>
+            <option value="world">🌍 Tour du Monde</option> </select>
           </select>
         </div>
 
@@ -211,12 +212,12 @@
           <div style="margin-top: 12px;">
             <label><strong>Nombre de tours</strong></label>
             <select id="gameTurnsSelect">
-              <option value="20">20 tours</option>
               <option value="10">10 tours</option>
               <option value="12">12 tours</option>
               <option value="14">14 tours</option>
               <option value="16">16 tours</option>
               <option value="18">18 tours</option>
+              <option value="20" selected>20 tours</option>
               <option value="22">22 tours</option>
               <option value="24">24 tours</option>
               <option value="26">26 tours</option>
@@ -256,6 +257,37 @@
               <option value="double" selected>Double-out</option>
               <option value="single">Sans contrainte</option>
             </select>
+          </div>
+        </div>
+
+        <div id="worldParamsGroup" class="hidden">
+          <div style="margin-top: 12px;">
+            <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
+              <span class="stat-label"><strong>Sauter les numéros (Multiplicateurs)</strong></span>
+              <input type="checkbox" id="worldJumpCheckbox" style="width: auto; margin-top: 0;" checked>
+            </div>
+            <p class="hint" style="margin-top: 2px;">Si coché, un Double fait avancer de +2 et un Triple de +3 numéros.</p>
+          </div>
+
+          <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label><strong>Chiffre Départ</strong></label>
+              <select id="worldStartSelect">
+                <option value="1" selected>1</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+              </select>
+            </div>
+            <div>
+              <label><strong>Chiffre Arrivée</strong></label>
+              <select id="worldEndSelect">
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="25" selected>🎯 Bull</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>

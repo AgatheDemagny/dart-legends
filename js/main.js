@@ -79,12 +79,46 @@ document.getElementById("backHomeBtn").addEventListener("click", () => showScree
 
 // Affichage dynamique des paramètres selon le mode de jeu sélectionné
 document.getElementById("gameModeSelect").addEventListener("change", (e) => {
+  document.getElementById("cricketParamsGroup").classList.add("hidden");
+  document.getElementById("x01ParamsGroup").classList.add("hidden");
+  document.getElementById("worldParamsGroup").classList.add("hidden");
+
   if (e.target.value === "x01") {
-    document.getElementById("cricketParamsGroup").classList.add("hidden");
     document.getElementById("x01ParamsGroup").classList.remove("hidden");
+  } else if (e.target.value === "world") {
+    document.getElementById("worldParamsGroup").classList.remove("hidden");
   } else {
     document.getElementById("cricketParamsGroup").classList.remove("hidden");
-    document.getElementById("x01ParamsGroup").classList.add("hidden");
+  }
+});
+
+// Contrainte adaptative : min <= max - 10
+const worldStart = document.getElementById("worldStartSelect");
+const worldEnd = document.getElementById("worldEndSelect");
+
+worldStart.addEventListener("change", () => {
+  const minVal = parseInt(worldStart.value, 10);
+  const maxVal = parseInt(worldEnd.value, 10);
+  
+  if (minVal > maxVal - 10) {
+    // On force le max à s'adapter
+    if (minVal === 1) worldEnd.value = "15";
+    else if (minVal === 5) worldEnd.value = "15";
+    else if (minVal === 10) worldEnd.value = "20";
+    else if (minVal === 15) worldEnd.value = "25";
+  }
+});
+
+worldEnd.addEventListener("change", () => {
+  const minVal = parseInt(worldStart.value, 10);
+  const maxVal = parseInt(worldEnd.value, 10);
+  
+  if (maxVal < minVal + 10) {
+    // On force le min à s'adapter
+    if (maxVal === 25) worldStart.value = "15";
+    else if (maxVal === 20) worldStart.value = "10";
+    else if (maxVal === 15) worldStart.value = "5";
+    else if (maxVal === 10) worldStart.value = "1";
   }
 });
 
@@ -744,6 +778,8 @@ document.getElementById("startGameBtn").addEventListener("click", () => {
   const mode = document.getElementById("gameModeSelect").value;
   if (mode === "x01") {
     demarrerMatchX01(ordonnancementTireurs);
+  } else if (mode === "world") {
+    demarrerMatchWorld(ordonnancementTireurs); // Nouveau branchement
   } else {
     demarrerMatchCricket(ordonnancementTireurs);
   }
@@ -865,6 +901,127 @@ function demarrerMatchX01(listeJoueurs) {
   lancerInterfaceJeu("x01");
 }
 
+function demarrerMatchWorld(listeJoueurs) {
+  cricketState.gameMode = "world";
+  initVariablesMatchGenerales(listeJoueurs);
+
+  cricketState.maxTurns = 999; // Pas de limite de tours par défaut
+  
+  // Lecture des configurations de l'UI
+  const startNum = parseInt(document.getElementById("worldStartSelect").value, 10);
+  const endNum = parseInt(document.getElementById("worldEndSelect").value, 10);
+  cricketState.worldStartNum = startNum;
+  cricketState.worldEndNum = endNum;
+  cricketState.worldJump = document.getElementById("worldJumpCheckbox").checked;
+
+  // Initialisation des scores : chaque joueur/équipe démarre à l'étape initiale
+  cricketState.players.forEach(p => {
+    const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
+    cricketState.scores[keyStockage] = startNum;
+
+    // Initialisation des statistiques individuelles de suivi de cible
+    cricketState.statsDetails[p.id] = {
+      dartsThrown: 0,
+      totalTargetsHit: 0,
+      dartsPerTarget: {}, // Compte le nombre de fléchettes tirées POUR atteindre ce nombre
+      triplesHitCount: 0  // Statistiques globales de frime
+    };
+    
+    // On prépare le compteur pour chaque cible possible de 1 à 25
+    for(let i = 1; i <= 25; i++) {
+      cricketState.statsDetails[p.id].dartsPerTarget[i] = 0;
+    }
+  });
+
+  lancerInterfaceJeu("world");
+}
+
+// Rendu de la table de jeu en direct
+function renderGridWorld() {
+  const table = document.getElementById("cricketGridTable");
+  table.innerHTML = "";
+  
+  const headerRow = document.createElement("tr");
+  headerRow.style.background = "rgba(255,255,255,0.02)";
+  headerRow.innerHTML = `
+    <th style="text-align:left; padding: 12px 6px; border-bottom: 2px solid var(--divider); width: 40%;">Joueurs</th>
+    <th style="padding: 12px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--text-soft); width: 30%;">Cible Actuelle</th>
+    <th style="padding: 12px 6px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 30%;">Progression</th>
+  `;
+  table.appendChild(headerRow);
+
+  let entitesAAfficher = [];
+  if (cricketState.isTeamMode) {
+    listeEquipesFormees.forEach(eq => { entitesAAfficher.push({ id: eq.id, name: eq.name }); });
+  } else {
+    cricketState.players.forEach(p => { entitesAAfficher.push({ id: p.id, name: p.name }); });
+  }
+
+  const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
+
+  entitesAAfficher.forEach(entite => {
+    const row = document.createElement("tr");
+    row.style.borderBottom = "1px solid var(--divider)";
+    
+    const estLigneActive = cricketState.isTeamMode ? (joueurActuel.teamId === entite.id) : (joueurActuel.id === entite.id);
+    if(estLigneActive) {
+      row.style.backgroundColor = "rgba(192,101,42,0.15)";
+    }
+    
+    let nomTronque = entite.name.length > 12 ? entite.name.substring(0, 12) + "." : entite.name;
+    let cibleCourante = cricketState.scores[entite.id];
+    let affichageCible = cibleCourante === 25 ? "🎯 BULL" : `N° ${cibleCourante}`;
+    
+    // Calcul du pourcentage de progression
+    let totalAFAire = cricketState.worldEndNum - cricketState.worldStartNum;
+    let fait = cibleCourante - cricketState.worldStartNum;
+    let pct = totalAFAire > 0 ? Math.min(100, Math.round((fait / totalAFAire) * 100)) : 100;
+
+    row.innerHTML = `
+      <td style="text-align:left; padding: 14px 6px; font-weight:700;">${nomTronque}</td>
+      <td style="padding: 14px 4px; border-left: 1px solid var(--divider); font-weight:800; color: var(--primary-strong); font-size: 16px;">${affichageCible}</td>
+      <td style="font-weight:600; padding: 14px 6px; border-left: 1px solid var(--divider); color: var(--accent); font-size: 13px;">${pct}% (${cibleCourante}/${cricketState.worldEndNum})</td>
+    `;
+    table.appendChild(row);
+  });
+}
+
+// Calcul de l'impact des fléchettes pour le Tour du Monde
+function traiterCalculWorld(keyStockage, joueurActuel, valeurBouton) {
+  const stats = cricketState.statsDetails[joueurActuel.id];
+  let cibleAttendue = cricketState.scores[keyStockage];
+
+  // Incrémenter le nombre de fléchettes utilisées pour essayer de fermer cette cible spécifique
+  if(stats && stats.dartsPerTarget[cibleAttendue] !== undefined) {
+    stats.dartsPerTarget[cibleAttendue] += 1;
+  }
+
+  // Le joueur touche-t-il le bon numéro au bon moment ?
+  if (valeurBouton === cibleAttendue) {
+    let bond = 1;
+    if (cricketState.worldJump) {
+      bond = modificateurEnCours; // +1, +2 (Double), ou +3 (Triple)
+    }
+
+    if (modificateurEnCours === 3 && valeurBouton !== 25) {
+      stats.triplesHitCount += 1;
+    }
+
+    stats.totalTargetsHit += 1;
+    let nouvelleCible = cibleAttendue + bond;
+
+    // Sécurités face au Bullseye terminal
+    if (cibleAttendue === 20 && bond > 1) {
+      nouvelleCible = 25; // Un saut propulse directement sur le Bull
+    }
+    if (nouvelleCible > cricketState.worldEndNum && cibleAttendue !== cricketState.worldEndNum) {
+      nouvelleCible = cricketState.worldEndNum; 
+    }
+
+    cricketState.scores[keyStockage] = nouvelleCible;
+  }
+}
+
 function lancerInterfaceJeu(mode) {
   showScreen(screens.cricket);
   cricketState.startTime = Date.now(); 
@@ -878,6 +1035,9 @@ function lancerInterfaceJeu(mode) {
   if (mode === "x01") {
     renderKeyboardX01(); 
     renderGridX01();
+  } else if (mode === "world") {
+    renderKeyboardX01();
+    renderGridWorld();
   } else {
     renderKeyboard(); 
     renderGrid();
@@ -1299,8 +1459,10 @@ function taperChiffre(valeurBouton) {
   // Incrémentation des lancers individuels
   cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
 
-  if (cricketState.gameMode === "x01") {
+if (cricketState.gameMode === "x01") {
     traiterCalculX01(keyStockage, joueurActuel, valeurBouton);
+  } else if (cricketState.gameMode === "world") {
+    traiterCalculWorld(keyStockage, joueurActuel, valeurBouton);
   } else {
     traiterCalculCricket(keyStockage, joueurActuel, valeurBouton);
   }
@@ -1313,6 +1475,8 @@ function taperChiffre(valeurBouton) {
   resetModifierUI(); 
   if (cricketState.gameMode === "x01") {
     renderKeyboardX01(); renderGridX01();
+  } else if (cricketState.gameMode === "world") {
+    renderKeyboardX01(); renderGridWorld(); 
   } else {
     renderKeyboard(); renderGrid();
   }
@@ -1523,6 +1687,10 @@ function verifierConditionsFinMatch() {
   if (cricketState.gameMode === "x01") {
     for (let k of clesEntites) {
       if (cricketState.scores[k] === 0) { gagnantId = k; break; }
+    }
+  } else if (cricketState.gameMode === "world") {
+    for (let k of clesEntites) {
+      if (cricketState.scores[k] > cricketState.worldEndNum) { gagnantId = k; break; }
     }
   } else {
     for (let k of clesEntites) {
@@ -1770,7 +1938,7 @@ function genererTableauStatistiques() {
     });
     mainWrapper.appendChild(blocZone.blockDiv);
 
-    // --- BLOC 3 : LA GRILLE SOUVENIR DU MATCH (NEW) ---
+    // --- BLOC 3 : LA GRILLE SOUVENIR DU MATCH ---
     const blocGrille = creerBlocStats("🏁 Grille de Fin de Match");
     genererEnteteJoueurs(blocGrille.table);
 
@@ -1781,7 +1949,6 @@ function genererTableauStatistiques() {
       let rowHtml = `<td style="text-align:left; padding:10px 8px; font-weight:700; color:var(--primary);">${libelle}</td>`;
 
       cricketState.players.forEach(p => {
-        // En mode équipe, on va chercher l'état des marques de l'équipe du joueur
         const keyGrille = cricketState.isTeamMode ? p.teamId : p.id;
         const touches = cricketState.marks[keyGrille][t];
         let symbole = "-";
@@ -1799,9 +1966,67 @@ function genererTableauStatistiques() {
     mainWrapper.appendChild(blocGrille.blockDiv);
 
   // ==========================================
-  // RENDU DU MODE : X01
+  // RENDU DU MODE : TOUR DU MONDE
   // ==========================================
-  } else {
+  } else if (cricketState.gameMode === "world") {
+    
+    // --- BLOC 1 : STATS GÉNÉRALES ---
+    const blocGenW = creerBlocStats("📊 Bilan du Voyage");
+    genererEnteteJoueurs(blocGenW.table);
+
+    let rowTotDarts = document.createElement("tr"); rowTotDarts.style.borderBottom = "1px solid var(--divider)";
+    let dartsHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600;">Fléchettes totales lancées</td>`;
+    cricketState.players.forEach(p => {
+      dartsHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--primary-strong);">${cricketState.statsDetails[p.id].dartsThrown} darts</td>`;
+    });
+    rowTotDarts.innerHTML = dartsHtml; blocGenW.table.appendChild(rowTotDarts);
+
+    let rowAvgTarget = document.createElement("tr"); rowAvgTarget.style.borderBottom = "1px solid var(--divider)";
+    let avgHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px; color:var(--text-soft); font-weight:600;">Moy. fléchettes par numéro validé</td>`;
+    cricketState.players.forEach(p => {
+      const totalThrown = cricketState.statsDetails[p.id].dartsThrown;
+      const targetsHit = cricketState.statsDetails[p.id].totalTargetsHit || 1;
+      avgHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600; color:var(--text-soft);">${(totalThrown / targetsHit).toFixed(1)}</td>`;
+    });
+    rowAvgTarget.innerHTML = avgHtml; blocGenW.table.appendChild(rowAvgTarget);
+
+    let rowTriples = document.createElement("tr"); rowTriples.style.borderBottom = "1px solid var(--divider)";
+    let tripHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Triples cliniques validés 🔥</td>`;
+    cricketState.players.forEach(p => {
+      tripHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700; color:var(--accent);">${cricketState.statsDetails[p.id].triplesHitCount || 0}</td>`;
+    });
+    rowTriples.innerHTML = tripHtml; blocGenW.table.appendChild(rowTriples);
+
+    mainWrapper.appendChild(blocGenW.blockDiv);
+
+    // --- BLOC 2 : ANALYSE DÉTAILLÉE PAR CHIFFRE VISÉ ---
+    const blocDetailsW = creerBlocStats("🎯 Effort fourni par Numéro");
+    genererEnteteJoueurs(blocDetailsW.table);
+
+    for (let i = cricketState.worldStartNum; i <= cricketState.worldEndNum; i++) {
+      let libelleNum = i === 25 ? "Zone BULL" : `Chiffre ${i}`;
+      let rowNum = document.createElement("tr");
+      rowNum.style.borderBottom = "1px solid var(--divider)";
+      let rowNumHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--primary-strong);">${libelleNum}</td>`;
+
+      cricketState.players.forEach(p => {
+        const dCount = cricketState.statsDetails[p.id].dartsPerTarget[i] || 0;
+        if(dCount > 0) {
+          rowNumHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700;">${dCount} <span style="font-size:10px; font-weight:normal; color:#6c757d;">darts</span></td>`;
+        } else {
+          rowNumHtml += `<td style="text-align:center; border-left:1px solid var(--divider); color:#ccc;">-</td>`;
+        }
+      });
+
+      rowNum.innerHTML = rowNumHtml;
+      blocDetailsW.table.appendChild(rowNum);
+    }
+    mainWrapper.appendChild(blocDetailsW.blockDiv);
+
+  // ==========================================
+  // RENDU DU MODE : X01 (Parfaitement détaché)
+  // ==========================================
+  } else if (cricketState.gameMode === "x01") {
     
     // --- BLOC 1 : STATS GÉNÉRALES ---
     const blocGenX = creerBlocStats("📊 Statistiques Générales");
@@ -1862,11 +2087,10 @@ function genererTableauStatistiques() {
     });
     mainWrapper.appendChild(blocFamily.blockDiv);
 
-    // --- BLOC 3 : COMPTEUR D'IMPACTS ET % PRÉFÉRENCE (NEW) ---
+    // --- BLOC 3 : COMPTEUR D'IMPACTS ET % PRÉFÉRENCE ---
     const blocHits = creerBlocStats("🎯 Fréquence des Tirs (Chiffres préférés)");
     genererEnteteJoueurs(blocHits.table);
 
-    // Ligne spéciale pour le OUT (Bouton fermeture réussi)
     let rowOut = document.createElement("tr");
     rowOut.style.borderBottom = "2px solid var(--divider)";
     rowOut.style.background = "rgba(40, 167, 69, 0.04)";
@@ -1878,15 +2102,13 @@ function genererTableauStatistiques() {
     rowOut.innerHTML = outHtml;
     blocHits.table.appendChild(rowOut);
 
-    // On prépare la liste complète : de 20 jusqu'à 1, puis le Bull (25)
     let chiffresAles = [];
     for(let i = 20; i >= 1; i--) chiffresAles.push(i);
     chiffresAles.push(25);
 
     chiffresAles.forEach(num => {
-      // On vérifie d'abord si au moins un des joueurs a touché ce chiffre pour ne pas afficher 20 lignes vides inutiles
       const estUtile = cricketState.players.some(p => (cricketState.statsDetails[p.id].touchesNum[num] || 0) > 0);
-      if (!estUtile) return; // Si personne n'a tiré dessus, on passe au chiffre suivant (plus propre sur mobile)
+      if (!estUtile) return;
 
       let rowNum = document.createElement("tr");
       rowNum.style.borderBottom = "1px solid var(--divider)";
@@ -1897,7 +2119,6 @@ function genererTableauStatistiques() {
         const stats = cricketState.statsDetails[p.id];
         const hits = stats.touchesNum[num] || 0;
         
-        // Calcul du % par rapport au nombre total de touches réussies de ce joueur
         let totalHitsJoueur = 0;
         Object.values(stats.touchesNum).forEach(v => totalHitsJoueur += v);
         
