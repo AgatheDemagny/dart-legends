@@ -183,7 +183,6 @@ auth.onAuthStateChanged(async (user) => {
         if (doc.data().name) displayName = doc.data().name;
         if (doc.data().defaultCommunity) defaultCommunity = doc.data().defaultCommunity;
       } else {
-        // Initialisation si premier compte (sécurité au cas où l'inscription n'a pas fini d'écrire)
         await db.collection("players").doc(user.uid).set({
           email: user.email,
           name: displayName,
@@ -194,15 +193,10 @@ auth.onAuthStateChanged(async (user) => {
         });
       }
       
-      const nameDisplay = document.getElementById("playerNameDisplay");
-      if (nameDisplay) {
-        nameDisplay.innerText = displayName;
-      }
-      
       // 2. Charger les communautés de l'utilisateur
       await chargerCommunautesUtilisateur(user.uid, defaultCommunity);
 
-      // Si l'utilisateur n'a aucune communauté, on le redirige sur l'écran compte pour qu'il en crée/rejoigne une
+      // Redirection adaptative
       if (listeMesCommunautes.length === 0) {
         showScreen(screens.account);
         showPopup("👋 Bienvenue ! Crée ou rejoins une communauté pour commencer à jouer.", false);
@@ -297,6 +291,9 @@ async function chargerInfosProfil() {
     } else {
       document.getElementById("accountProfileName").value = user.email.split('@')[0];
     }
+    
+    renderGestionCommunautes();
+    
   } catch(e) {
     console.error(e);
   }
