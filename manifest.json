@@ -1,11 +1,12 @@
 {
   "name": "Dart Legends",
   "short_name": "Dart Legends",
-  "start_url": "./",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#08090C",
-  "theme_color": "#08090C",
   "orientation": "portrait",
+  "background_color": "#F5F1E7",
+  "theme_color": "#0F4C81",
+  "scope": "./",
   "icons": [
     {
       "src": "icons/icon-192.png",
@@ -25,8 +26,5 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ],
-  "background_color": "#F5F5ED",
-  "theme_color": "#F5F5ED",
-  "scope": "./"
+  ]
 }
