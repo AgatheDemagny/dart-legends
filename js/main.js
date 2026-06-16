@@ -1036,12 +1036,8 @@ function traiterCalculWorld(keyStockage, joueurActuel, valeurBouton) {
     stats.totalTargetsHit += 1;
     let nouvelleCible = cibleAttendue + bond;
 
-    // Sécurités face au Bullseye terminal
-    if (cibleAttendue === 20 && bond > 1) {
-      nouvelleCible = 25; // Un saut propulse directement sur le Bull
-    }
-    if (nouvelleCible > cricketState.worldEndNum && cibleAttendue !== cricketState.worldEndNum) {
-      nouvelleCible = cricketState.worldEndNum; 
+    if (cibleAttendue === 20 || nouvelleCible >= 21) {
+      nouvelleCible = 25; // On force l'étape suivante à être le Bullseye (25)
     }
 
     cricketState.scores[keyStockage] = nouvelleCible;
