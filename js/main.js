@@ -180,8 +180,25 @@ document.getElementById("backHomeFromHistoryBtn").addEventListener("click", () =
 
 document.getElementById("btnKeyZero").onclick = () => taperChiffre(0);
 
+const bountyTurnsSelect = document.getElementById('bountyTurnsSelect');
+const bountyTargetScoreSelect = document.getElementById('bountyTargetScoreSelect');
+const bountyWarning = document.getElementById('bountyLimitWarning');
+const startGameBtnForBountyCheck = document.getElementById('startGameBtn');
+
+function checkBountyLimits() {
+    if (!bountyTurnsSelect || !bountyTargetScoreSelect || !bountyWarning || !startGameBtnForBountyCheck) return;
+    const isUnlimitedTurns = bountyTurnsSelect.value === "999";
+    const isUnlimitedScore = bountyTargetScoreSelect.value === "0";
+    if (isUnlimitedTurns && isUnlimitedScore) {
+        bountyWarning.classList.remove('hidden');
+        startGameBtnForBountyCheck.disabled = true;
+    } else {
+        bountyWarning.classList.add('hidden');
+        startGameBtnForBountyCheck.disabled = false;
+    }
+}
+
 // ================== CONFIGURATION FIREBASE ==================
-// ================== CONFIGURATION & FLUX FIREBASE ==================
 const auth = firebase.auth();
 const db = firebase.firestore();
 let communautéActiveId = null; 
@@ -425,9 +442,13 @@ async function initPageNouvellePartie() {
         else if (maxVal === 10) worldStart.value = "1";
       }
     });
-    
+    if(bountyTurnsSelect && bountyTargetScoreSelect) {
+      bountyTurnsSelect.addEventListener('change', checkBountyLimits);
+      bountyTargetScoreSelect.addEventListener('change', checkBountyLimits);
+    }
     worldStartListenerSet = true; 
   }
+  checkBountyLimits();
 }
 
 // LA VOICI : Elle récupère uniquement les joueurs qui ont joué dans cette commu OU qui y sont liés
@@ -768,17 +789,6 @@ function gererEtatBoutonBull() {
 }
 
 document.getElementById("startGameBtn").addEventListener("click", () => {
-  const activeMode = document.getElementById('gameModeSelect').value;
-  if (activeMode === 'bounty') {
-        const bountyTurnsSelect = document.getElementById('bountyTurnsSelect');
-        const bountyTargetScoreSelect = document.getElementById('bountyTargetScoreSelect');
-
-        if (bountyTurnsSelect.value === "999" && bountyTargetScoreSelect.value === "0") {
-            alert("⚠️ Impossible de lancer la partie : Les tours ET le score ne peuvent pas être illimités en même temps !");
-            return; // Bloque la suite de l'exécution
-        }
-    }
-
   if (joueursSelectionnesMatch.length < 2) {
     return showPopup("⚠️ Il faut au moins 2 joueurs sur la ligne de tir pour démarrer !", true);
   }
