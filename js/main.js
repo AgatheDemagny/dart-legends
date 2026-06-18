@@ -1438,6 +1438,7 @@ function annulerDernierCoup() {
   resetModifierUI(); 
   if (cricketState.gameMode === "x01") { renderKeyboardX01(); renderGridX01(); }
   else if (cricketState.gameMode === "world") { renderKeyboardX01(); renderGridWorld(); }
+  else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); }
   else { renderKeyboard(); renderGrid(); }
   updateTurnHeader();
 }
