@@ -224,6 +224,7 @@
             <option value="cricket" selected>🏏 Cricket</option>
             <option value="x01">💯 X01</option>
             <option value="world">🌍 Tour du Monde</option>
+            <option value="bounty">💰 Chasseur de primes</option>
           </select>
         </div>
 
@@ -237,7 +238,6 @@
               <option value="16">16 tours</option>
               <option value="18">18 tours</option>
               <option value="20" selected>20 tours</option>
-              <option value="30">30 tours</option>
               <option value="999">Sans limite</option>
             </select>
           </div>
@@ -297,6 +297,44 @@
             </div>
           </div>
         </div>
+
+        <div id="bountyParamsGroup" class="hidden">
+          <div style="margin-top: 12px;">
+            <label><strong>Nombre de tours max</strong></label>
+            <select id="bountyTurnsSelect">
+              <option value="10">10 tours</option>
+              <option value="12">12 tours</option>
+              <option value="14">14 tours</option>
+              <option value="16">16 tours</option>
+              <option value="18">18 tours</option>
+              <option value="20" selected>20 tours</option>
+              <option value="30">30 tours</option>
+              <option value="999">Sans limite (tours)</option>
+            </select>
+          </div>
+
+          <div style="margin-top: 12px;">
+            <label><strong>Score cible</strong></label>
+            <select id="bountyTargetScoreSelect">
+              <option value="200">200 points</option>
+              <option value="300" selected>300 points</option>
+              <option value="500">500 points</option>
+              <option value="1000">1000 points</option>
+              <option value="0">Sans limite (score)</option>
+            </select>
+            <p class="hint" style="margin-top: 2px; color: var(--danger);" id="bountyLimitWarning">
+              ⚠️ Attention : Vous ne pouvez pas mettre ces deux options en illimité.
+            </p>
+          </div>
+
+          <div style="margin-top: 12px;">
+            <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
+              <span class="stat-label"><strong>Activer un chiffre Malus 💀</strong></span>
+              <input type="checkbox" id="bountyMalusCheckbox" style="width: auto; margin-top: 0;" checked>
+            </div>
+            <p class="hint" style="margin-top: 2px;">Toucher le chiffre malus retire les points de votre score.</p>
+          </div>
+        </div>
       </div>
 
       <div id="teamModeBlock" class="card form-card hidden">
@@ -333,6 +371,16 @@
         <div id="lastTurnHistoryText" style="font-size: 13px; color: #6c757d; margin-top: 5px; font-weight: 600;">Coup précédent : Aucun</div>
       </div>
 
+      <div id="bountyTargetsZone" class="hidden" style="padding: 10px; background: rgba(0,0,0,0.05); border-bottom: 1px solid var(--divider); text-align: center; flex-shrink: 0;">
+        <p class="hint" style="justify-content: center; margin-bottom: 6px;">🎯 Primes actives (Score augmenté)</p>
+        <div id="bountyBonusContainer" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px;">
+          </div>
+        
+        <div id="bountyMalusContainer">
+          <p class="hint" style="justify-content: center; margin-bottom: 4px; color: #dc3545;">💀 Zone recherchée (Malus)</p>
+          <span id="bountyMalusBadge" class="badge" style="background: #dc3545; color: white; font-size: 16px; padding: 6px 12px;">—</span>
+        </div>
+      </div>
       <div style="flex: 1; width: 100%; overflow-x: auto; overflow-y: hidden; display: block; background: var(--card-bg);">
         <table id="cricketGridTable" style="width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 13px;"></table>
       </div>

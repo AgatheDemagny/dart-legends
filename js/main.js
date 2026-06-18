@@ -28,11 +28,7 @@ const POOL_NOMS_EQUIPES = [
   "Araignée", "Libellule", "Abeille", "Sauterelle"  
 ];
 
-const SEQUENCE_TOUR_DU_MONDE = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
-  11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 
-  25 // Le Bullseye représenté par 25
-];
+const SEQUENCE_TOUR_DU_MONDE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25];
 
 function showScreen(activeScreen) {
   Object.values(screens).forEach(s => {
@@ -74,6 +70,19 @@ function openCustomModal(title, message) {
       resolve(false);
     };
   });
+}
+
+function generateNewBountyTarget(currentBonusTargets, currentMalusTarget) {
+    // On filtre SEQUENCE_TOUR_DU_MONDE pour exclure les cibles déjà utilisées
+    const availableTargets = SEQUENCE_TOUR_DU_MONDE.filter(t => 
+        !currentBonusTargets.includes(t) && t !== currentMalusTarget
+    );
+    
+    if (availableTargets.length === 0) return 20;
+
+    // On pioche au hasard dans ce qui reste
+    const randomIndex = Math.floor(Math.random() * availableTargets.length);
+    return availableTargets[randomIndex];
 }
 
 // Navigation de base
@@ -756,6 +765,17 @@ function gererEtatBoutonBull() {
 }
 
 document.getElementById("startGameBtn").addEventListener("click", () => {
+  const activeMode = document.getElementById('gameModeSelect').value;
+  if (activeMode === 'bounty') {
+        const bountyTurnsSelect = document.getElementById('bountyTurnsSelect');
+        const bountyTargetScoreSelect = document.getElementById('bountyTargetScoreSelect');
+
+        if (bountyTurnsSelect.value === "999" && bountyTargetScoreSelect.value === "0") {
+            alert("⚠️ Impossible de lancer la partie : Les tours ET le score ne peuvent pas être illimités en même temps !");
+            return; // Bloque la suite de l'exécution
+        }
+    }
+
   if (joueursSelectionnesMatch.length < 2) {
     return showPopup("⚠️ Il faut au moins 2 joueurs sur la ligne de tir pour démarrer !", true);
   }
