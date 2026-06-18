@@ -1966,7 +1966,31 @@ function verifierConditionsFinMatch() {
     for (let k of clesEntites) {
       if (cricketState.scores[k] > cricketState.worldEndNum) { gagnantId = k; break; }
     }
+  // --- AJOUT SÉCURITÉ POUR LE MODE BOUNTY ---
+  } else if (cricketState.gameMode === "bounty") {
+    const scoreCibleSelect = document.getElementById("bountyTargetScoreSelect");
+    const scoreCible = scoreCibleSelect ? parseInt(scoreCibleSelect.value, 10) : 300;
+
+    // 1. Vérification par le score (si pas illimité)
+    if (scoreCible !== 9999) {
+      for (let k of clesEntites) {
+        if (cricketState.scores[k] >= scoreCible) { gagnantId = k; break; }
+      }
+    }
+    
+    // 2. Vérification par la limite de tours (si pas illimité)
+    if (!gagnantId && cricketState.maxTurns !== 999 && cricketState.currentTurn > cricketState.maxTurns) {
+      let meilleurScore = -Infinity;
+      clesEntites.forEach(k => {
+        if (cricketState.scores[k] > meilleurScore) { 
+          meilleurScore = cricketState.scores[k]; 
+          gagnantId = k; 
+        }
+      });
+    }
+  // --- FIN DU BLOC BOUNTY ---
   } else {
+    // Mode Cricket classique
     for (let k of clesEntites) {
       let aToutFerme = cricketState.targets.every(t => cricketState.marks[k][t] >= 3);
       if (aToutFerme) {
