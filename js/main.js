@@ -189,7 +189,7 @@ const startGameBtnForBountyCheck = document.getElementById('startGameBtn');
 function checkBountyLimits() {
     if (!bountyTurnsSelect || !bountyTargetScoreSelect || !bountyWarning || !startGameBtnForBountyCheck) return;
     const isUnlimitedTurns = bountyTurnsSelect.value === "999";
-    const isUnlimitedScore = bountyTargetScoreSelect.value === "0";
+    const isUnlimitedScore = bountyTargetScoreSelect.value === "9999";
     if (isUnlimitedTurns && isUnlimitedScore) {
         bountyWarning.classList.remove('hidden');
         startGameBtnForBountyCheck.disabled = true;
@@ -1011,10 +1011,11 @@ function demarrerMatchBounty(listeJoueurs) {
   // Lecture de la configuration de l'UI
   const selectTours = document.getElementById("bountyTurnsSelect");
   cricketState.maxTurns = selectTours ? parseInt(selectTours.value, 10) : 20;
-  
+  cricketState.bountyHasMalus = document.getElementById("bountyMalusCheckbox").checked;
+
   // Initialisation des cibles de départ du premier tour
   cricketState.bountyBonusTargets = [20, 19, 18];
-  cricketState.bountyMalusTarget = 7;
+  cricketState.bountyMalusTarget = cricketState.bountyHasMalus ? 7 : null;
 
   cricketState.players.forEach(p => {
     const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
@@ -1473,48 +1474,6 @@ function renderGridBounty() {
   });
 }
 
-function renderGridBounty() {
-  const table = document.getElementById("cricketGridTable");
-  table.innerHTML = "";
-  const headerRow = document.createElement("tr");
-  headerRow.style.background = "rgba(255,255,255,0.02)";
-  let headerHtml = `<th style="text-align:left; padding: 10px 4px; border-bottom: 2px solid var(--divider); width: 70%;">Joueur</th>`;
-  headerHtml += `<th style="padding: 10px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 30%;">Score</th>`;
-  headerRow.innerHTML = headerHtml;
-  table.appendChild(headerRow);
-
-  let entitesAAfficher = [];
-  if (cricketState.isTeamMode) {
-    listeEquipesFormees.forEach(eq => {
-      if (!entitesAAfficher.some(e => e.id === eq.id)) {
-        entitesAAfficher.push({ id: eq.id, name: eq.name, isTeam: true });
-      }
-    });
-  } else {
-    cricketState.players.forEach(p => {
-      entitesAAfficher.push({ id: p.id, name: p.name, isTeam: false });
-    });
-  }
-
-  const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
-
-  entitesAAfficher.forEach(entite => {
-    const row = document.createElement("tr");
-    row.style.borderBottom = "1px solid var(--divider)";
-
-    const estLigneActive = cricketState.isTeamMode ? (joueurActuel.teamId === entite.id) : (joueurActuel.id === entite.id);
-    if (estLigneActive) {
-      row.style.backgroundColor = "rgba(192,101,42,0.15)";
-    }
-
-    let nomTronque = entite.name.length > 12 ? entite.name.substring(0, 12) + "." : entite.name;
-    let cellsHtml = `<td style="text-align:left; padding: 12px 4px; font-weight:700;">${nomTronque}</td>`;
-    cellsHtml += `<td style="font-weight:800; padding: 12px 2px; border-left: 1px solid var(--divider); color: var(--primary-strong); font-size: 14px;">${cricketState.scores[entite.id]}</td>`;
-    row.innerHTML = cellsHtml;
-    table.appendChild(row);
-  });
-}
-
 function renderGridX01() {
   const table = document.getElementById("cricketGridTable");
   table.innerHTML = "";
@@ -1763,7 +1722,11 @@ function cloreVoleeActuelle(joueur) {
     const nouveauBonusUn = generateNewBountyTarget([], null);
     let nouveauBonusDeux = generateNewBountyTarget([nouveauBonusUn], null);
     let nouveauBonusTrois = generateNewBountyTarget([nouveauBonusUn, nouveauBonusDeux], null);
-    let nouveauMalus = generateNewBountyTarget([nouveauBonusUn, nouveauBonusDeux, nouveauBonusTrois], null);
+    let nouveauMalus = null;
+
+    if (cricketState.bountyHasMalus) {
+      nouveauMalus = generateNewBountyTarget([nouveauBonusUn, nouveauBonusDeux, nouveauBonusTrois], null);
+    }
 
     cricketState.bountyBonusTargets = [nouveauBonusUn, nouveauBonusDeux, nouveauBonusTrois];
     cricketState.bountyMalusTarget = nouveauMalus;
@@ -1932,13 +1895,22 @@ function traiterCalculBounty(keyStockage, joueurActuel, valeurBouton) {
 
 function mettreAJourCiblesBountyUI() {
   const bonusContainer = document.getElementById("bountyBonusContainer");
+  const malusContainer = document.getElementById("bountyMalusContainer");
   const malusBadge = document.getElementById("bountyMalusBadge");
 
   if (bonusContainer) {
     bonusContainer.innerHTML = cricketState.bountyBonusTargets.map(t => `<span class="badge" style="background: #28a745; color: white; font-size: 16px; padding: 6px 12px;">${t}</span>`).join('');
   }
-  if (malusBadge) {
-    malusBadge.innerText = cricketState.bountyMalusTarget;
+
+  if (malusContainer) {
+    if (cricketState.bountyHasMalus) {
+      malusContainer.classList.remove("hidden");
+      if (malusBadge) {
+        malusBadge.innerText = cricketState.bountyMalusTarget;
+      }
+    } else {
+      malusContainer.classList.add("hidden");
+    }
   }
 }
 
