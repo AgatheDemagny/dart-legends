@@ -28,6 +28,12 @@ const POOL_NOMS_EQUIPES = [
   "Araignée", "Libellule", "Abeille", "Sauterelle"  
 ];
 
+const SEQUENCE_TOUR_DU_MONDE = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
+  11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 
+  25 // Le Bullseye représenté par 25
+];
+
 function showScreen(activeScreen) {
   Object.values(screens).forEach(s => {
     if(s) s.classList.add("hidden");
@@ -986,6 +992,12 @@ function renderGridWorld() {
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
 
   // Calcul dynamique de la taille du parcours
+  const startIndex = SEQUENCE_TOUR_DU_MONDE.indexOf(parseInt(cricketState.worldStartNum, 10));
+  const endIndex = SEQUENCE_TOUR_DU_MONDE.indexOf(parseInt(cricketState.worldEndNum, 10));
+
+  const ciblesPartieActuelle = SEQUENCE_TOUR_DU_MONDE.slice(startIndex, endIndex + 1);
+  const tailleParcoursReelle = ciblesPartieActuelle.length; 
+
   const start = cricketState.worldStartNum;
   const end = cricketState.worldEndNum;
   // Si la fin est le Bull (25), l'étape juste avant est le 20. Donc le nombre de zones est (20 - start + 1) + 1 pour le Bull
@@ -2066,15 +2078,26 @@ function genererTableauStatistiques() {
     const blocDetailsW = creerBlocStats("🎯 Effort fourni par Numéro");
     genererEnteteJoueurs(blocDetailsW.table);
 
-    for (let i = cricketState.worldStartNum; i <= cricketState.worldEndNum; i++) {
+    // 1. Récupération propre de la portion de séquence jouée
+    const idxStart = SEQUENCE_TOUR_DU_MONDE.indexOf(parseInt(cricketState.worldStartNum, 10));
+    const idxEnd = SEQUENCE_TOUR_DU_MONDE.indexOf(parseInt(cricketState.worldEndNum, 10));
+    
+    // Sécurité au cas où l'index n'est pas trouvé
+    const ciblesFaites = (idxStart !== -1 && idxEnd !== -1) 
+      ? SEQUENCE_TOUR_DU_MONDE.slice(idxStart, idxEnd + 1)
+      : [...SEQUENCE_TOUR_DU_MONDE];
+
+    // 2. On parcourt une seule fois la liste des vraies cibles
+    ciblesFaites.forEach(i => {
       let libelleNum = i === 25 ? "Zone BULL" : `Chiffre ${i}`;
       let rowNum = document.createElement("tr");
       rowNum.style.borderBottom = "1px solid var(--divider)";
+      
       let rowNumHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--primary-strong);">${libelleNum}</td>`;
 
       cricketState.players.forEach(p => {
         const dCount = cricketState.statsDetails[p.id].dartsPerTarget[i] || 0;
-        if(dCount > 0) {
+        if (dCount > 0) {
           rowNumHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700;">${dCount} <span style="font-size:10px; font-weight:normal; color:#6c757d;">darts</span></td>`;
         } else {
           rowNumHtml += `<td style="text-align:center; border-left:1px solid var(--divider); color:#ccc;">-</td>`;
@@ -2083,7 +2106,9 @@ function genererTableauStatistiques() {
 
       rowNum.innerHTML = rowNumHtml;
       blocDetailsW.table.appendChild(rowNum);
-    }
+    });
+
+    // 3. On ajoute enfin le bloc complet au wrapper de la page
     mainWrapper.appendChild(blocDetailsW.blockDiv);
 
   // ==========================================
