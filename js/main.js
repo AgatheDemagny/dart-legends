@@ -97,11 +97,14 @@ document.getElementById("gameModeSelect").addEventListener("change", (e) => {
   document.getElementById("cricketParamsGroup").classList.add("hidden");
   document.getElementById("x01ParamsGroup").classList.add("hidden");
   document.getElementById("worldParamsGroup").classList.add("hidden");
+  document.getElementById("bountyParamsGroup").classList.add("hidden");
 
   if (e.target.value === "x01") {
     document.getElementById("x01ParamsGroup").classList.remove("hidden");
   } else if (e.target.value === "world") {
     document.getElementById("worldParamsGroup").classList.remove("hidden");
+  } else if (e.target.value === "bounty") {
+    document.getElementById("bountyParamsGroup").classList.remove("hidden");
   } else {
     document.getElementById("cricketParamsGroup").classList.remove("hidden");
   }
