@@ -123,7 +123,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.15 - 18/06/2026</p>
+        <p>Version 1.16 - 18/06/2026</p>
       </div>
     </section>
 
@@ -461,5 +461,14 @@
     firebase.initializeApp(firebaseConfig);
   </script>
   <script src="js/main.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker enregistré avec succès ! Scope: ', reg.scope))
+          .catch(err => console.error('Échec de l\'enregistrement du Service Worker: ', err));
+      });
+    }
+  </script>
 </body>
 </html>
