@@ -1534,36 +1534,123 @@ document.getElementById("btnGoToStats").onclick = () => { genererTableauStatisti
 document.getElementById("btnBackToPodium").onclick = () => showScreen(screens.gameOver);
 
 function genererTableauStatistiques() {
-  const container = document.getElementById("matchStatsTable"); container.innerHTML = "";
-  const mainWrapper = document.createElement("div"); mainWrapper.style.padding = "0 8px 40px 8px"; mainWrapper.style.display = "flex"; mainWrapper.style.flexDirection = "column"; mainWrapper.style.gap = "20px";
+  const container = document.getElementById("matchStatsTable"); 
+  container.innerHTML = "";
+  const mainWrapper = document.createElement("div"); 
+  mainWrapper.style.padding = "0 8px 40px 8px"; 
+  mainWrapper.style.display = "flex"; 
+  mainWrapper.style.flexDirection = "column"; 
+  mainWrapper.style.gap = "20px";
   container.appendChild(mainWrapper);
 
   function creerBlocStats(titreBloc) {
-    const blockDiv = document.createElement("div"); blockDiv.className = "card"; blockDiv.style.padding = "12px";
-    const h3 = document.createElement("h3"); h3.style.textAlign = "left !important"; h3.style.borderBottom = "2px solid var(--divider)"; h3.style.paddingBottom = "6px"; h3.innerText = titreBloc;
+    const blockDiv = document.createElement("div"); 
+    blockDiv.className = "card"; 
+    blockDiv.style.padding = "12px";
+    const h3 = document.createElement("h3"); 
+    h3.style.textAlign = "left !important"; 
+    h3.style.borderBottom = "2px solid var(--divider)"; 
+    h3.style.paddingBottom = "6px"; 
+    h3.innerText = titreBloc;
     blockDiv.appendChild(h3);
-    const table = document.createElement("table"); table.style.width = "100%"; table.style.borderCollapse = "collapse"; table.style.fontSize = "13px";
-    blockDiv.appendChild(table); return { blockDiv, table };
+    const table = document.createElement("table"); 
+    table.style.width = "100%"; 
+    table.style.borderCollapse = "collapse"; 
+    table.style.fontSize = "13px";
+    blockDiv.appendChild(table); 
+    return { blockDiv, table };
   }
 
   function genererEnteteJoueurs(tableTarget) {
-    const rowHeader = document.createElement("tr"); rowHeader.style.background = "rgba(255,255,255,0.02)";
+    const rowHeader = document.createElement("tr"); 
+    rowHeader.style.background = "rgba(255,255,255,0.02)";
     let html = `<th style="text-align:left; padding:8px; border-bottom:1px solid var(--divider); width:35%;">Joueurs</th>`;
     cricketState.players.forEach(p => {
       let nom = p.name.length > 9 ? p.name.substring(0, 9) + "." : p.name;
       if (cricketState.isTeamMode) nom += ` <span style="font-size:9px; color:var(--accent); display:block;">(${p.teamName})</span>`;
       html += `<th style="font-weight:700; padding:8px 4px; border-bottom:1px solid var(--divider); border-left:1px solid var(--divider); text-align:center;">${nom}</th>`;
     });
-    rowHeader.innerHTML = html; tableTarget.appendChild(rowHeader);
+    rowHeader.innerHTML = html; 
+    tableTarget.appendChild(rowHeader);
   }
 
+  function ajouterLigneStat(tableTarget, libelle, calculFn) {
+    let row = document.createElement("tr");
+    row.style.borderBottom = "1px solid var(--divider)";
+    let html = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--accent);">${libelle}</td>`;
+    cricketState.players.forEach(p => {
+      html += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider);">${calculFn(p)}</td>`;
+    });
+    row.innerHTML = html;
+    tableTarget.appendChild(row);
+  }
+
+  // --- 1. MODE CRICKET ---
   if (cricketState.gameMode === "cricket") {
-    const blocGen = creerBlocStats("📊 Statistiques Générales"); genererEnteteJoueurs(blocGen.table);
-    let rowMpr = document.createElement("tr"); let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--accent);">MPR</td>`;
-    cricketState.players.forEach(p => { mprHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider);">${(((cricketState.statsDetails[p.id].touchesUtiles || 0) / (cricketState.statsDetails[p.id].dartsThrown || 1)) * 3).toFixed(2)}</td>`; });
-    rowMpr.innerHTML = mprHtml; blocGen.table.appendChild(rowMpr); mainWrapper.appendChild(blocGen.blockDiv);
-  } else {
-    const blocGenX = creerBlocStats("📊 Bilan Match"); genererEnteteJoueurs(blocGenX.table);
-    mainWrapper.appendChild(blocGenX.blockDiv);
+    const blocGen = creerBlocStats("📊 Statistiques Générales"); 
+    genererEnteteJoueurs(blocGen.table);
+    
+    ajouterLigneStat(blocGen.table, "MPR (Marques/Tour)", p => {
+      const darts = cricketState.statsDetails[p.id].dartsThrown || 1;
+      return (((cricketState.statsDetails[p.id].touchesUtiles || 0) / darts) * 3).toFixed(2);
+    });
+    ajouterLigneStat(blocGen.table, "Fléchettes lancées", p => cricketState.statsDetails[p.id].dartsThrown || 0);
+    ajouterLigneStat(blocGen.table, "Points donnés (Pénalités)", p => cricketState.statsDetails[p.id].totalPointsGiven || 0);
+    ajouterLigneStat(blocGen.table, "Max points en 1 volée", p => cricketState.statsDetails[p.id].maxPointsGivenInOneVolley || 0);
+
+    mainWrapper.appendChild(blocGen.blockDiv);
+
+  // --- 2. MODE CHASSEUR DE PRIMES (BOUNTY) ---
+  } else if (cricketState.gameMode === "bounty") {
+    const blocBounty = creerBlocStats("💰 Bilan du Chasseur");
+    genererEnteteJoueurs(blocBounty.table);
+
+    ajouterLigneStat(blocBounty.table, "Score Final", p => cricketState.scores[cricketState.isTeamMode ? p.teamId : p.id] || 0);
+    ajouterLigneStat(blocBounty.table, "Primes touchées (＋)", p => cricketState.statsDetails[p.id].touchesPositives || 0);
+    ajouterLigneStat(blocBounty.table, "Malus touchés (💀)", p => cricketState.statsDetails[p.id].touchesMalus || 0);
+    ajouterLigneStat(blocBounty.table, "Simples / Doubles / Triples", p => {
+      const s = cricketState.statsDetails[p.id].simples || 0;
+      const d = cricketState.statsDetails[p.id].doubles || 0;
+      const t = cricketState.statsDetails[p.id].triples || 0;
+      return `${s} / ${d} / ${t}`;
+    });
+    ajouterLigneStat(blocBounty.table, "Fléchettes lancées", p => cricketState.statsDetails[p.id].dartsThrown || 0);
+
+    mainWrapper.appendChild(blocBounty.blockDiv);
+
+  // --- 3. MODE X01 ---
+  } else if (cricketState.gameMode === "x01") {
+    const blocX01 = creerBlocStats("💯 Statistiques X01");
+    genererEnteteJoueurs(blocX01.table);
+
+    ajouterLigneStat(blocX01.table, "Moyenne (3 fléchettes)", p => {
+      const darts = cricketState.statsDetails[p.id].dartsThrown || 1;
+      return (((cricketState.statsDetails[p.id].totalScoreScored || 0) / darts) * 3).toFixed(1);
+    });
+    ajouterLigneStat(blocX01.table, "Moyenne (First 9)", p => {
+      const darts = Math.min(cricketState.statsDetails[p.id].dartsThrown || 0, 9);
+      return darts > 0 ? (((cricketState.statsDetails[p.id].first9DartsScore || 0) / darts) * 3).toFixed(1) : "0.0";
+    });
+    ajouterLigneStat(blocX01.table, "Meilleure Volée", p => cricketState.statsDetails[p.id].maxVolleyScore || 0);
+    ajouterLigneStat(blocX01.table, "Nombre de Busts (💥)", p => cricketState.statsDetails[p.id].bustsCount || 0);
+    ajouterLigneStat(blocX01.table, "Scores 100+ / 140+ / 180", p => {
+      const c100 = cricketState.statsDetails[p.id].scoreFamily100 || 0;
+      const c140 = cricketState.statsDetails[p.id].scoreFamily140 || 0;
+      const c180 = cricketState.statsDetails[p.id].scoreFamily180 || 0;
+      return `${c100} / ${c140} / ${c180}`;
+    });
+
+    mainWrapper.appendChild(blocX01.blockDiv);
+
+  // --- 4. MODE TOUR DU MONDE (WORLD) ---
+  } else if (cricketState.gameMode === "world") {
+    const blocWorld = creerBlocStats("🌍 Bilan Tour du Monde");
+    genererEnteteJoueurs(blocWorld.table);
+
+    ajouterLigneStat(blocWorld.table, "Cibles validées", p => cricketState.statsDetails[p.id].totalTargetsHit || 0);
+    ajouterLigneStat(blocWorld.table, "Fléchettes lancées", p => cricketState.statsDetails[p.id].dartsThrown || 0);
+    ajouterLigneStat(blocWorld.table, "Triples enregistrés", p => cricketState.statsDetails[p.id].triplesHitCount || 0);
+
+    mainWrapper.appendChild(blocWorld.blockDiv);
   }
 }
