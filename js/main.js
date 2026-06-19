@@ -1534,18 +1534,21 @@ document.getElementById("btnGoToStats").onclick = () => { genererTableauStatisti
 document.getElementById("btnBackToPodium").onclick = () => showScreen(screens.gameOver);
 
 function genererTableauStatistiques() {
-  // Fix pour injecter directement dans le bon conteneur de la page
   const tableEl = document.getElementById("matchStatsTable");
   if (!tableEl) return;
-  const container = tableEl.parentElement; 
-  container.innerHTML = "";
   
+  // CORRECTION DIRECTE : On cible le parent et on s'assure qu'il est propre
+  const parentContainer = tableEl.parentElement;
+  parentContainer.innerHTML = ""; // On vide proprement l'ancien contenu
+
+  // Création d'un wrapper de bloc dédié pour accueillir vos cartes
   const mainWrapper = document.createElement("div");
   mainWrapper.style.padding = "0 8px 40px 8px"; 
   mainWrapper.style.display = "flex";
   mainWrapper.style.flexDirection = "column";
   mainWrapper.style.gap = "20px";
-  container.appendChild(mainWrapper);
+  mainWrapper.style.width = "100%";
+  parentContainer.appendChild(mainWrapper);
 
   function creerBlocStats(titreBloc) {
     const blockDiv = document.createElement("div");
@@ -1554,9 +1557,10 @@ function genererTableauStatistiques() {
     blockDiv.style.borderRadius = "var(--r-2)";
     blockDiv.style.padding = "12px";
     blockDiv.style.boxShadow = "0 4px 12px rgba(227, 212, 174, 0.05)";
+    blockDiv.style.width = "100%";
     
     const h3 = document.createElement("h3");
-    h3.style.textAlign = "left !important";
+    h3.style.textAlign = "left";
     h3.style.color = "var(--primary)";
     h3.style.fontSize = "16px";
     h3.style.marginBottom = "10px";
@@ -1677,14 +1681,14 @@ function genererTableauStatistiques() {
     let rowTouchesPos = document.createElement("tr"); rowTouchesPos.style.borderBottom = "1px solid var(--divider)";
     let touchesPosHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:#28a745;">Primes Capturées (Hits)</td>`;
     cricketState.players.forEach(p => {
-      touchesPosHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:#28a745;">${cricketState.statsDetails[p.id].touchesPositives}</td>`;
+      touchesPosHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:#28a745;">${cricketState.statsDetails[p.id].touchesPositives || 0}</td>`;
     });
     rowTouchesPos.innerHTML = touchesPosHtml; blocGenB.table.appendChild(rowTouchesPos);
 
     let rowTouchesNeg = document.createElement("tr"); rowTouchesNeg.style.borderBottom = "1px solid var(--divider)";
     let touchesNegHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--danger);">Faillites (Malus)</td>`;
     cricketState.players.forEach(p => {
-      touchesNegHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--danger);">${cricketState.statsDetails[p.id].touchesMalus}</td>`;
+      touchesNegHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--danger);">${cricketState.statsDetails[p.id].touchesMalus || 0}</td>`;
     });
     rowTouchesNeg.innerHTML = touchesNegHtml; blocGenB.table.appendChild(rowTouchesNeg);
     mainWrapper.appendChild(blocGenB.blockDiv);
@@ -1694,17 +1698,17 @@ function genererTableauStatistiques() {
 
     let rowS = document.createElement("tr"); rowS.style.borderBottom = "1px solid var(--divider)";
     let sHtml = `<td style="text-align:left; padding:10px 8px;">Simples</td>`;
-    cricketState.players.forEach(p => { sHtml += `<td style="text-align:center; border-left:1px solid var(--divider);">${cricketState.statsDetails[p.id].simples}</td>`; });
+    cricketState.players.forEach(p => { sHtml += `<td style="text-align:center; border-left:1px solid var(--divider);">${cricketState.statsDetails[p.id].simples || 0}</td>`; });
     rowS.innerHTML = sHtml; blocMultiplicateurs.table.appendChild(rowS);
 
     let rowD = document.createElement("tr"); rowD.style.borderBottom = "1px solid var(--divider)";
     let dHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600;">Doubles 🥈</td>`;
-    cricketState.players.forEach(p => { dHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600; color:var(--accent);">${cricketState.statsDetails[p.id].doubles}</td>`; });
+    cricketState.players.forEach(p => { dHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600; color:var(--accent);">${cricketState.statsDetails[p.id].doubles || 0}</td>`; });
     rowD.innerHTML = dHtml; blocMultiplicateurs.table.appendChild(rowD);
 
     let rowT = document.createElement("tr"); rowT.style.borderBottom = "1px solid var(--divider)";
     let tHtml = `<td style="text-align:left; padding:10px 8px; font-weight:700;">Triples 🥇</td>`;
-    cricketState.players.forEach(p => { tHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700; color:var(--primary);">${cricketState.statsDetails[p.id].triples}</td>`; });
+    cricketState.players.forEach(p => { tHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700; color:var(--primary);">${cricketState.statsDetails[p.id].triples || 0}</td>`; });
     rowT.innerHTML = tHtml; blocMultiplicateurs.table.appendChild(rowT);
     mainWrapper.appendChild(blocMultiplicateurs.blockDiv);
 
