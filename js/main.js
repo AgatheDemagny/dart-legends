@@ -1534,8 +1534,12 @@ document.getElementById("btnGoToStats").onclick = () => { genererTableauStatisti
 document.getElementById("btnBackToPodium").onclick = () => showScreen(screens.gameOver);
 
 function genererTableauStatistiques() {
-  const container = document.getElementById("matchStatsTable"); 
-  container.innerHTML = "";
+  const tableEl = document.getElementById("matchStatsTable");
+  if (!tableEl) return;
+  
+  const container = tableEl.parentElement; 
+  container.innerHTML = ""; // On vide la zone
+  
   const mainWrapper = document.createElement("div"); 
   mainWrapper.style.padding = "0 8px 40px 8px"; 
   mainWrapper.style.display = "flex"; 
