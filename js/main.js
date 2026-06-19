@@ -933,8 +933,15 @@ function demarrerMatchBounty(listeJoueurs) {
   initVariablesMatchGenerales(listeJoueurs);
   cricketState.maxTurns = document.getElementById("bountyTurnsSelect") ? parseInt(document.getElementById("bountyTurnsSelect").value, 10) : 20;
   cricketState.bountyHasMalus = document.getElementById("bountyMalusCheckbox").checked;
-  cricketState.bountyBonusTargets = [20, 19, 18];
-  cricketState.bountyMalusTarget = cricketState.bountyHasMalus ? 7 : null;
+  
+  // Génération dynamique des cibles de départ sans doublons
+  cricketState.bountyBonusTargets = [];
+  while(cricketState.bountyBonusTargets.length < 3) {
+    let t = generateNewBountyTarget(cricketState.bountyBonusTargets, null);
+    cricketState.bountyBonusTargets.push(t);
+  }
+  
+  cricketState.bountyMalusTarget = cricketState.bountyHasMalus ? generateNewBountyTarget(cricketState.bountyBonusTargets, null) : null;
 
   cricketState.players.forEach(p => {
     const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
@@ -1275,12 +1282,15 @@ function taperChiffre(valeurBouton) {
   const keyStockage = cricketState.isTeamMode ? joueurActuel.teamId : joueurActuel.id;
   
   cricketState.history.push({
-    scores: JSON.parse(JSON.stringify(cricketState.scores)),
-    marks: cricketState.marks ? JSON.parse(JSON.stringify(cricketState.marks)) : null,
-    revealedTargets: [...cricketState.revealedTargets], currentTurnDartsText: [...cricketState.currentTurnDartsText],
-    statsDetails: JSON.parse(JSON.stringify(cricketState.statsDetails)),
-    currentPlayerIdx: cricketState.currentPlayerIdx, currentDart: cricketState.currentDart, currentTurn: cricketState.currentTurn, lastTurnText: cricketState.lastTurnText
-  });
+      scores: JSON.parse(JSON.stringify(cricketState.scores)),
+      marks: cricketState.marks ? JSON.parse(JSON.stringify(cricketState.marks)) : null,
+      revealedTargets: [...cricketState.revealedTargets], 
+      currentTurnDartsText: [...cricketState.currentTurnDartsText],
+      bountyBonusTargets: cricketState.bountyBonusTargets ? [...cricketState.bountyBonusTargets] : null, // Ajout
+      bountyMalusTarget: cricketState.bountyMalusTarget, // Ajout
+      statsDetails: JSON.parse(JSON.stringify(cricketState.statsDetails)),
+      currentPlayerIdx: cricketState.currentPlayerIdx, currentDart: cricketState.currentDart, currentTurn: cricketState.currentTurn, lastTurnText: cricketState.lastTurnText
+    });
 
   let prefixeText = modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "";
   cricketState.currentTurnDartsText.push(valeurBouton === 0 ? "0" : valeurBouton === 25 ? prefixeText + "Bull" : prefixeText + valeurBouton);
@@ -1430,15 +1440,24 @@ document.getElementById("btnKeyUndo").onclick = () => { annulerDernierCoup(); };
 function annulerDernierCoup() {
   if (cricketState.history.length === 0) return showPopup("Aucun coup à effacer.", true);
   const precedentState = cricketState.history.pop();
-  cricketState.scores = precedentState.scores; cricketState.marks = precedentState.marks;
-  cricketState.revealedTargets = precedentState.revealedTargets; cricketState.currentTurnDartsText = precedentState.currentTurnDartsText;
-  cricketState.statsDetails = precedentState.statsDetails; cricketState.currentPlayerIdx = precedentState.currentPlayerIdx;
-  cricketState.currentDart = precedentState.currentDart; cricketState.currentTurn = precedentState.currentTurn; cricketState.lastTurnText = precedentState.lastTurnText;
+  cricketState.scores = precedentState.scores; 
+  cricketState.marks = precedentState.marks;
+  cricketState.revealedTargets = precedentState.revealedTargets; 
+  cricketState.currentTurnDartsText = precedentState.currentTurnDartsText;
+  
+  if (precedentState.bountyBonusTargets) cricketState.bountyBonusTargets = precedentState.bountyBonusTargets;
+  if (precedentState.bountyMalusTarget !== undefined) cricketState.bountyMalusTarget = precedentState.bountyMalusTarget;
+  
+  cricketState.statsDetails = precedentState.statsDetails; 
+  cricketState.currentPlayerIdx = precedentState.currentPlayerIdx;
+  cricketState.currentDart = precedentState.currentDart; 
+  cricketState.currentTurn = precedentState.currentTurn; 
+  cricketState.lastTurnText = precedentState.lastTurnText;
   
   resetModifierUI(); 
   if (cricketState.gameMode === "x01") { renderKeyboardX01(); renderGridX01(); }
   else if (cricketState.gameMode === "world") { renderKeyboardX01(); renderGridWorld(); }
-  else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); }
+  else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); mettreAJourCiblesBountyUI(); }
   else { renderKeyboard(); renderGrid(); }
   updateTurnHeader();
 }
