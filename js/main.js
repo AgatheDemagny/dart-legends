@@ -130,24 +130,10 @@ document.getElementById("btnReshuffleTeams").addEventListener("click", () => {
   genererEquipesAleatoires();
 });
 
-// Navigation vers la page Mon Compte
-document.getElementById("menuAccount").addEventListener("click", () => {
-  showScreen(screens.account);
-  chargerInfosProfil();
-});
-document.getElementById("backHomeFromAccountBtn").addEventListener("click", () => showScreen(screens.home));
-
 // Autres menus indisponibles
 ["menuPlayers", "menuRanking", "menuTraining", "menuTournament"].forEach(id => {
   document.getElementById(id).addEventListener("click", () => { showPopup("Arrive dans la prochaine mise à jour !"); });
 });
-
-// Navigation vers l'historique
-document.getElementById("menuHistory").addEventListener("click", () => {
-  showScreen(screens.history);
-  chargerHistoriqueParties();
-});
-document.getElementById("backHomeFromHistoryBtn").addEventListener("click", () => showScreen(screens.home));
 
 document.getElementById("btnKeyZero").onclick = () => taperChiffre(0);
 
@@ -272,78 +258,307 @@ document.getElementById("btnLogout").addEventListener("click", () => {
   auth.signOut(); 
 });
 
-// ================== LOGIQUE DE L'ÉCRAN MON COMPTE ==================
+// ================== GESTIONNAIRES DE NAVIGATION & ÉVÉNEMENTS COMMUNAUTÉS ==================
+
+let commuSelectionneePourModal = null;
+let actionCommuEnCours = "creer"; // "creer" ou "rejoindre"
+
+// Navigation Mon Compte et Historique
+document.getElementById("menuAccount").addEventListener("click", () => {
+  showScreen(screens.account);
+  chargerInfosProfil();
+});
+document.getElementById("backHomeFromAccountBtn").addEventListener("click", () => showScreen(screens.home));
+
+document.getElementById("menuHistory").addEventListener("click", () => {
+  showScreen(screens.history);
+  chargerHistoriqueParties();
+});
+document.getElementById("backHomeFromHistoryBtn").addEventListener("click", () => showScreen(screens.home));
+
+// Ouvrir le formulaire de création
+document.getElementById("btnDeclencherCreerCommu").addEventListener("click", () => {
+  actionCommuEnCours = "creer";
+  document.getElementById("titreActionCommu").innerText = "Créer une communauté";
+  document.getElementById("inputNomCodeCommu").placeholder = "Nom de la communauté";
+  document.getElementById("zoneFormulaireCommu").classList.remove("hidden");
+});
+
+// Ouvrir le formulaire pour rejoindre
+document.getElementById("btnDeclencherRejoindreCommu").addEventListener("click", () => {
+  actionCommuEnCours = "rejoindre";
+  document.getElementById("titreActionCommu").innerText = "Rejoindre une communauté";
+  document.getElementById("inputNomCodeCommu").placeholder = "Code de la communauté (ex: ABC123)";
+  document.getElementById("zoneFormulaireCommu").classList.remove("hidden");
+});
+
+// Valider l'action (Créer ou Rejoindre)
+document.getElementById("btnValiderActionCommu").addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const valeur = document.getElementById("inputNomCodeCommu").value.trim();
+  if (!valeur) return showPopup("Ce champ ne peut pas être vide.", true);
+
+  try {
+    if (actionCommuEnCours === "creer") {
+      const codeCommu = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const nouvelleCommu = {
+        name: valeur,
+        code: codeCommu,
+        adminId: user.uid,
+        memberIds: [user.uid],
+        createdAt: Date.now()
+      };
+      
+      const docRef = await db.collection("communities").add(nouvelleCommu);
+      const playerDoc = await db.collection("players").doc(user.uid).get();
+      const currentDefault = playerDoc.exists ? playerDoc.data().defaultCommunity : null;
+      
+      await db.collection("players").doc(user.uid).set({
+        defaultCommunity: currentDefault || docRef.id
+      }, { merge: true });
+
+      showPopup(`Communauté "${valeur}" créée ! Code : ${codeCommu}`);
+    } else {
+      const snap = await db.collection("communities").where("code", "==", valeur.toUpperCase()).get();
+      if (snap.empty) return showPopup("Communauté introuvable avec ce code.", true);
+      
+      const commuDoc = snap.docs[0];
+      const commuData = commuDoc.data();
+      
+      if (commuData.memberIds.includes(user.uid)) {
+        return showPopup("Vous faites déjà partie de cette communauté.", true);
+      }
+      
+      await db.collection("communities").doc(commuDoc.id).update({
+        memberIds: firebase.firestore.FieldValue.arrayUnion(user.uid)
+      });
+      
+      await db.collection("players").doc(user.uid).set({
+        defaultCommunity: commuDoc.id
+      }, { merge: true });
+
+      showPopup(`Bienvenue dans ${commuData.name} !`);
+    }
+
+    document.getElementById("inputNomCodeCommu").value = "";
+    document.getElementById("zoneFormulaireCommu").classList.add("hidden");
+    
+    await chargerCommunautesUtilisateur(user.uid, communautéActiveId);
+    await chargerInfosProfil();
+  } catch (e) {
+    showPopup("Erreur : " + e.message, true);
+  }
+});
+
+// Fermer le Modal
+document.getElementById("btnCloseCommuAdminModal").addEventListener("click", () => {
+  document.getElementById("communityAdminModalOverlay").classList.add("hidden");
+  commuSelectionneePourModal = null;
+});
+
+// Ajouter un membre via le Modal
+document.getElementById("btnCommuValidateAddMember").addEventListener("click", async () => {
+  if (!commuSelectionneePourModal) return;
+  
+  const name = document.getElementById("commuAddMemberName").value.trim();
+  const email = document.getElementById("commuAddMemberEmail").value.trim().toLowerCase();
+  
+  if (!name) return showPopup("Le nom est obligatoire.", true);
+
+  try {
+    let targetUid = null;
+    if (email) {
+      const snapUser = await db.collection("players").where("email", "==", email).get();
+      if (!snapUser.empty) targetUid = snapUser.docs[0].id;
+    }
+
+    if (targetUid) {
+      if (commuSelectionneePourModal.memberIds.includes(targetUid)) {
+        return showPopup("Ce joueur est déjà membre.", true);
+      }
+      await db.collection("communities").doc(commuSelectionneePourModal.id).update({
+        memberIds: firebase.firestore.FieldValue.arrayUnion(targetUid)
+      });
+    } else {
+      const docId = "guest-" + Date.now();
+      await db.collection("players").doc(docId).set({
+        name: name,
+        email: email || null,
+        createdAt: Date.now(),
+        communityIds: [commuSelectionneePourModal.id],
+        isRealAccount: false
+      });
+    }
+
+    showPopup(`${name} ajouté !`);
+    document.getElementById("commuAddMemberName").value = "";
+    document.getElementById("commuAddMemberEmail").value = "";
+    ouvrirModalGestionCommunaute(commuSelectionneePourModal.id);
+  } catch (e) {
+    showPopup("Erreur d'ajout : " + e.message, true);
+  }
+});
+
+// Quitter une communauté
+document.getElementById("btnCommuLeave").addEventListener("click", async () => {
+  if (!commuSelectionneePourModal) return;
+  const user = auth.currentUser;
+  if (!user) return;
+
+  if (commuSelectionneePourModal.adminId === user.uid) {
+    return showPopup("Vous êtes admin. Dissolvez-la ou transférez les droits pour partir.", true);
+  }
+
+  const certitude = await openCustomModal("🏃 Quitter", `Voulez-vous quitter ${commuSelectionneePourModal.name} ?`);
+  if (!certitude) return;
+
+  try {
+    await db.collection("communities").doc(commuSelectionneePourModal.id).update({
+      memberIds: firebase.firestore.FieldValue.arrayRemove(user.uid)
+    });
+    document.getElementById("communityAdminModalOverlay").classList.add("hidden");
+    await chargerCommunautesUtilisateur(user.uid, null);
+    await chargerInfosProfil();
+    showPopup("Communauté quittée.");
+  } catch (e) { showPopup(e.message, true); }
+});
+
+// Dissoudre
+document.getElementById("btnCommuDelete").addEventListener("click", async () => {
+  if (!commuSelectionneePourModal) return;
+  const user = auth.currentUser;
+  if (!user || commuSelectionneePourModal.adminId !== user.uid) return;
+
+  const certitude = await openCustomModal("🗑️ Dissoudre", `Supprimer définitivement "${commuSelectionneePourModal.name}" et son historique ?`);
+  if (!certitude) return;
+
+  try {
+    await db.collection("communities").doc(commuSelectionneePourModal.id).delete();
+    const histSnap = await db.collection("games_history").where("communityId", "==", commuSelectionneePourModal.id).get();
+    const batch = db.batch();
+    histSnap.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    document.getElementById("communityAdminModalOverlay").classList.add("hidden");
+    await chargerCommunautesUtilisateur(user.uid, null);
+    await chargerInfosProfil();
+    showPopup("Communauté dissoute.");
+  } catch (e) { showPopup(e.message, true); }
+});
+
+// ================== LOGIQUE PROFIL & NOUVELLE PARTIE ==================
+
 async function chargerInfosProfil() {
   const user = auth.currentUser;
   if (!user) return;
-  
   document.getElementById("accountProfileEmail").innerText = user.email;
-  document.getElementById("accountProfileName").value = "";
 
   try {
     await chargerJoueursCommunauteCible();
     const doc = await db.collection("players").doc(user.uid).get();
-    if(doc.exists && doc.data().name) {
-      document.getElementById("accountProfileName").value = doc.data().name;
-    } else {
-      document.getElementById("accountProfileName").value = user.email.split('@')[0];
-    }
-    
-    // Note: Si tu as une fonction UI de rendu de gestion commu, appelle-la ici.
-    
-  } catch(e) {
-    console.error(e);
-  }
+    document.getElementById("accountProfileName").value = (doc.exists && doc.data().name) ? doc.data().name : user.email.split('@')[0];
+    renderListeCommunautesGestion();
+  } catch(e) { console.error(e); }
 }
 
 document.getElementById("btnUpdateProfileName").addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return;
-
   const nouveauPseudo = document.getElementById("accountProfileName").value.trim();
   if(!nouveauPseudo) return showPopup("Le pseudo ne peut pas être vide.", true);
 
-  const doublon = tousLesJoueursBase.some(p => p.id !== user.uid && p.name.toLowerCase() === nouveauPseudo.toLowerCase());
-  if (doublon) {
-    return showPopup(`Le nom "${nouveauPseudo}" existe déjà !`, true);
-  }
-
   try {
-    await db.collection("players").doc(user.uid).update({
-      name: nouveauPseudo
-    });
-    const nameDisplay = document.getElementById("playerNameDisplay");
-    if (nameDisplay) nameDisplay.innerText = nouveauPseudo;
-    await chargerJoueursCommunauteCible();
+    await db.collection("players").doc(user.uid).update({ name: nouveauPseudo });
     showPopup("Pseudo mis à jour !");
-  } catch(e) {
-    showPopup("Erreur lors de la mise à jour : " + e.message, true);
-  }
+    await chargerJoueursCommunauteCible();
+  } catch(e) { showPopup(e.message, true); }
 });
 
-// ================== LOGIQUE NOUVELLE PARTIE & EQUIPES ==================
-let tousLesJoueursBase = [];
-let joueursSelectionnesMatch = [];
-let listeEquipesFormees = []; 
-let communauteCibleMatchId = null;
-let worldStartListenerSet = false;
+function renderListeCommunautesGestion() {
+  const container = document.getElementById("listeCommunautesContainer");
+  if (!container) return; container.innerHTML = "";
+
+  if (listeMesCommunautes.length === 0) {
+    container.innerHTML = "<p class='hint'>Aucune communauté pour l'instant.</p>";
+    return;
+  }
+
+  listeMesCommunautes.forEach(commu => {
+    const row = document.createElement("div");
+    row.className = "stat-row";
+    row.style.padding = "10px"; row.style.background = "#FDFDFB"; row.style.border = "1px solid var(--divider)"; row.style.borderRadius = "var(--r-1)"; row.style.marginBottom = "4px";
+    const estAdmin = commu.adminId === auth.currentUser.uid;
+    const badgeRole = estAdmin ? "<span class='badge' style='background:#0F4C81; color:#fff;'>Admin</span>" : "<span class='badge'>Membre</span>";
+
+    row.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:2px;">
+        <span style="font-weight:700; color:var(--primary);">${commu.name}</span>
+        <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+          ${badgeRole} <span style="font-size:11px; font-family:monospace; color:var(--text-soft);">Code : ${commu.code}</span>
+        </div>
+      </div>
+      <button class="primary" style="padding: 6px 12px; font-size: 12px;" onclick="ouvrirModalGestionCommunaute('${commu.id}')">Gérer</button>
+    `;
+    container.appendChild(row);
+  });
+}
+
+async function ouvrirModalGestionCommunaute(commuId) {
+  try {
+    const doc = await db.collection("communities").doc(commuId).get();
+    if (!doc.exists) return;
+    const commuData = doc.data();
+    commuSelectionneePourModal = { id: doc.id, ...commuData };
+
+    document.getElementById("commuModalTitle").innerText = commuData.name;
+    document.getElementById("commuModalCodeBadge").innerText = `CODE : ${commuData.code}`;
+    document.getElementById("btnCommuDelete").style.display = commuData.adminId === auth.currentUser.uid ? "block" : "none";
+
+    const listContainer = document.getElementById("commuModalMembersList");
+    listContainer.innerHTML = "<p class='hint'>Chargement...</p>";
+
+    let membresHtml = "";
+    for (const uid of commuData.memberIds) {
+      const uDoc = await db.collection("players").doc(uid).get();
+      if (uDoc.exists) {
+        membresHtml += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:4px; font-size:13px; border-bottom:1px solid #f5f5f5;">
+            <span><strong>${uDoc.data().name}</strong>${commuData.adminId === uid ? " 👑" : ""}</span>
+            <span style="font-size:11px; color:var(--text-soft);">Compte lié</span>
+          </div>`;
+      }
+    }
+
+    const snapGuests = await db.collection("players").where("communityIds", "array-contains", commuId).get();
+    snapGuests.forEach(gDoc => {
+      if (!gDoc.data().isRealAccount) {
+        membresHtml += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:4px; font-size:13px; border-bottom:1px solid #f5f5f5;">
+            <span style="color:#6c757d;">👤 ${gDoc.data().name}</span>
+            <span style="font-size:11px; color:var(--accent); font-weight:600;">Invité</span>
+          </div>`;
+      }
+    });
+
+    listContainer.innerHTML = membresHtml || "<p class='hint'>Aucun membre</p>";
+    document.getElementById("communityAdminModalOverlay").classList.remove("hidden");
+  } catch (e) { showPopup(e.message, true); }
+}
 
 async function initPageNouvellePartie() {
   communauteCibleMatchId = communautéActiveId;
   await chargerJoueursCommunauteCible();
-
   joueursSelectionnesMatch = [];
   document.getElementById("teamModeCheckbox").checked = false;
   document.getElementById("teamModeConfig").classList.add("hidden");
-  document.getElementById("teamCountSelect").value = "2";
   
   const selectCommu = document.getElementById("selectCommuMatch");
   selectCommu.innerHTML = "";
-  
   listeMesCommunautes.forEach(c => {
     const opt = document.createElement("option");
-    opt.value = c.id;
-    opt.innerText = c.name;
+    opt.value = c.id; opt.innerText = c.name;
     if (c.id === communautéActiveId) opt.selected = true;
     selectCommu.appendChild(opt);
   });
@@ -357,331 +572,80 @@ async function initPageNouvellePartie() {
 
   const user = auth.currentUser;
   if (user) {
-    try {
-      const doc = await db.collection("players").doc(user.uid).get();
-      const currentName = (doc.exists && doc.data().name) ? doc.data().name : user.email.split('@')[0];
-      joueursSelectionnesMatch.push({ id: user.uid, name: currentName });
-    } catch(e) {
-      joueursSelectionnesMatch.push({ id: user.uid, name: user.email.split('@')[0] });
-    }
+    const doc = await db.collection("players").doc(user.uid).get();
+    joueursSelectionnesMatch.push({ id: user.uid, name: (doc.exists && doc.data().name) ? doc.data().name : user.email.split('@')[0] });
   }
-  
   renderSelectedPlayers();
-
-  const worldStart = document.getElementById("worldStartSelect");
-  const worldEnd = document.getElementById("worldEndSelect");
-
-  if (worldStart && worldEnd && !worldStartListenerSet) {
-    worldStart.addEventListener("change", () => {
-      const minVal = parseInt(worldStart.value, 10);
-      const maxVal = parseInt(worldEnd.value, 10);
-      if (minVal > maxVal - 10) {
-        if (minVal === 1) worldEnd.value = "15";
-        else if (minVal === 5) worldEnd.value = "15";
-        else if (minVal === 10) worldEnd.value = "20";
-        else if (minVal === 15) worldEnd.value = "25";
-      }
-    });
-
-    worldEnd.addEventListener("change", () => {
-      const minVal = parseInt(worldStart.value, 10);
-      const maxVal = parseInt(worldEnd.value, 10);
-      if (maxVal < minVal + 10) {
-        if (maxVal === 25) worldStart.value = "15";
-        else if (maxVal === 20) worldStart.value = "10";
-        else if (maxVal === 15) worldStart.value = "5";
-        else if (maxVal === 10) worldStart.value = "1";
-      }
-    });
-
-    if(bountyTurnsSelect && bountyTargetScoreSelect) {
-      bountyTurnsSelect.addEventListener('change', checkBountyLimits);
-      bountyTargetScoreSelect.addEventListener('change', checkBountyLimits);
-    }
-    worldStartListenerSet = true; 
-  }
   checkBountyLimits();
 }
 
 async function chargerJoueursCommunauteCible() {
-  if (!communauteCibleMatchId) {
-    communauteCibleMatchId = communautéActiveId;
-  }
-  if (!communauteCibleMatchId) {
-    tousLesJoueursBase = [];
-    return;
-  }
-  
+  if (!communauteCibleMatchId) communauteCibleMatchId = communautéActiveId;
+  if (!communauteCibleMatchId) { tousLesJoueursBase = []; return; }
   tousLesJoueursBase = [];
   try {
     const docCommu = await db.collection("communities").doc(communauteCibleMatchId).get();
     if (docCommu.exists) {
-      const dataCommu = docCommu.data();
-      const membresIds = dataCommu.memberIds || [];
-      for (const uid of membresIds) {
+      for (const uid of docCommu.data().memberIds || []) {
         const docUser = await db.collection("players").doc(uid).get();
-        if (docUser.exists) {
-          tousLesJoueursBase.push({ id: docUser.id, ...docUser.data() });
-        }
+        if (docUser.exists) tousLesJoueursBase.push({ id: docUser.id, ...docUser.data() });
       }
     }
-    
-    const snapGuests = await db.collection("players")
-                                .where("communityIds", "array-contains", communauteCibleMatchId)
-                                .get();
-                                
+    const snapGuests = await db.collection("players").where("communityIds", "array-contains", communauteCibleMatchId).get();
     snapGuests.forEach(doc => {
-      if (!tousLesJoueursBase.some(p => p.id === doc.id)) {
-        tousLesJoueursBase.push({ id: doc.id, ...doc.data() });
-      }
+      if (!tousLesJoueursBase.some(p => p.id === doc.id)) tousLesJoueursBase.push({ id: doc.id, ...doc.data() });
     });
-    
-    const user = auth.currentUser;
-    if (user && !tousLesJoueursBase.some(p => p.id === user.uid)) {
-      const docUser = await db.collection("players").doc(user.uid).get();
-      if (docUser.exists) {
-        tousLesJoueursBase.push({ id: docUser.id, ...docUser.data() });
-      }
-    }
-  } catch(e) {
-    console.error("Erreur lors du chargement des joueurs :", e);
-  }
+  } catch(e) { console.error(e); }
 }
 
-document.getElementById("btnOpenSearchPlayer").addEventListener("click", () => {
-  const zoneSearch = document.getElementById("zoneSearchPlayer");
-  zoneSearch.classList.toggle("hidden");
-  document.getElementById("zoneCreatePlayer").classList.add("hidden");
-  if (!zoneSearch.classList.contains("hidden")) {
-    filtrerEtAfficherJoueurs(""); 
-    document.getElementById("searchPlayerInput").focus();
-  }
-});
-document.getElementById("btnOpenCreatePlayer").addEventListener("click", () => {
-  document.getElementById("zoneCreatePlayer").classList.toggle("hidden");
-  document.getElementById("zoneSearchPlayer").classList.add("hidden");
-});
+// ================== LOGIQUE HISTORIQUE AVEC FILTRE CROISÉ ==================
 
-function filtrerEtAfficherJoueurs(query) {
-  const resultContainer = document.getElementById("searchResultsList");
-  resultContainer.innerHTML = "";
-
-  const filtres = tousLesJoueursBase.filter(p => {
-    const correspondNom = p.name.toLowerCase().includes(query.toLowerCase().trim());
-    const pasDejaSelectionne = !joueursSelectionnesMatch.some(sel => sel.id === p.id);
-    return correspondNom && pasDejaSelectionne;
-  });
-
-  if (filtres.length === 0) {
-    resultContainer.innerHTML = "<p class='hint' style='padding:6px;'>Aucun joueur disponible</p>";
-    return;
-  }
-
-  filtres.forEach(p => {
-    const d = document.createElement("div");
-    d.className = "stat-row";
-    d.style.cursor = "pointer";
-    d.style.padding = "8px 6px";
-    d.style.borderBottom = "1px solid var(--divider)";
-    d.innerHTML = `<span><strong>${p.name}</strong></span>`;
-    
-    d.onclick = () => {
-      joueursSelectionnesMatch.push({ id: p.id, name: p.name });
-      renderSelectedPlayers();
-      document.getElementById("searchPlayerInput").value = "";
-      resultContainer.innerHTML = "";
-      document.getElementById("zoneSearchPlayer").classList.add("hidden");
-      showPopup(`${p.name} ajouté au match !`);
-    };
-    resultContainer.appendChild(d);
-  });
-}
-
-document.getElementById("searchPlayerInput").addEventListener("input", (e) => {
-  filtrerEtAfficherJoueurs(e.target.value);
-});
-
-document.getElementById("btnValidateCreatePlayer").addEventListener("click", async () => {
-  const name = document.getElementById("createPlayerName").value.trim();
-  const email = document.getElementById("createPlayerEmail").value.trim().toLowerCase();
-  
-  if(!name) return showPopup("Le nom est obligatoire.", true);
-  if(!communauteCibleMatchId) return showPopup("Aucune communauté sélectionnée.", true);
-
-  const existeDeja = tousLesJoueursBase.some(p => p.name.toLowerCase() === name.toLowerCase());
-  if (existeDeja) {
-    return showPopup(`Le nom "${name}" existe déjà dans cette communauté !`, true);
-  }
-
-  try {
-    const docId = "guest-" + Date.now();
-    const nouveauJoueur = { 
-      name: name, 
-      email: email || null, 
-      createdAt: Date.now(),
-      communityIds: [communauteCibleMatchId]
-    };
-    
-    await db.collection("players").doc(docId).set(nouveauJoueur);
-    joueursSelectionnesMatch.push({ id: docId, name: name });
-    renderSelectedPlayers();
-    await chargerJoueursCommunauteCible();
-    
-    document.getElementById("createPlayerName").value = "";
-    document.getElementById("createPlayerEmail").value = "";
-    document.getElementById("zoneCreatePlayer").classList.add("hidden");
-    showPopup("Joueur créé avec succès !");
-  } catch(e) { showPopup(e.message, true); }
-});
-
-function renderSelectedPlayers() {
-  const container = document.getElementById("selectedPlayersMatchList");
-  container.innerHTML = "";
-  if(joueursSelectionnesMatch.length === 0) {
-    container.innerHTML = "<p class='hint'>Aucun tireur sélectionné.</p>";
-  } else {
-    joueursSelectionnesMatch.forEach((p, index) => {
-      const badge = document.createElement("div");
-      badge.className = "stat-row";
-      badge.style.padding = "6px 10px";
-      badge.style.background = "rgba(255,255,255,0.03)";
-      badge.style.borderRadius = "10px";
-      badge.style.marginBottom = "5px";
-      badge.innerHTML = `
-        <span><strong>${p.name}</strong></span>
-        <button class="ghost btn-action-soft" onclick="retirerJoueurMatch(${index})">Retirer</button>
-      `;
-      container.appendChild(badge);
-    });
-  }
-
-  const blockEquipe = document.getElementById("teamModeBlock");
-  if (joueursSelectionnesMatch.length >= 4) {
-    blockEquipe.classList.remove("hidden");
-    const teamSelect = document.getElementById("teamCountSelect");
-    const valCourante = parseInt(teamSelect.value, 10);
-    teamSelect.innerHTML = "";
-    for (let i = 2; i <= Math.min(4, joueursSelectionnesMatch.length); i++) {
-      let opt = document.createElement("option");
-      opt.value = i; opt.innerText = `${i} équipes`;
-      if (i === valCourante) opt.selected = true;
-      teamSelect.appendChild(opt);
-    }
-    if (document.getElementById("teamModeCheckbox").checked) {
-      genererEquipesAleatoires();
-    }
-  } else {
-    blockEquipe.classList.add("hidden");
-    document.getElementById("teamModeCheckbox").checked = false;
-    document.getElementById("teamModeConfig").classList.add("hidden");
-  }
-}
-
-function retirerJoueurMatch(idx) {
-  joueursSelectionnesMatch.splice(idx, 1);
-  renderSelectedPlayers();
-}
-
-function genererEquipesAleatoires() {
-  const nbEquipesDemandees = parseInt(document.getElementById("teamCountSelect").value, 10);
-  let joueursMelanges = [...joueursSelectionnesMatch];
-  for (let i = joueursMelanges.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [joueursMelanges[i], joueursMelanges[j]] = [joueursMelanges[j], joueursMelanges[i]];
-  }
-
-  let nomsPioches = [];
-  let poolCopie = [...POOL_NOMS_EQUIPES];
-  for(let i=0; i<nbEquipesDemandees; i++) {
-    if(poolCopie.length === 0) poolCopie = [...POOL_NOMS_EQUIPES];
-    const indexAlea = Math.floor(Math.random() * poolCopie.length);
-    nomsPioches.push(poolCopie.splice(indexAlea, 1)[0]);
-  }
-
-  listeEquipesFormees = [];
-  for (let i = 0; i < nbEquipesDemandees; i++) {
-    listeEquipesFormees.push({ id: "team-" + i, name: nomsPioches[i], members: [] });
-  }
-
-  joueursMelanges.forEach((joueur, index) => {
-    const cibleEquipe = index % nbEquipesDemandees;
-    listeEquipesFormees[cibleEquipe].members.push(joueur);
-  });
-
-  renderEquipesUI();
-}
-
-function renderEquipesUI() {
-  const container = document.getElementById("teamsContainer");
-  container.innerHTML = "";
-
-  listeEquipesFormees.forEach((equipe, indexTeam) => {
-    const cardTeam = document.createElement("div");
-    cardTeam.className = "card subtle";
-    cardTeam.style.padding = "12px";
-    cardTeam.style.background = "rgba(255,255,255,0.01)";
-    cardTeam.style.border = "1px solid var(--divider)";
-
-    let teamHtml = `
-      <div style="margin-bottom:10px;">
-        <input type="text" value="${equipe.name}" 
-               class="team-config-title"
-               style="border:none; background:transparent; padding:2px 0px; width:100%; border-radius:0; outline:none;"
-               oninput="mettreAJourNomEquipe(${indexTeam}, this.value)" />
-      </div>
-      <div style="display:flex; flex-direction:column; gap:8px; padding-left:4px;">
-    `;
-
-    equipe.members.forEach((m, indexMembre) => {
-      teamHtml += `
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span class="team-config-player">${m.name}</span>
-          <button class="ghost btn-action-soft" 
-                  onclick="deplacerJoueurManuellement(${indexTeam}, ${indexMembre})">Changer d'équipe</button>
-        </div>
-      `;
-    });
-
-    teamHtml += `</div>`;
-    cardTeam.innerHTML = teamHtml;
-    container.appendChild(cardTeam);
-  });
-}
-
-function mettreAJourNomEquipe(index, nvNom) {
-  if(listeEquipesFormees[index]) {
-    listeEquipesFormees[index].name = nvNom;
-  }
-}
-
-function deplacerJoueurManuellement(indexTeamSource, indexMembre) {
-  const joueur = listeEquipesFormees[indexTeamSource].members.splice(indexMembre, 1)[0];
-  const indexTeamCible = (indexTeamSource + 1) % listeEquipesFormees.length;
-  listeEquipesFormees[indexTeamCible].members.push(joueur);
-  renderEquipesUI();
-}
-
-// ================== LOGIQUE HISTORIQUE (AJOUT MANQUANT KO) ==================
 async function chargerHistoriqueParties() {
   const container = document.getElementById("historyContainer");
-  if (!container) return;
-  container.innerHTML = "<p class='hint' style='text-align:center; padding:20px;'>Chargement de l'historique...</p>";
+  const selectFiltre = document.getElementById("selectFiltreHistorique");
+  if (!container || !selectFiltre) return;
   
-  if (!communauteActiveId) {
-    container.innerHTML = "<p class='hint' style='text-align:center; padding:20px;'>Aucune communauté active.</p>";
+  container.innerHTML = "<p class='hint' style='text-align:center; padding:20px;'>Chargement de l'historique...</p>";
+  if (listeMesCommunautes.length === 0) {
+    container.innerHTML = "<p class='hint' style='text-align:center; padding:20px;'>Rejoignez une communauté pour voir l'historique.</p>";
+    selectFiltre.innerHTML = "<option value='none'>Aucune communauté</option>";
     return;
   }
 
+  const valeurFiltreSelectionnee = selectFiltre.value;
+  selectFiltre.innerHTML = "";
+
+  const optTous = document.createElement("option");
+  optTous.value = "TOUT"; optTous.innerText = "✨ Toutes mes communautés";
+  if (valeurFiltreSelectionnee === "TOUT" || !valeurFiltreSelectionnee) optTous.selected = true;
+  selectFiltre.appendChild(optTous);
+
+  listeMesCommunautes.forEach(commu => {
+    const opt = document.createElement("option");
+    opt.value = commu.id; opt.innerText = `👥 ${commu.name}`;
+    if (valeurFiltreSelectionnee === commu.id) opt.selected = true;
+    selectFiltre.appendChild(opt);
+  });
+
+  selectFiltre.onchange = () => { chargerHistoriqueParties(); };
+
   try {
-    const snap = await db.collection("games_history")
-                          .where("communityId", "==", communauteActiveId)
-                          .orderBy("createdAt", "desc")
-                          .limit(20)
-                          .get();
-    
+    let filtreActuel = selectFiltre.value || "TOUT";
+    let snap;
+
+    if (filtreActuel === "TOUT") {
+      snap = await db.collection("games_history")
+                    .where("communityId", "in", listeMesCommunautes.map(c => c.id))
+                    .orderBy("createdAt", "desc").limit(30).get();
+    } else {
+      snap = await db.collection("games_history")
+                    .where("communityId", "==", filtreActuel)
+                    .orderBy("createdAt", "desc").limit(30).get();
+    }
+
     container.innerHTML = "";
     if (snap.empty) {
-      container.innerHTML = "<p class='hint' style='text-align:center; padding:20px;'>Aucune partie dans l'historique.</p>";
+      container.innerHTML = "<p class='hint' style='text-align:center; padding:20px;'>Aucune partie enregistrée.</p>";
       return;
     }
 
@@ -689,25 +653,26 @@ async function chargerHistoriqueParties() {
       const data = doc.data();
       const date = new Date(data.createdAt).toLocaleDateString("fr-FR");
       const duration = `${Math.floor(data.duration / 60)}m ${data.duration % 60}s`;
-      
+      const nomCommuAssociee = listeMesCommunautes.find(c => c.id === data.communityId)?.name || "Inconnue";
+
       const card = document.createElement("div");
-      card.className = "card";
-      card.style.marginBottom = "10px";
+      card.className = "card"; card.style.marginBottom = "10px";
       card.innerHTML = `
-        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-          <span class="badge">${data.type.toUpperCase()}</span>
-          <span style="font-size:12px; color:var(--text-soft); font-weight:600;">📅 ${date}</span>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px; align-items:center;">
+          <span class="badge" style="background:var(--primary); color:#fff;">${data.type.toUpperCase()}</span>
+          <span style="font-size:11px; color:var(--accent); font-weight:700;">👥 ${nomCommuAssociee}</span>
         </div>
         <p style="padding:4px 0;">🥇 Vainqueur : <strong>${data.winner}</strong></p>
-        <p style="padding:4px 0; border:none;">⏱️ Durée : <span>${duration}</span></p>
+        <p style="padding:4px 0; border:none; font-size:12px; color:var(--text-soft);">⏱️ ${duration} — 📅 ${date}</p>
       `;
       container.appendChild(card);
     });
   } catch (e) {
-    console.error(e);
     container.innerHTML = "<p class='hint' style='text-align:center; color:var(--danger); padding:20px;'>Erreur lors du chargement.</p>";
   }
 }
+
+window.ouvrirModalGestionCommunaute = ouvrirModalGestionCommunaute;
 
 // ================== MOTEUR DE JEU GENERAL ==================
 let cricketState = {
