@@ -1538,9 +1538,9 @@ function genererTableauStatistiques() {
   if (!tableEl) return;
   
   const parentContainer = tableEl.parentElement;
-  parentContainer.innerHTML = ""; // On vide proprement l'ancien contenu pour repartir sur du neuf
+  parentContainer.innerHTML = ""; // On vide proprement l'ancien contenu
 
-  // Création du wrapper principal pour accueillir les cartes de statistiques
+  // Création d'un wrapper de bloc dédié pour accueillir vos cartes
   const mainWrapper = document.createElement("div");
   mainWrapper.style.padding = "0 8px 40px 8px"; 
   mainWrapper.style.display = "flex";
@@ -1549,7 +1549,7 @@ function genererTableauStatistiques() {
   mainWrapper.style.width = "100%";
   parentContainer.appendChild(mainWrapper);
 
-  // Recréation de la table de secours pour ne pas casser les futurs cycles de l'application
+  // Recréation de la table fantôme indispensable pour le cycle de l'app
   const backupTable = document.createElement("table");
   backupTable.id = "matchStatsTable";
   backupTable.style.display = "none";
