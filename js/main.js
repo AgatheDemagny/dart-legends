@@ -1537,7 +1537,6 @@ function genererTableauStatistiques() {
   const tableEl = document.getElementById("matchStatsTable");
   if (!tableEl) return;
   
-  // CORRECTION DIRECTE : On cible le parent et on s'assure qu'il est propre
   const parentContainer = tableEl.parentElement;
   parentContainer.innerHTML = ""; // On vide proprement l'ancien contenu
 
@@ -1560,7 +1559,7 @@ function genererTableauStatistiques() {
     blockDiv.style.width = "100%";
     
     const h3 = document.createElement("h3");
-    h3.style.textAlign = "left";
+    h3.style.textAlign = "left !important";
     h3.style.color = "var(--primary)";
     h3.style.fontSize = "16px";
     h3.style.marginBottom = "10px";
