@@ -1538,9 +1538,9 @@ function genererTableauStatistiques() {
   if (!tableEl) return;
   
   const parentContainer = tableEl.parentElement;
-  parentContainer.innerHTML = ""; // On vide proprement l'ancien contenu
+  parentContainer.innerHTML = ""; // On vide proprement l'ancien contenu pour repartir sur du neuf
 
-  // Création d'un wrapper de bloc dédié pour accueillir vos cartes
+  // Création du wrapper principal pour accueillir les cartes de statistiques
   const mainWrapper = document.createElement("div");
   mainWrapper.style.padding = "0 8px 40px 8px"; 
   mainWrapper.style.display = "flex";
@@ -1548,6 +1548,12 @@ function genererTableauStatistiques() {
   mainWrapper.style.gap = "20px";
   mainWrapper.style.width = "100%";
   parentContainer.appendChild(mainWrapper);
+
+  // Recréation de la table de secours pour ne pas casser les futurs cycles de l'application
+  const backupTable = document.createElement("table");
+  backupTable.id = "matchStatsTable";
+  backupTable.style.display = "none";
+  parentContainer.appendChild(backupTable);
 
   function creerBlocStats(titreBloc) {
     const blockDiv = document.createElement("div");
@@ -1559,7 +1565,7 @@ function genererTableauStatistiques() {
     blockDiv.style.width = "100%";
     
     const h3 = document.createElement("h3");
-    h3.style.textAlign = "left !important";
+    h3.style.textAlign = "left";
     h3.style.color = "var(--primary)";
     h3.style.fontSize = "16px";
     h3.style.marginBottom = "10px";
@@ -1656,14 +1662,14 @@ function genererTableauStatistiques() {
     let rowTotDarts = document.createElement("tr"); rowTotDarts.style.borderBottom = "1px solid var(--divider)";
     let dartsHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600;">Fléchettes lancées</td>`;
     cricketState.players.forEach(p => {
-      dartsHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--primary-strong);">${cricketState.statsDetails[p.id].dartsThrown} darts</td>`;
+      dartsHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--primary-strong);">${cricketState.statsDetails[p.id].dartsThrown || 0} darts</td>`;
     });
     rowTotDarts.innerHTML = dartsHtml; blocGenW.table.appendChild(rowTotDarts);
 
     let rowAvgTarget = document.createElement("tr"); rowAvgTarget.style.borderBottom = "1px solid var(--divider)";
     let avgHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px; color:var(--text-soft); font-weight:600;">Moy. fléchettes / cible</td>`;
     cricketState.players.forEach(p => {
-      const totalThrown = cricketState.statsDetails[p.id].dartsThrown;
+      const totalThrown = cricketState.statsDetails[p.id].dartsThrown || 0;
       const targetsHit = cricketState.statsDetails[p.id].totalTargetsHit || 1;
       avgHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600; color:var(--text-soft);">${(totalThrown / targetsHit).toFixed(1)}</td>`;
     });
@@ -1728,7 +1734,7 @@ function genererTableauStatistiques() {
     rowMoy.innerHTML = moyHtml; blocGenX.table.appendChild(rowMoy);
 
     let rowMaxX = document.createElement("tr"); rowMaxX.style.borderBottom = "1px solid var(--divider)";
-    let maxXHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Meilleur Volée</td>`;
+    let maxXHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Meilleure Volée</td>`;
     cricketState.players.forEach(p => {
       maxXHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700;">⚡ ${cricketState.statsDetails[p.id].maxVolleyScore || 0}</td>`;
     });
