@@ -1237,7 +1237,6 @@ function traiterCalculWorld(keyStockage, joueurActuel, valeurBouton) {
       cricketState.scores[keyStockage] = 26; 
       return;
     }
-    let bond = cricketState.worldJump ? modificateurEnCours : 1;
     if (modificateurEnCours === 3 && valeurBouton !== 25) stats.triplesHitCount += 1;
 
     stats.totalTargetsHit += 1;
@@ -1523,9 +1522,7 @@ function taperChiffre(valeurBouton) {
       estChiffreFermePourTous = clesEntites.every(k => cricketState.marks[k] && cricketState.marks[k][valeurBouton] >= 3);
   }
   cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
-  if (!estChiffreFermePourTous) {
-      cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
-  }
+
   if (cricketState.gameMode === "x01") traiterCalculX01(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "world") traiterCalculWorld(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "bounty") traiterCalculBounty(keyStockage, joueurActuel, valeurBouton);
@@ -1579,7 +1576,6 @@ function traiterCalculCricket(keyStockage, joueurActuel, valeurBouton) {
     if (modificateurEnCours === 2) stats.doublesCount[valeurBouton] += 1;
     if (modificateurEnCours === 3 && valeurBouton !== 25) stats.triplesCount[valeurBouton] += 1;
 
-    let clesEntites = Object.keys(cricketState.scores);
     if (!clesEntites.every(k => cricketState.marks[k][valeurBouton] >= 3)) stats.touchesNum[valeurBouton] += modificateurEnCours;
     
     let touchesAppliquees = Math.min(modificateurEnCours, 3 - cricketState.marks[keyStockage][valeurBouton]);

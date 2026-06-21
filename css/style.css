@@ -496,5 +496,5 @@ button.ghost.btn-action-soft:hover {
   overflow-y: auto !important;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 40px; 
+  padding-bottom: 40px;
 }
