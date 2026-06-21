@@ -434,6 +434,7 @@ document.getElementById("btnDeclencherRejoindreCommu").addEventListener("click",
 });
 
 // Valider l'action (Créer ou Rejoindre)
+// Valider l'action (Créer ou Rejoindre)
 document.getElementById("btnValiderActionCommu").addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return;
@@ -471,6 +472,18 @@ document.getElementById("btnValiderActionCommu").addEventListener("click", async
       if (commuData.memberIds.includes(user.uid)) {
         return showPopup("Vous faites déjà partie de cette communauté.", true);
       }
+
+      // ===== VÉRIFICATION DU CONFLIT DE NOM INTÉGRÉE ICI =====
+      const playerDocCourant = await db.collection("players").doc(user.uid).get();
+      const monPseudoActuel = playerDocCourant.exists ? playerDocCourant.data().name : "";
+
+      for (const uid of commuData.memberIds) {
+        const uDoc = await db.collection("players").doc(uid).get();
+        if (uDoc.exists && uDoc.data().name?.toLowerCase() === monPseudoActuel.toLowerCase()) {
+          return showPopup("Conflit de nom : modifiez votre nom avant de pouvoir rejoindre cette communauté.", true);
+        }
+      }
+      // =======================================================
       
       await db.collection("communities").doc(commuDoc.id).update({
         memberIds: firebase.firestore.FieldValue.arrayUnion(user.uid)
@@ -667,17 +680,7 @@ document.getElementById("btnUpdateProfileName").addEventListener("click", async 
   } catch(e) { showPopup(e.message, true); }
 });
 
-// Dans l'écouteur de "btnValiderActionCommu", modifier la section "rejoindre" pour ajouter :
-// (Insérer ce bloc juste après avoir récupéré commuData et avant d'effectuer l'update dans Firebase)
-const playerDocCourant = await db.collection("players").doc(user.uid).get();
-const monPseudoActuel = playerDocCourant.exists ? playerDocCourant.data().name : "";
 
-for (const uid of commuData.memberIds) {
-  const uDoc = await db.collection("players").doc(uid).get();
-  if (uDoc.exists && uDoc.data().name?.toLowerCase() === monPseudoActuel.toLowerCase()) {
-    return showPopup("Conflit de nom : modifiez votre nom avant de pouvoir rejoindre cette communauté.", true);
-  }
-}
 
 function renderListeCommunautesGestion() {
   const container = document.getElementById("listeCommunautesContainer");
