@@ -548,51 +548,124 @@ document.getElementById("btnCommuValidateAddMember").addEventListener("click", a
   const name = document.getElementById("commuAddMemberName").value.trim();
   const email = document.getElementById("commuAddMemberEmail").value.trim().toLowerCase();
   
-  if (!name) return showPopup("Le nom est obligatoire.", true);
+  if (!name && !email) return showPopup("Veuillez renseigner un nom ou un email.", true);
 
   try {
+    let targetAccount = null;
+    let finalName = name;
+
+    // 1. Si un email est renseigné, on vérifie si le compte existe déjà
+    if (email) {
+      const snap = await db.collection("players").where("email", "==", email).where("isRealAccount", "==", true).get();
+      if (!snap.empty) {
+        targetAccount = { id: snap.docs[0].id, ...snap.docs[0].data() };
+        finalName = targetAccount.name; // Le nom du vrai compte prime
+      } else if (!name) {
+        // Mail fourni mais inconnu ET aucun nom fourni pour créer l'invité
+        return showPopup("Aucun compte avec cet email. Renseignez un nom pour l'inviter.", true);
+      }
+    }
+
+    if (!finalName) return showPopup("Le nom est obligatoire.", true);
+
+    // 2. VÉRIFICATION DU CONFLIT DE NOM (la règle stricte du PDF)
     for (const uid of commuSelectionneePourModal.memberIds) {
       const uDoc = await db.collection("players").doc(uid).get();
-      if (uDoc.exists && uDoc.data().name?.toLowerCase() === name.toLowerCase()) {
-        return showPopup("Ce nom existe déjà dans la communauté. Modifiez son nom pour l'ajouter.", true);
+      if (uDoc.exists) {
+        const uData = uDoc.data();
+        if (uData.name?.toLowerCase() === finalName.toLowerCase() && targetAccount?.id !== uid) {
+          return showPopup(`Le pseudo '${finalName}' existe déjà dans la communauté. L'ajout est bloqué.`, true);
+        }
       }
     }
 
-    let targetUid = null;
-    if (email) {
-      const snapUser = await db.collection("players").where("email", "==", email).get();
-      if (!snapUser.empty) targetUid = snapUser.docs[0].id;
-    }
-
-    if (targetUid) {
-      if (commuSelectionneePourModal.memberIds.includes(targetUid)) {
-        return showPopup("Ce joueur est déjà membre.", true);
+    // 3. AJOUT OU CRÉATION
+    if (targetAccount) {
+      // Le compte existe -> On l'ajoute
+      if (commuSelectionneePourModal.memberIds.includes(targetAccount.id)) {
+        return showPopup("Ce joueur fait déjà partie de la communauté.", true);
       }
-      await db.collection("communities").doc(commuSelectionneePourModal.id).update({
-        memberIds: firebase.firestore.FieldValue.arrayUnion(targetUid)
-      });
+      
+      const newCommuIds = [...(targetAccount.communityIds || []), commuSelectionneePourModal.id];
+      await db.collection("players").doc(targetAccount.id).update({ communityIds: newCommuIds });
+      
+      const newMembers = [...commuSelectionneePourModal.memberIds, targetAccount.id];
+      await db.collection("communities").doc(commuSelectionneePourModal.id).update({ memberIds: newMembers });
+      
+      showPopup(`${targetAccount.name} a été ajouté à la communauté !`);
+
     } else {
-      const docId = "guest-" + Date.now();
-      await db.collection("players").doc(docId).set({
-        name: name,
-        email: email || null,
-        createdAt: Date.now(),
+      // Le compte n'existe pas -> Création d'un "Invité"
+      const newGuestRef = db.collection("players").doc();
+      await newGuestRef.set({
+        name: finalName,
+        email: email || "", // L'email reste enregistré pour une future liaison
+        isRealAccount: false,
         communityIds: [commuSelectionneePourModal.id],
-        isRealAccount: false
+        createdAt: Date.now()
       });
+
+      const newMembers = [...commuSelectionneePourModal.memberIds, newGuestRef.id];
+      await db.collection("communities").doc(commuSelectionneePourModal.id).update({ memberIds: newMembers });
+      
+      showPopup(`Le joueur invité ${finalName} a été créé !`);
     }
 
-    showPopup(`${name} ajouté !`);
-    document.getElementById("commuAddMemberName").value = "";
-    document.getElementById("commuAddMemberEmail").value = "";
-    ouvrirModalGestionCommunaute(commuSelectionneePourModal.id);
-  } catch (e) {
-    showPopup("Erreur d'ajout : " + e.message, true);
+    fermerModal("modalAddMember");
+    ouvrirModalGestionCommunaute(commuSelectionneePourModal.id); // Rafraîchir l'affichage
+  } catch (error) {
+    console.error("Erreur ajout membre:", error);
+    showPopup("Une erreur est survenue.", true);
   }
 });
 
+document.getElementById("btnRejoindreCommu").addEventListener("click", async () => {
+  const code = document.getElementById("inputRejoindreCode").value.trim().toUpperCase();
+  
+  if (!code) return;
+  try {
+    const snap = await db.collection("communities").where("joinCode", "==", code).get();
+    if (snap.empty) return showPopup("Code invalide.", true);
+    
+    const commuDoc = snap.docs[0];
+    const commuData = commuDoc.data();
+    
+    // Le joueur est-il déjà dedans ?
+    if (commuData.memberIds.includes(auth.currentUser.uid)) {
+      return showPopup("Tu fais déjà partie de cette communauté.");
+    }
+
+    // VÉRIFICATION DU CONFLIT DE NOM "BOB"
+    const myDoc = await db.collection("players").doc(auth.currentUser.uid).get();
+    const myName = myDoc.data().name.toLowerCase();
+
+    for (const uid of commuData.memberIds) {
+      const uDoc = await db.collection("players").doc(uid).get();
+      if (uDoc.exists && uDoc.data().name?.toLowerCase() === myName) {
+        // Blocage de l'ajout si le pseudo existe déjà dans la communauté cible
+        return showPopup("Conflit de nom: modifiez votre pseudo avant de pouvoir rejoindre cette communauté.", true);
+      }
+    }
+
+    // Tout est bon, on l'ajoute
+    const newMembers = [...commuData.memberIds, auth.currentUser.uid];
+    await db.collection("communities").doc(commuDoc.id).update({ memberIds: newMembers });
+
+    const newCommuIds = [...(myDoc.data().communityIds || []), commuDoc.id];
+    await db.collection("players").doc(auth.currentUser.uid).update({ communityIds: newCommuIds });
+
+    showPopup("Communauté rejointe avec succès !");
+    
+    // REMPLACE AUSSI L'ID ICI POUR VIDER LE CHAMP
+    document.getElementById("inputRejoindreCode").value = "";
+    chargerDonneesUtilisateur(); 
+  } catch(e) { 
+    showPopup(e.message, true); 
+  }
+});
+
+
 // Quitter une communauté
-// Remplacer l'écouteur existant de "btnCommuLeave"
 document.getElementById("btnCommuLeave").addEventListener("click", async () => {
   if (!commuSelectionneePourModal) return;
   const user = auth.currentUser;
@@ -726,8 +799,12 @@ function renderListeCommunautesGestion() {
     return;
   }
 
+  // On récupère l'ID de la commu par défaut du joueur connecté
+  let defaultCommuId = null;
+  const currentP = listeMesJoueurs.find(p => p.id === auth.currentUser?.uid);
+  if (currentP) defaultCommuId = currentP.defaultCommunityId;
+
   listeMesCommunautes.forEach(commu => {
-    // RÉINTÉGRATION DE LA DÉTERMINATION DU RÔLE
     const isAdmin = commu.adminId === auth.currentUser.uid;
     const roleBadge = isAdmin ? `<span style="font-size: 10px; background: var(--primary); color: white; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle;">Admin</span>` : "";
 
@@ -741,15 +818,32 @@ function renderListeCommunautesGestion() {
     row.style.justifyContent = "space-between";
     row.style.alignItems = "center";
 
-    // Visuel propre : Nom de l'espace (avec rôle) + Bouton
+    const isChecked = commu.id === defaultCommuId ? "checked" : "";
+
     row.innerHTML = `
-      <div style="font-weight:700; color:var(--primary); font-size:15px; text-align:left; flex: 1; display: flex; align-items: center;">
-        ${commu.name} ${roleBadge}
+      <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+        <input type="radio" name="defaultCommuRadio" value="${commu.id}" ${isChecked} onchange="setDefaultCommunity('${commu.id}')" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--primary);">
+        <div style="font-weight:700; color:var(--primary); font-size:15px; display: flex; align-items: center;">
+          ${commu.name} ${roleBadge}
+        </div>
       </div>
-      <button class="primary" style="padding: 8px 14px; font-size: 13px;" onclick="ouvrirModalGestionCommunaute('${commu.id}')">Gérer la communauté</button>
+      <button class="primary" style="padding: 8px 14px; font-size: 13px;" onclick="ouvrirModalGestionCommunaute('${commu.id}')">Gérer</button>
     `;
     container.appendChild(row);
   });
+}
+
+async function setDefaultCommunity(commuId) {
+  if (!auth.currentUser) return;
+  try {
+    await db.collection("players").doc(auth.currentUser.uid).update({
+      defaultCommunityId: commuId
+    });
+    showPopup("Communauté par défaut mise à jour !");
+  } catch(e) {
+    console.error("Erreur update default community:", e);
+    showPopup("Erreur lors de la mise à jour.", true);
+  }
 }
 
 window.renderListeCommunautesGestion = renderListeCommunautesGestion;
