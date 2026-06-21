@@ -446,11 +446,44 @@ document.getElementById("menuHistory").addEventListener("click", () => {
 });
 document.getElementById("backHomeFromHistoryBtn").addEventListener("click", () => showScreen(screens.home));
 
+let selectedEmoji = "🎯";
+const emojiList = [
+  "🎯", "🏆", "🏅", "🥇", "🥈", "🥉", "🎳", "🎱", "🎲", "🃏", "🎮", "⚽", "🏀", "🏈", "🥊", "🥋",
+  "🍺", "🥂", "🍷", "🍹", "🥳", "🎉", "🎊", "🎈", "🍾",
+  "🦍", "🦦", "🦊", "🐨", "🦫", "🦔", "🦡", "🦈", "🦅", "🐉", "🦄", "🦁", "🐻", "🐺", "🐗", "🦇", "🦉", "🐍", "🐢", "🦖", "🐙", "🦂", "🕷️", "🐝",
+  "🔥", "⚡", "🌟", "✨", "💥", "👑", "💎", "💯", "🚀", "💣", "🛡️", "⚔️", "🔱", "🏴‍☠️", "☠️", "💪",
+  "😎", "🤠", "😈", "👹", "👺", "👽", "👻", "🤖", "🤡", "🥶", "🤯", "🤬", "🤪", "🥸", "🦸‍♂️", "🥷",
+  "🌍", "🌋", "🏔️", "🏕️", "🧭", "⚓", "💡", "🧿", "🍀", "🌶️", "🥩", "🍔"
+];
+
+// Remplir la grille d'emojis une seule fois
+const emojiGrid = document.getElementById("emojiGrid");
+emojiList.forEach(em => {
+  const btn = document.createElement("button");
+  btn.className = "ghost";
+  btn.style.padding = "6px 8px";
+  btn.style.fontSize = "22px";
+  btn.innerText = em;
+  btn.onclick = () => {
+    selectedEmoji = em;
+    document.getElementById("btnSelectEmoji").innerText = em;
+    emojiGrid.classList.add("hidden");
+  };
+  emojiGrid.appendChild(btn);
+});
+
+// Ouvrir/fermer la grille d'emojis
+document.getElementById("btnSelectEmoji").addEventListener("click", () => {
+  emojiGrid.classList.toggle("hidden");
+});
+
 // Ouvrir le formulaire de création
 document.getElementById("btnDeclencherCreerCommu").addEventListener("click", () => {
   actionCommuEnCours = "creer";
   document.getElementById("titreActionCommu").innerText = "Créer une communauté";
   document.getElementById("inputNomCodeCommu").placeholder = "Nom de la communauté";
+  document.getElementById("btnSelectEmoji").classList.remove("hidden"); // Affiche l'emoji
+  document.getElementById("emojiGrid").classList.add("hidden"); // Cache la grille par défaut
   document.getElementById("zoneFormulaireCommu").classList.remove("hidden");
 });
 
@@ -459,10 +492,11 @@ document.getElementById("btnDeclencherRejoindreCommu").addEventListener("click",
   actionCommuEnCours = "rejoindre";
   document.getElementById("titreActionCommu").innerText = "Rejoindre une communauté";
   document.getElementById("inputNomCodeCommu").placeholder = "Code de la communauté (ex: ABC123)";
+  document.getElementById("btnSelectEmoji").classList.add("hidden"); // Cache l'emoji
+  document.getElementById("emojiGrid").classList.add("hidden");
   document.getElementById("zoneFormulaireCommu").classList.remove("hidden");
 });
 
-// Valider l'action (Créer ou Rejoindre)
 // Valider l'action (Créer ou Rejoindre)
 document.getElementById("btnValiderActionCommu").addEventListener("click", async () => {
   const user = auth.currentUser;
@@ -475,7 +509,7 @@ document.getElementById("btnValiderActionCommu").addEventListener("click", async
     if (actionCommuEnCours === "creer") {
       const codeCommu = Math.random().toString(36).substring(2, 8).toUpperCase();
       const nouvelleCommu = {
-        name: valeur,
+        name: `${selectedEmoji} ${valeur}`, // On concatène l'emoji et le nom
         code: codeCommu,
         adminId: user.uid,
         memberIds: [user.uid],
@@ -490,7 +524,7 @@ document.getElementById("btnValiderActionCommu").addEventListener("click", async
         defaultCommunity: currentDefault || docRef.id
       }, { merge: true });
 
-      showPopup(`Communauté "${valeur}" créée ! Code : ${codeCommu}`);
+      showPopup(`Communauté créée ! Code : ${codeCommu}`);
     } else {
       const snap = await db.collection("communities").where("code", "==", valeur.toUpperCase()).get();
       if (snap.empty) return showPopup("Communauté introuvable avec ce code.", true);
@@ -596,10 +630,10 @@ document.getElementById("btnCommuValidateAddMember").addEventListener("click", a
 
     } else {
       // Le compte n'existe pas -> Création d'un "Invité"
-      const newGuestRef = db.collection("players").doc();
+      const newGuestRef = db.collection("players").doc("guest-" + Date.now()); 
       await newGuestRef.set({
         name: finalName,
-        email: email || "", // L'email reste enregistré pour une future liaison
+        email: email || "", 
         isRealAccount: false,
         communityIds: [commuSelectionneePourModal.id],
         createdAt: Date.now()
