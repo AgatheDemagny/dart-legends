@@ -76,6 +76,46 @@ function generateNewBountyTarget(currentBonusTargets, currentMalusTarget) {
     return availableTargets[randomIndex];
 }
 
+window.definirCommuParDefaut = async function(commuId) {
+  const user = auth.currentUser;
+  if (!user) return;
+  try {
+    await db.collection("players").doc(user.uid).set({
+      defaultCommunity: commuId
+    }, { merge: true });
+    
+    communautéActiveId = commuId;
+    await chargerInfosProfil();
+    showPopup("Communauté par défaut mise à jour !");
+  } catch(e) { 
+    showPopup(e.message, true); 
+  }
+};
+
+function renderSelectedPlayers() {
+  const container = document.getElementById("selectedPlayersMatchList");
+  if (!container) return;
+  container.innerHTML = "";
+  
+  joueursSelectionnesMatch.forEach((p, index) => {
+    const div = document.createElement("div");
+    div.style.padding = "8px";
+    div.style.borderBottom = "1px solid var(--divider)";
+    div.innerHTML = `<strong>Joueur ${index + 1} :</strong> ${p.name}`;
+    container.appendChild(div);
+  });
+
+  // Affichage dynamique du bloc équipe si 4 joueurs ou plus
+  const teamBlock = document.getElementById("teamModeBlock");
+  if (joueursSelectionnesMatch.length >= 4) {
+    teamBlock.classList.remove("hidden");
+  } else {
+    teamBlock.classList.add("hidden");
+    document.getElementById("teamModeCheckbox").checked = false;
+    document.getElementById("teamModeConfig").classList.add("hidden");
+  }
+}
+
 // Navigation de base
 document.getElementById("menuNewGame").addEventListener("click", () => {
   showScreen(screens.newGame);
@@ -110,6 +150,42 @@ document.getElementById("btnLeaveGame").addEventListener("click", async () => {
     showScreen(screens.home);
   }
 });
+
+function genererEquipesAleatoires() {
+  const numTeams = parseInt(document.getElementById("teamCountSelect").value, 10);
+  listeEquipesFormees = [];
+  
+  // Création des équipes vides
+  for (let i = 0; i < numTeams; i++) {
+    const nomAlea = POOL_NOMS_EQUIPES[Math.floor(Math.random() * POOL_NOMS_EQUIPES.length)];
+    listeEquipesFormees.push({ id: `team_${i}`, name: nomAlea, members: [] });
+  }
+
+  // Mélange et distribution
+  let joueursMelanges = melangerJoueurs(joueursSelectionnesMatch);
+  joueursMelanges.forEach((j, index) => {
+    const teamIdx = index % numTeams;
+    listeEquipesFormees[teamIdx].members.push(j);
+    j.teamId = listeEquipesFormees[teamIdx].id;
+    j.teamName = listeEquipesFormees[teamIdx].name;
+  });
+
+  renderTeamsConfig();
+}
+
+function renderTeamsConfig() {
+  const container = document.getElementById("teamsContainer");
+  container.innerHTML = "";
+  listeEquipesFormees.forEach(eq => {
+    const div = document.createElement("div");
+    div.style.padding = "8px";
+    div.style.background = "rgba(15, 76, 129, 0.05)";
+    div.style.borderRadius = "8px";
+    div.innerHTML = `<div class="team-config-title">${eq.name}</div>
+                     <div class="team-config-player">${eq.members.map(m => m.name).join(" - ")}</div>`;
+    container.appendChild(div);
+  });
+}
 
 // ÉCOUTEURS POUR LE MODE ÉQUIPE
 document.getElementById("teamModeCheckbox").addEventListener("change", (e) => {
@@ -159,6 +235,10 @@ function checkBountyLimits() {
 const auth = firebase.auth();
 const db = firebase.firestore();
 let communautéActiveId = null; 
+let tousLesJoueursBase = [];
+let joueursSelectionnesMatch = [];
+let listeEquipesFormees = [];
+let communauteCibleMatchId = null;
 let listeMesCommunautes = [];
 
 auth.onAuthStateChanged(async (user) => {
@@ -256,6 +336,67 @@ document.getElementById("btnLogin").addEventListener("click", async () => {
 
 document.getElementById("btnLogout").addEventListener("click", () => { 
   auth.signOut(); 
+});
+
+document.getElementById("btnOpenSearchPlayer").addEventListener("click", () => {
+  document.getElementById("zoneSearchPlayer").classList.toggle("hidden");
+  document.getElementById("zoneCreatePlayer").classList.add("hidden");
+  
+  // Remplir la liste avec les membres de la communauté qui ne jouent pas encore
+  const container = document.getElementById("searchResultsList");
+  container.innerHTML = "";
+  const joueursDisponibles = tousLesJoueursBase.filter(j => !joueursSelectionnesMatch.some(sel => sel.id === j.id));
+  
+  if (joueursDisponibles.length === 0) {
+    container.innerHTML = "<p class='hint'>Tous les membres participent déjà.</p>";
+    return;
+  }
+  
+  joueursDisponibles.forEach(j => {
+    const btn = document.createElement("button");
+    btn.className = "ghost btn-block";
+    btn.style.marginTop = "4px";
+    btn.innerText = `➕ ${j.name}`;
+    btn.onclick = () => {
+      joueursSelectionnesMatch.push(j);
+      renderSelectedPlayers();
+      document.getElementById("zoneSearchPlayer").classList.add("hidden");
+    };
+    container.appendChild(btn);
+  });
+});
+
+document.getElementById("btnOpenCreatePlayer").addEventListener("click", () => {
+  document.getElementById("zoneCreatePlayer").classList.toggle("hidden");
+  document.getElementById("zoneSearchPlayer").classList.add("hidden");
+});
+
+document.getElementById("btnValidateCreatePlayer").addEventListener("click", async () => {
+  const nom = document.getElementById("createPlayerName").value.trim();
+  if (!nom) return showPopup("Le nom est obligatoire", true);
+  
+  try {
+    const docId = "guest-" + Date.now();
+    await db.collection("players").doc(docId).set({
+      name: nom,
+      email: null,
+      createdAt: Date.now(),
+      communityIds: [communauteCibleMatchId],
+      isRealAccount: false
+    });
+    
+    // Ajout direct à la partie en cours
+    const nouveauJoueur = { id: docId, name: nom };
+    tousLesJoueursBase.push(nouveauJoueur);
+    joueursSelectionnesMatch.push(nouveauJoueur);
+    
+    renderSelectedPlayers();
+    document.getElementById("createPlayerName").value = "";
+    document.getElementById("zoneCreatePlayer").classList.add("hidden");
+    showPopup(`Joueur ${nom} créé et ajouté à la partie !`);
+  } catch (e) {
+    showPopup(e.message, true);
+  }
 });
 
 // ================== GESTIONNAIRES DE NAVIGATION & ÉVÉNEMENTS COMMUNAUTÉS ==================
@@ -952,13 +1093,30 @@ function demarrerMatchX01(listeJoueurs) {
   cricketState.players.forEach(p => {
     const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
     cricketState.scores[keyStockage] = cricketState.x01StartPoints;
+    
+    // NOUVELLE INITIALISATION DES STATS
     cricketState.statsDetails[p.id] = { 
-      dartsThrown: 0, totalScoreScored: 0, bustsCount: 0, maxVolleyScore: 0, currentVolleyScore: 0,
-      first9DartsScore: 0, scoreFamily50: 0, scoreFamily100: 0, scoreFamily140: 0, scoreFamily180: 0,
-      checkoutHits: 0, touchesNum: {}
+      dartsThrown: 0, 
+      totalScoreScored: 0, 
+      bustsCount: 0, 
+      maxVolleyScore: 0, 
+      currentVolleyScore: 0,
+      first9DartsScore: 0, 
+      scoreFamily60: 0,     // Corrigé (c'était 50 avant)
+      scoreFamily100: 0, 
+      scoreFamily140: 0, 
+      scoreFamily180: 0,
+      checkoutHits: 0, 
+      touchesNum: {},
+      touchesSimpleNum: {}  // Ajout pour compter le % de simples
     };
-    for (let i = 1; i <= 20; i++) cricketState.statsDetails[p.id].touchesNum[i] = 0;
+
+    for (let i = 1; i <= 20; i++) {
+      cricketState.statsDetails[p.id].touchesNum[i] = 0;
+      cricketState.statsDetails[p.id].touchesSimpleNum[i] = 0; // Ajout
+    }
     cricketState.statsDetails[p.id].touchesNum[25] = 0;
+    cricketState.statsDetails[p.id].touchesSimpleNum[25] = 0;  // Ajout
   });
 
   lancerInterfaceJeu("x01");
@@ -976,7 +1134,7 @@ function demarrerMatchWorld(listeJoueurs) {
   cricketState.players.forEach(p => {
     const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
     cricketState.scores[keyStockage] = cricketState.worldStartNum;
-    cricketState.statsDetails[p.id] = { dartsThrown: 0, totalTargetsHit: 0, dartsPerTarget: {}, triplesHitCount: 0 };
+    cricketState.statsDetails[p.id] = { dartsThrown: 0, totalTargetsHit: 0, dartsPerTarget: {}, simplesHitCount: 0, doublesHitCount: 0, triplesHitCount: 0 };
     for(let i = 1; i <= 25; i++) cricketState.statsDetails[p.id].dartsPerTarget[i] = 0;
   });
 
@@ -989,9 +1147,11 @@ function demarrerMatchBounty(listeJoueurs) {
   cricketState.maxTurns = document.getElementById("bountyTurnsSelect") ? parseInt(document.getElementById("bountyTurnsSelect").value, 10) : 20;
   cricketState.bountyHasMalus = document.getElementById("bountyMalusCheckbox").checked;
   
-  // Génération dynamique des cibles de départ sans doublons
+  const primeCountSelect = document.getElementById("bountyPrimeCountSelect");
+  const nbPrimes = primeCountSelect ? parseInt(primeCountSelect.value, 10) : 3;
+  
   cricketState.bountyBonusTargets = [];
-  while(cricketState.bountyBonusTargets.length < 3) {
+  while(cricketState.bountyBonusTargets.length < nbPrimes) {
     let t = generateNewBountyTarget(cricketState.bountyBonusTargets, null);
     cricketState.bountyBonusTargets.push(t);
   }
@@ -1058,6 +1218,11 @@ function traiterCalculWorld(keyStockage, joueurActuel, valeurBouton) {
   const stats = cricketState.statsDetails[joueurActuel.id];
   let cibleAttendue = cricketState.scores[keyStockage];
   const finParcours = cricketState.worldEndNum;
+  let bond = cricketState.worldJump ? modificateurEnCours : 1;
+    
+  if (modificateurEnCours === 1) stats.simplesHitCount += 1;
+  if (modificateurEnCours === 2) stats.doublesHitCount += 1;
+  if (modificateurEnCours === 3 && valeurBouton !== 25) stats.triplesHitCount += 1;
 
   if(stats && stats.dartsPerTarget[cibleAttendue] !== undefined) {
     stats.dartsPerTarget[cibleAttendue] += 1;
@@ -1349,8 +1514,15 @@ function taperChiffre(valeurBouton) {
 
   let prefixeText = modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "";
   cricketState.currentTurnDartsText.push(valeurBouton === 0 ? "0" : valeurBouton === 25 ? prefixeText + "Bull" : prefixeText + valeurBouton);
+  let estChiffreFermePourTous = false;
+  if (cricketState.gameMode === "cricket" && valeurBouton !== 0 && cricketState.targets.includes(valeurBouton)) {
+      const clesEntites = Object.keys(cricketState.scores);
+      estChiffreFermePourTous = clesEntites.every(k => cricketState.marks[k] && cricketState.marks[k][valeurBouton] >= 3);
+  }
   cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
-
+  if (!estChiffreFermePourTous) {
+      cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
+  }
   if (cricketState.gameMode === "x01") traiterCalculX01(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "world") traiterCalculWorld(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "bounty") traiterCalculBounty(keyStockage, joueurActuel, valeurBouton);
@@ -1394,6 +1566,10 @@ function cloreVoleeActuelle(joueur) {
 function traiterCalculCricket(keyStockage, joueurActuel, valeurBouton) {
   if (valeurBouton === 0) return;
   if (cricketState.targets.includes(valeurBouton)) {
+    const clesEntites = Object.keys(cricketState.scores);
+    const estChiffreFermePourTous = clesEntites.every(k => cricketState.marks[k][valeurBouton] >= 3);
+    if (estChiffreFermePourTous) return;
+    
     if (!cricketState.revealedTargets.includes(valeurBouton)) cricketState.revealedTargets.push(valeurBouton);
     const stats = cricketState.statsDetails[joueurActuel.id];
 
@@ -1426,30 +1602,54 @@ function traiterCalculCricket(keyStockage, joueurActuel, valeurBouton) {
 
 function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
   const stats = cricketState.statsDetails[joueurActuel.id];
+  
+  // Calcul des points (le double Bullseye vaut 50)
   let pointsMarques = (valeurBouton === 25 && modificateurEnCours === 2 ? 50 : valeurBouton) * modificateurEnCours;
   const scoreResultat = cricketState.scores[keyStockage] - pointsMarques;
 
-  let estBust = scoreResultat < 0 || (scoreResultat === 1 && cricketState.x01Checkout === "double") || (scoreResultat === 0 && cricketState.x01Checkout === "double" && modificateurEnCours !== 2);
+  // Détection du Bust
+  let estBust = scoreResultat < 0 || 
+                (scoreResultat === 1 && cricketState.x01Checkout === "double") || 
+                (scoreResultat === 0 && cricketState.x01Checkout === "double" && modificateurEnCours !== 2);
 
-  if (valeurBouton !== 0 && stats) stats.touchesNum[valeurBouton] += modificateurEnCours;
+  // Comptage des touches générales et spécifiques aux simples
+  if (valeurBouton !== 0 && stats) {
+    stats.touchesNum[valeurBouton] += modificateurEnCours;
+    if (modificateurEnCours === 1) {
+      stats.touchesSimpleNum[valeurBouton] += 1;
+    }
+  }
 
+  // Application du score ou du Bust
   if (estBust) {
     showPopup("💥 Bust", true);
-    if (stats) { stats.bustsCount += 1; stats.currentVolleyScore = 0; stats.dartsThrown += (3 - cricketState.currentDart); }
+    if (stats) { 
+      stats.bustsCount += 1; 
+      stats.currentVolleyScore = 0; 
+      stats.dartsThrown += (3 - cricketState.currentDart); 
+    }
     cricketState.currentDart = 3; 
   } else {
     cricketState.scores[keyStockage] = scoreResultat;
     if (stats) {
-      stats.totalScoreScored += pointsMarques; stats.currentVolleyScore += pointsMarques;
+      stats.totalScoreScored += pointsMarques; 
+      stats.currentVolleyScore += pointsMarques;
+      // Compte le score sur les 9 premières fléchettes
       if (stats.dartsThrown <= 9) stats.first9DartsScore += pointsMarques;
     }
   }
 
+  // Fin de volée : mise à jour des statistiques de famille de scores
   if (cricketState.currentDart === 3 && stats) {
-    if (stats.currentVolleyScore > stats.maxVolleyScore) stats.maxVolleyScore = stats.currentVolleyScore;
+    if (stats.currentVolleyScore > stats.maxVolleyScore) {
+      stats.maxVolleyScore = stats.currentVolleyScore;
+    }
+    
     if (stats.currentVolleyScore === 180) stats.scoreFamily180 += 1;
     else if (stats.currentVolleyScore >= 140) stats.scoreFamily140 += 1;
     else if (stats.currentVolleyScore >= 100) stats.scoreFamily100 += 1;
+    else if (stats.currentVolleyScore >= 60) stats.scoreFamily60 += 1; // La famille des 60 ajoutée ici
+    
     stats.currentVolleyScore = 0; 
   }
 }
