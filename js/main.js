@@ -833,11 +833,7 @@ function renderListeCommunautesGestion() {
     return;
   }
 
-  // On récupère l'ID de la commu par défaut du joueur connecté
-  let defaultCommuId = null;
-  const currentP = listeMesJoueurs.find(p => p.id === auth.currentUser?.uid);
-  if (currentP) defaultCommuId = currentP.defaultCommunityId;
-
+  let defaultCommuId = communautéActiveId;
   listeMesCommunautes.forEach(commu => {
     const isAdmin = commu.adminId === auth.currentUser.uid;
     const roleBadge = isAdmin ? `<span style="font-size: 10px; background: var(--primary); color: white; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle;">Admin</span>` : "";
@@ -871,8 +867,9 @@ async function setDefaultCommunity(commuId) {
   if (!auth.currentUser) return;
   try {
     await db.collection("players").doc(auth.currentUser.uid).update({
-      defaultCommunityId: commuId
+      defaultCommunity: commuId
     });
+    communautéActiveId = commuId;
     showPopup("Communauté par défaut mise à jour !");
   } catch(e) {
     console.error("Erreur update default community:", e);
