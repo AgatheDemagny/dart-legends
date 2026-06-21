@@ -402,26 +402,59 @@ document.getElementById("btnCommuValidateAddMember").addEventListener("click", a
 });
 
 // Quitter une communauté
+// Remplacer l'écouteur existant de "btnCommuLeave"
 document.getElementById("btnCommuLeave").addEventListener("click", async () => {
   if (!commuSelectionneePourModal) return;
   const user = auth.currentUser;
   if (!user) return;
 
-  if (commuSelectionneePourModal.adminId === user.uid) {
-    return showPopup("Vous êtes admin. Dissolvez-la ou transférez les droits pour partir.", true);
-  }
-
-  const certitude = await openCustomModal("🏃 Quitter", `Voulez-vous quitter ${commuSelectionneePourModal.name} ?`);
-  if (!certitude) return;
-
   try {
+    if (commuSelectionneePourModal.adminId === user.uid) {
+      // Filtrer les repreneurs potentiels (les autres membres ayant un compte valide)
+      let candidats = [];
+      for (const uid of commuSelectionneePourModal.memberIds) {
+        if (uid !== user.uid) {
+          const uDoc = await db.collection("players").doc(uid).get();
+          if (uDoc.exists && uDoc.data().email && uDoc.data().isRealAccount) {
+            candidats.push({ id: uid, name: uDoc.data().name });
+          }
+        }
+      }
+
+      if (candidats.length === 0) {
+        return showPopup("Vous êtes le seul membre avec un compte valide. Dissolvez la communauté ou invitez un membre avec un compte pour pouvoir la quitter.", true);
+      }
+
+      // Construction d'une invite de sélection simplifiée via prompt ou boîte personnalisée
+      let messageSelection = "Veuillez choisir le nouvel administrateur en tapant son numéro :\n";
+      candidats.forEach((c, idx) => { messageSelection += `${idx + 1}. ${c.name}\n`; });
+      
+      let choix = prompt(messageSelection);
+      let indexChoisi = parseInt(choix, 10) - 1;
+
+      if (isNaN(indexChoisi) || indexChoisi < 0 || indexChoisi >= candidats.length) {
+        return showPopup("Sélection invalide. Abandon de la procédure.", true);
+      }
+
+      const repreneur = candidats[indexChoisi];
+      // Transférer les droits d'administration
+      await db.collection("communities").doc(commuSelectionneePourModal.id).update({
+        adminId: repreneur.id
+      });
+      showPopup(`Droits transférés à ${repreneur.name}.`);
+    }
+
+    const certitude = await openCustomModal("🏃 Quitter", `Voulez-vous quitter ${commuSelectionneePourModal.name} ?`);
+    if (!certitude) return;
+
     await db.collection("communities").doc(commuSelectionneePourModal.id).update({
       memberIds: firebase.firestore.FieldValue.arrayRemove(user.uid)
     });
+    
     document.getElementById("communityAdminModalOverlay").classList.add("hidden");
     await chargerCommunautesUtilisateur(user.uid, null);
     await chargerInfosProfil();
-    showPopup("Communauté quittée.");
+    showPopup("Vous avez quitté la communauté.");
   } catch (e) { showPopup(e.message, true); }
 });
 
@@ -463,6 +496,7 @@ async function chargerInfosProfil() {
   } catch(e) { console.error(e); }
 }
 
+// Remplacer l'écouteur existant pour la mise à jour du pseudo
 document.getElementById("btnUpdateProfileName").addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return;
@@ -470,15 +504,45 @@ document.getElementById("btnUpdateProfileName").addEventListener("click", async 
   if(!nouveauPseudo) return showPopup("Le pseudo ne peut pas être vide.", true);
 
   try {
+    // Vérification de l'unicité du pseudo dans toutes les communautés dont le joueur fait partie
+    for (const commu of listeMesCommunautes) {
+      const docCommu = await db.collection("communities").doc(commu.id).get();
+      if (docCommu.exists) {
+        const memberIds = docCommu.data().memberIds || [];
+        for (const uid of memberIds) {
+          if (uid !== user.uid) {
+            const uDoc = await db.collection("players").doc(uid).get();
+            if (uDoc.exists && uDoc.data().name?.toLowerCase() === nouveauPseudo.toLowerCase()) {
+              return showPopup(`Conflit de nom : Le pseudo "${nouveauPseudo}" est déjà utilisé dans la communauté ${commu.name}.`, true);
+            }
+          }
+        }
+      }
+    }
+
     await db.collection("players").doc(user.uid).update({ name: nouveauPseudo });
     showPopup("Pseudo mis à jour !");
     await chargerJoueursCommunauteCible();
   } catch(e) { showPopup(e.message, true); }
 });
 
+// Dans l'écouteur de "btnValiderActionCommu", modifier la section "rejoindre" pour ajouter :
+// (Insérer ce bloc juste après avoir récupéré commuData et avant d'effectuer l'update dans Firebase)
+const playerDocCourant = await db.collection("players").doc(user.uid).get();
+const monPseudoActuel = playerDocCourant.exists ? playerDocCourant.data().name : "";
+
+for (const uid of commuData.memberIds) {
+  const uDoc = await db.collection("players").doc(uid).get();
+  if (uDoc.exists && uDoc.data().name?.toLowerCase() === monPseudoActuel.toLowerCase()) {
+    return showPopup("Conflit de nom : modifiez votre nom avant de pouvoir rejoindre cette communauté.", true);
+  }
+}
+
 function renderListeCommunautesGestion() {
   const container = document.getElementById("listeCommunautesContainer");
-  if (!container) return; container.innerHTML = "";
+  if (!container) return; 
+  
+  container.innerHTML = "";
 
   if (listeMesCommunautes.length === 0) {
     container.innerHTML = "<p class='hint'>Aucune communauté pour l'instant.</p>";
@@ -488,22 +552,48 @@ function renderListeCommunautesGestion() {
   listeMesCommunautes.forEach(commu => {
     const row = document.createElement("div");
     row.className = "stat-row";
-    row.style.padding = "10px"; row.style.background = "#FDFDFB"; row.style.border = "1px solid var(--divider)"; row.style.borderRadius = "var(--r-1)"; row.style.marginBottom = "4px";
-    const estAdmin = commu.adminId === auth.currentUser.uid;
-    const badgeRole = estAdmin ? "<span class='badge' style='background:#0F4C81; color:#fff;'>Admin</span>" : "<span class='badge'>Membre</span>";
+    row.style.padding = "10px"; 
+    row.style.background = "#FDFDFB"; 
+    row.style.border = "1px solid var(--divider)"; 
+    row.style.borderRadius = "var(--r-1)"; 
+    row.style.marginBottom = "4px";
+    row.style.display = "flex";
+    row.style.justifyContent = "space-between";
+    row.style.alignItems = "center";
 
+    // 1. Détermination du rôle (Admin ou Membre)
+    const estAdmin = commu.adminId === auth.currentUser.uid;
+    const badgeRole = estAdmin 
+      ? "<span class='badge' style='background:#0F4C81; color:#fff;'>Admin</span>" 
+      : "<span class='badge'>Membre</span>";
+
+    // 2. Gestion de la communauté par défaut
+    // communautéActiveId contient l'ID choisi par défaut (ou le premier par défaillance)
+    const estParDefaut = commu.id === communautéActiveId;
+    const zoneParDefaut = estParDefaut 
+      ? `<span style="font-size:12px; color:var(--accent); font-weight:700; display:inline-flex; align-items:center; gap:3px;">⭐ Par défaut</span>`
+      : `<button class="ghost btn-action-soft" style="padding: 4px 8px; font-size: 11px; margin-top:4px;" onclick="definirCommuParDefaut('${commu.id}')">Définir par défaut</button>`;
+
+    // 3. Injection du template HTML complet pour la ligne
     row.innerHTML = `
-      <div style="display:flex; flex-direction:column; gap:2px;">
-        <span style="font-weight:700; color:var(--primary);">${commu.name}</span>
-        <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
-          ${badgeRole} <span style="font-size:11px; font-family:monospace; color:var(--text-soft);">Code : ${commu.code}</span>
+      <div style="display:flex; flex-direction:column; gap:4px; text-align:left;">
+        <span style="font-weight:700; color:var(--primary); font-size:15px;">${commu.name}</span>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          ${badgeRole} 
+          <span style="font-size:11px; font-family:monospace; color:var(--text-soft);">Code : ${commu.code}</span>
+        </div>
+        <div style="margin-top:2px;">
+          ${zoneParDefaut}
         </div>
       </div>
-      <button class="primary" style="padding: 6px 12px; font-size: 12px;" onclick="ouvrirModalGestionCommunaute('${commu.id}')">Gérer</button>
+      <button class="primary" style="padding: 8px 14px; font-size: 12px; height: fit-content;" onclick="ouvrirModalGestionCommunaute('${commu.id}')">Gérer</button>
     `;
+    
     container.appendChild(row);
   });
 }
+
+window.renderListeCommunautesGestion = renderListeCommunautesGestion;
 
 async function ouvrirModalGestionCommunaute(commuId) {
   try {
@@ -1382,11 +1472,17 @@ function traiterCalculBounty(keyStockage, joueurActuel, valeurBouton) {
       mettreAJourCiblesBountyUI();
     }
   }
-
   cricketState.scores[keyStockage] += pointsMarques;
-  if (modificateurEnCours === 1) { stats.simples += 1; stats.chiffresVisites[valeurBouton].simples += 1; }
-  else if (modificateurEnCours === 2) { stats.doubles += 1; stats.chiffresVisites[valeurBouton].doubles += 1; }
-  else { stats.triples += 1; stats.chiffresVisites[valeurBouton].triples += 1; }
+    
+  if (pointsMarques > 0) {
+      stats.touchesPositives += pointsMarques; // Cumul des points gagnés
+  } else if (pointsMarques < 0) {
+      stats.touchesMalus += Math.abs(pointsMarques); // Cumul des points perdus
+  }
+
+  if (modificateurEnCours === 1) stats.simples += 1;
+  else if (modificateurEnCours === 2) stats.doubles += 1;
+  else if (modificateurEnCours === 3) stats.triples += 1;
 }
 
 function mettreAJourCiblesBountyUI() {
@@ -1644,23 +1740,27 @@ function genererTableauStatistiques() {
   // ==========================================
   // RENDU DU MODE : CHASSEUR DE PRIMES (BOUNTY)
   // ==========================================
-  } else if (cricketState.gameMode === "bounty") {
+    } else if (cricketState.gameMode === "bounty") {
     const blocGenB = creerBlocStats("💰 Tableau de Chasse");
     genererEnteteJoueurs(blocGenB.table);
 
-    let rowTouchesPos = document.createElement("tr"); rowTouchesPos.style.borderBottom = "1px solid var(--divider)";
-    let touchesPosHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:#28a745;">Primes Capturées (Hits)</td>`;
-    cricketState.players.forEach(p => {
-      touchesPosHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:#28a745;">${cricketState.statsDetails[p.id].touchesPositives || 0}</td>`;
-    });
-    rowTouchesPos.innerHTML = touchesPosHtml; blocGenB.table.appendChild(rowTouchesPos);
+    let rowPtsGagnes = document.createElement("tr"); rowPtsGagnes.style.borderBottom = "1px solid var(--divider)";
+    let ptsGHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:#28a745;">Points gagnés</td>`;
+    cricketState.players.forEach(p => { ptsGHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:#28a745;">+${cricketState.statsDetails[p.id].touchesPositives || 0}</td>`; });
+    rowPtsGagnes.innerHTML = ptsGHtml; blocGenB.table.appendChild(rowPtsGagnes);
 
-    let rowTouchesNeg = document.createElement("tr"); rowTouchesNeg.style.borderBottom = "1px solid var(--divider)";
-    let touchesNegHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--danger);">Faillites (Malus)</td>`;
+    let rowPtsPerdus = document.createElement("tr"); rowPtsPerdus.style.borderBottom = "1px solid var(--divider)";
+    let ptsPHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--danger);">Points perdus</td>`;
+    cricketState.players.forEach(p => { ptsPHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--danger);">-${cricketState.statsDetails[p.id].touchesMalus || 0}</td>`; });
+    rowPtsPerdus.innerHTML = ptsPHtml; blocGenB.table.appendChild(rowPtsPerdus);
+    
+    let rowChiffresT = document.createElement("tr"); rowChiffresT.style.borderBottom = "1px solid var(--divider)";
+    let cTHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Chiffres touchés (Total)</td>`;
     cricketState.players.forEach(p => {
-      touchesNegHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--danger);">${cricketState.statsDetails[p.id].touchesMalus || 0}</td>`;
+        const totalHits = (cricketState.statsDetails[p.id].simples || 0) + (cricketState.statsDetails[p.id].doubles || 0) + (cricketState.statsDetails[p.id].triples || 0);
+        cTHtml += `<td style="text-align:center; border-left:1px solid var(--divider);">${totalHits}</td>`;
     });
-    rowTouchesNeg.innerHTML = touchesNegHtml; blocGenB.table.appendChild(rowTouchesNeg);
+    rowChiffresT.innerHTML = cTHtml; blocGenB.table.appendChild(rowChiffresT);
     mainWrapper.appendChild(blocGenB.blockDiv);
 
     const blocMultiplicateurs = creerBlocStats("🎯 Précision des tirs");
