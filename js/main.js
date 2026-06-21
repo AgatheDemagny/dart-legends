@@ -67,9 +67,9 @@ function openCustomModal(title, message) {
   });
 }
 
-function generateNewBountyTarget(currentBonusTargets, currentMalusTarget) {
+function generateNewBountyTarget(currentBonusTargets, currentMalusTarget, excludedTarget = null) {
     const availableTargets = SEQUENCE_TOUR_DU_MONDE.filter(t => 
-        !currentBonusTargets.includes(t) && t !== currentMalusTarget
+        !currentBonusTargets.includes(t) && t !== currentMalusTarget && t !== excludedTarget
     );
     if (availableTargets.length === 0) return 20;
     const randomIndex = Math.floor(Math.random() * availableTargets.length);
@@ -215,6 +215,9 @@ document.getElementById("btnKeyZero").onclick = () => taperChiffre(0);
 
 const bountyTurnsSelect = document.getElementById('bountyTurnsSelect');
 const bountyTargetScoreSelect = document.getElementById('bountyTargetScoreSelect');
+bountyTurnsSelect.addEventListener('change', checkBountyLimits);
+bountyTargetScoreSelect.addEventListener('change', checkBountyLimits);
+
 const bountyWarning = document.getElementById('bountyLimitWarning');
 const startGameBtnForBountyCheck = document.getElementById('startGameBtn');
 
@@ -304,20 +307,46 @@ async function chargerCommunautesUtilisateur(userId, defaultId) {
 }
 
 document.getElementById("btnSignup").addEventListener("click", async () => {
-  const email = document.getElementById("authEmail").value.trim();
+  const email = document.getElementById("authEmail").value.trim().toLowerCase();
   const password = document.getElementById("authPassword").value.trim();
   if (!email || !password) return showPopup("Champs obligatoires.", true);
   try {
-    const defaultName = email.split('@')[0];
+    // 1. Chercher un compte invité avec cette adresse mail
+    const guestSnap = await db.collection("players").where("email", "==", email).where("isRealAccount", "==", false).get();
+    let existingGuest = null;
+    if (!guestSnap.empty) {
+      existingGuest = { id: guestSnap.docs[0].id, ...guestSnap.docs[0].data() };
+    }
+
     const cred = await auth.createUserWithEmailAndPassword(email, password);
-    await db.collection("players").doc(cred.user.uid).set({
+    const newUid = cred.user.uid;
+    const finalName = existingGuest ? existingGuest.name : email.split('@')[0];
+
+    // 2. Création du joueur en BDD
+    await db.collection("players").doc(newUid).set({
       email: email, 
-      name: defaultName, 
+      name: finalName, 
       createdAt: Date.now(),
-      communityIds: [],
+      communityIds: existingGuest ? existingGuest.communityIds : [],
       isRealAccount: true
     });
-    showPopup("Compte créé avec succès ! 🎯");
+
+    // 3. Remplacement du guest dans ses communautés
+    if (existingGuest) {
+      for (const commuId of existingGuest.communityIds) {
+        const cDoc = await db.collection("communities").doc(commuId).get();
+        if (cDoc.exists) {
+          let members = cDoc.data().memberIds || [];
+          members = members.filter(id => id !== existingGuest.id);
+          members.push(newUid);
+          await db.collection("communities").doc(commuId).update({ memberIds: members });
+        }
+      }
+      await db.collection("players").doc(existingGuest.id).delete();
+      showPopup(`Compte créé et rattaché à tes communautés ! Bienvenue ${finalName} 🎯`);
+    } else {
+      showPopup("Compte créé avec succès ! 🎯");
+    }
   } catch (e) { 
     showPopup(e.message, true); 
   }
@@ -522,6 +551,13 @@ document.getElementById("btnCommuValidateAddMember").addEventListener("click", a
   if (!name) return showPopup("Le nom est obligatoire.", true);
 
   try {
+    for (const uid of commuSelectionneePourModal.memberIds) {
+      const uDoc = await db.collection("players").doc(uid).get();
+      if (uDoc.exists && uDoc.data().name?.toLowerCase() === name.toLowerCase()) {
+        return showPopup("Ce nom existe déjà dans la communauté. Modifiez son nom pour l'ajouter.", true);
+      }
+    }
+
     let targetUid = null;
     if (email) {
       const snapUser = await db.collection("players").where("email", "==", email).get();
@@ -680,12 +716,9 @@ document.getElementById("btnUpdateProfileName").addEventListener("click", async 
   } catch(e) { showPopup(e.message, true); }
 });
 
-
-
 function renderListeCommunautesGestion() {
   const container = document.getElementById("listeCommunautesContainer");
   if (!container) return; 
-  
   container.innerHTML = "";
 
   if (listeMesCommunautes.length === 0) {
@@ -694,45 +727,27 @@ function renderListeCommunautesGestion() {
   }
 
   listeMesCommunautes.forEach(commu => {
+    // RÉINTÉGRATION DE LA DÉTERMINATION DU RÔLE
+    const isAdmin = commu.adminId === auth.currentUser.uid;
+    const roleBadge = isAdmin ? `<span style="font-size: 10px; background: var(--primary); color: white; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle;">Admin</span>` : "";
+
     const row = document.createElement("div");
-    row.className = "stat-row";
     row.style.padding = "10px"; 
     row.style.background = "#FDFDFB"; 
     row.style.border = "1px solid var(--divider)"; 
     row.style.borderRadius = "var(--r-1)"; 
-    row.style.marginBottom = "4px";
+    row.style.marginBottom = "6px";
     row.style.display = "flex";
     row.style.justifyContent = "space-between";
     row.style.alignItems = "center";
 
-    // 1. Détermination du rôle (Admin ou Membre)
-    const estAdmin = commu.adminId === auth.currentUser.uid;
-    const badgeRole = estAdmin 
-      ? "<span class='badge' style='background:#0F4C81; color:#fff;'>Admin</span>" 
-      : "<span class='badge'>Membre</span>";
-
-    // 2. Gestion de la communauté par défaut
-    // communautéActiveId contient l'ID choisi par défaut (ou le premier par défaillance)
-    const estParDefaut = commu.id === communautéActiveId;
-    const zoneParDefaut = estParDefaut 
-      ? `<span style="font-size:12px; color:var(--accent); font-weight:700; display:inline-flex; align-items:center; gap:3px;">⭐ Par défaut</span>`
-      : `<button class="ghost btn-action-soft" style="padding: 4px 8px; font-size: 11px; margin-top:4px;" onclick="definirCommuParDefaut('${commu.id}')">Définir par défaut</button>`;
-
-    // 3. Injection du template HTML complet pour la ligne
+    // Visuel propre : Nom de l'espace (avec rôle) + Bouton
     row.innerHTML = `
-      <div style="display:flex; flex-direction:column; gap:4px; text-align:left;">
-        <span style="font-weight:700; color:var(--primary); font-size:15px;">${commu.name}</span>
-        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-          ${badgeRole} 
-          <span style="font-size:11px; font-family:monospace; color:var(--text-soft);">Code : ${commu.code}</span>
-        </div>
-        <div style="margin-top:2px;">
-          ${zoneParDefaut}
-        </div>
+      <div style="font-weight:700; color:var(--primary); font-size:15px; text-align:left; flex: 1; display: flex; align-items: center;">
+        ${commu.name} ${roleBadge}
       </div>
-      <button class="primary" style="padding: 8px 14px; font-size: 12px; height: fit-content;" onclick="ouvrirModalGestionCommunaute('${commu.id}')">Gérer</button>
+      <button class="primary" style="padding: 8px 14px; font-size: 13px;" onclick="ouvrirModalGestionCommunaute('${commu.id}')">Gérer la communauté</button>
     `;
-    
     container.appendChild(row);
   });
 }
@@ -888,12 +903,15 @@ async function chargerHistoriqueParties() {
       const date = new Date(data.createdAt).toLocaleDateString("fr-FR");
       const duration = `${Math.floor(data.duration / 60)}m ${data.duration % 60}s`;
       const nomCommuAssociee = listeMesCommunautes.find(c => c.id === data.communityId)?.name || "Inconnue";
-
+      
+      const dictModes = { "cricket": "CRICKET", "x01": "X01", "world": "TOUR DU MONDE", "bounty": "CHASSEUR DE PRIMES" };
+      const modeAffiche = dictModes[data.type] || data.type.toUpperCase();
+      
       const card = document.createElement("div");
       card.className = "card"; card.style.marginBottom = "10px";
       card.innerHTML = `
         <div style="display:flex; justify-content:space-between; margin-bottom:6px; align-items:center;">
-          <span class="badge" style="background:var(--primary); color:#fff;">${data.type.toUpperCase()}</span>
+          <span class="badge" style="background:var(--primary); color:#fff;">${modeAffiche}</span>
           <span style="font-size:11px; color:var(--accent); font-weight:700;">👥 ${nomCommuAssociee}</span>
         </div>
         <p style="padding:4px 0;">🥇 Vainqueur : <strong>${data.winner}</strong></p>
@@ -1662,7 +1680,7 @@ function traiterCalculBounty(keyStockage, joueurActuel, valeurBouton) {
   if (cricketState.bountyBonusTargets.includes(valeurBouton)) {
     pointsMarques = valeurBouton * modificateurEnCours; stats.touchesPositives += modificateurEnCours;
     const idxAChanger = cricketState.bountyBonusTargets.indexOf(valeurBouton);
-    cricketState.bountyBonusTargets[idxAChanger] = generateNewBountyTarget(cricketState.bountyBonusTargets.filter(t => t !== valeurBouton), cricketState.bountyMalusTarget);
+    cricketState.bountyBonusTargets[idxAChanger] = generateNewBountyTarget(cricketState.bountyBonusTargets.filter(t => t !== valeurBouton), cricketState.bountyMalusTarget, valeurBouton);
     mettreAJourCiblesBountyUI();
   } else if (valeurBouton === cricketState.bountyMalusTarget) {
     pointsMarques = - (valeurBouton * modificateurEnCours); stats.touchesMalus += modificateurEnCours;
@@ -1688,10 +1706,22 @@ function mettreAJourCiblesBountyUI() {
   const bonusContainer = document.getElementById("bountyBonusContainer");
   const malusContainer = document.getElementById("bountyMalusContainer");
   const malusBadge = document.getElementById("bountyMalusBadge");
-  if (bonusContainer) bonusContainer.innerHTML = cricketState.bountyBonusTargets.map(t => `<span class="badge" style="background: #28a745; color: white; font-size: 16px; padding: 6px 12px;">${t}</span>`).join('');
+  const scoreBadge = document.getElementById("bountyTargetScoreBadge");
+
+  if (bonusContainer) {
+    bonusContainer.innerHTML = cricketState.bountyBonusTargets.map(t => 
+      `<span class="badge" style="background: #E3D4AE; color: var(--primary-strong); border: 1px solid var(--accent); font-size: 18px; padding: 8px 16px; font-weight: 800; box-shadow: 0 4px 8px rgba(227, 212, 174, 0.4);">${t}</span>`
+    ).join('');
+  }
+  
   if (malusContainer) {
     if (cricketState.bountyHasMalus) { malusContainer.classList.remove("hidden"); if (malusBadge) malusBadge.innerText = cricketState.bountyMalusTarget; }
     else malusContainer.classList.add("hidden");
+  }
+
+  if (scoreBadge) {
+    const targetScore = document.getElementById("bountyTargetScoreSelect") ? document.getElementById("bountyTargetScoreSelect").value : "300";
+    scoreBadge.innerText = targetScore === "9999" ? "Objectif : Infini" : `Objectif : ${targetScore} pts`;
   }
 }
 
@@ -1988,21 +2018,80 @@ function genererTableauStatistiques() {
     const blocGenX = creerBlocStats("💯 Bilan X01");
     genererEnteteJoueurs(blocGenX.table);
 
+    // Moyenne
     let rowMoy = document.createElement("tr"); rowMoy.style.borderBottom = "1px solid var(--divider)";
-    let moyHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--accent);">Moyenne / Volée (3 darts)</td>`;
+    let moyHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--accent);">Score moyen / Fléchette</td>`;
     cricketState.players.forEach(p => {
-      const totalPoints = cricketState.statsDetails[p.id].totalScoreScored || 0;
-      const totalDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
-      moyHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--primary-strong); font-size:14px;">${((totalPoints / totalDarts) * 3).toFixed(1)} pts</td>`;
+      const tPts = cricketState.statsDetails[p.id].totalScoreScored || 0;
+      const tDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
+      moyHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--primary-strong); font-size:14px;">${(tPts / tDarts).toFixed(1)}</td>`;
     });
     rowMoy.innerHTML = moyHtml; blocGenX.table.appendChild(rowMoy);
 
+    // Score 9 premières fléchettes
+    let row9 = document.createElement("tr"); row9.style.borderBottom = "1px solid var(--divider)";
+    let row9Html = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Score 9 premières fléchettes</td>`;
+    cricketState.players.forEach(p => {
+      row9Html += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700;">${cricketState.statsDetails[p.id].first9DartsScore || 0}</td>`;
+    });
+    row9.innerHTML = row9Html; blocGenX.table.appendChild(row9);
+
+    // Meilleure volée
     let rowMaxX = document.createElement("tr"); rowMaxX.style.borderBottom = "1px solid var(--divider)";
-    let maxXHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Meilleure Volée</td>`;
+    let maxXHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Meilleure Volée (3 darts)</td>`;
     cricketState.players.forEach(p => {
       maxXHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700;">⚡ ${cricketState.statsDetails[p.id].maxVolleyScore || 0}</td>`;
     });
     rowMaxX.innerHTML = maxXHtml; blocGenX.table.appendChild(rowMaxX);
     mainWrapper.appendChild(blocGenX.blockDiv);
+
+    // Compteurs de volées
+    const blocVolees = creerBlocStats("🎯 Performances Volées");
+    genererEnteteJoueurs(blocVolees.table);
+    const paliers = [
+      { label: "Volées 180", key: "scoreFamily180" },
+      { label: "Volées 140+", key: "scoreFamily140" },
+      { label: "Volées 100+", key: "scoreFamily100" },
+      { label: "Volées 60+", key: "scoreFamily60" }
+    ];
+    paliers.forEach(palier => {
+      let r = document.createElement("tr"); r.style.borderBottom = "1px solid var(--divider)";
+      let h = `<td style="text-align:left; padding:8px; font-size:13px;">${palier.label}</td>`;
+      cricketState.players.forEach(p => {
+        const val = cricketState.statsDetails[p.id][palier.key] || 0;
+        h += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600;">${val}</td>`;
+      });
+      r.innerHTML = h; blocVolees.table.appendChild(r);
+    });
+    mainWrapper.appendChild(blocVolees.blockDiv);
+
+    // Détail des chiffres
+    const blocDetail = creerBlocStats("📊 Détail par Chiffre (1-20 & Bull)");
+    genererEnteteJoueurs(blocDetail.table);
+    // Boucle de 1 à 20, plus le 25
+    for (let i = 1; i <= 21; i++) {
+      let cible = i === 21 ? 25 : i;
+      let labelCible = cible === 25 ? "Bull" : cible;
+      let r = document.createElement("tr"); r.style.borderBottom = "1px solid var(--divider)";
+      let h = `<td style="text-align:left; padding:8px; font-weight:600;">Zone ${labelCible}</td>`;
+      
+      cricketState.players.forEach(p => {
+        const stat = cricketState.statsDetails[p.id];
+        const tSimple = stat.touchesSimpleNum[cible] || 0;
+        const totalNumTouches = stat.touchesNum[cible] || 0; 
+        const tTriple = (totalNumTouches - tSimple) / 3; // Approximation simple s'il y a eu que des simples/triples, mais le plus propre est d'afficher les touches comptabilisées
+        
+        // Calcul du % de fléchettes dans ce chiffre
+        const totalDarts = stat.dartsThrown || 1;
+        const percent = ((tSimple / totalDarts) * 100).toFixed(1);
+        
+        let detailTxt = `${tSimple} S <span style="color:#6c757d; font-size:10px;">(${percent}%)</span>`;
+        if (tTriple >= 1) detailTxt += `<br><span style="color:var(--primary); font-size:11px;">+ touches multiples</span>`;
+        
+        h += `<td style="text-align:center; border-left:1px solid var(--divider); padding:6px; font-size:12px;">${detailTxt}</td>`;
+      });
+      r.innerHTML = h; blocDetail.table.appendChild(r);
+    }
+    mainWrapper.appendChild(blocDetail.blockDiv);
   }
 }
