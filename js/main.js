@@ -653,51 +653,6 @@ document.getElementById("btnCommuValidateAddMember").addEventListener("click", a
   }
 });
 
-document.getElementById("btnRejoindreCommu").addEventListener("click", async () => {
-  const code = document.getElementById("inputRejoindreCode").value.trim().toUpperCase();
-  
-  if (!code) return;
-  try {
-    const snap = await db.collection("communities").where("joinCode", "==", code).get();
-    if (snap.empty) return showPopup("Code invalide.", true);
-    
-    const commuDoc = snap.docs[0];
-    const commuData = commuDoc.data();
-    
-    // Le joueur est-il déjà dedans ?
-    if (commuData.memberIds.includes(auth.currentUser.uid)) {
-      return showPopup("Tu fais déjà partie de cette communauté.");
-    }
-
-    // VÉRIFICATION DU CONFLIT DE NOM "BOB"
-    const myDoc = await db.collection("players").doc(auth.currentUser.uid).get();
-    const myName = myDoc.data().name.toLowerCase();
-
-    for (const uid of commuData.memberIds) {
-      const uDoc = await db.collection("players").doc(uid).get();
-      if (uDoc.exists && uDoc.data().name?.toLowerCase() === myName) {
-        // Blocage de l'ajout si le pseudo existe déjà dans la communauté cible
-        return showPopup("Conflit de nom: modifiez votre pseudo avant de pouvoir rejoindre cette communauté.", true);
-      }
-    }
-
-    // Tout est bon, on l'ajoute
-    const newMembers = [...commuData.memberIds, auth.currentUser.uid];
-    await db.collection("communities").doc(commuDoc.id).update({ memberIds: newMembers });
-
-    const newCommuIds = [...(myDoc.data().communityIds || []), commuDoc.id];
-    await db.collection("players").doc(auth.currentUser.uid).update({ communityIds: newCommuIds });
-
-    showPopup("Communauté rejointe avec succès !");
-    
-    // REMPLACE AUSSI L'ID ICI POUR VIDER LE CHAMP
-    document.getElementById("inputRejoindreCode").value = "";
-    chargerDonneesUtilisateur(); 
-  } catch(e) { 
-    showPopup(e.message, true); 
-  }
-});
-
 
 // Quitter une communauté
 document.getElementById("btnCommuLeave").addEventListener("click", async () => {
