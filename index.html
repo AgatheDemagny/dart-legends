@@ -123,7 +123,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.39 - 24/06/2026</p>
+        <p>Version 1.40 - 25/06/2026</p>
       </div>
     </section>
 
@@ -344,6 +344,17 @@
             <p class="hint hidden" style="margin-top: 2px; color: var(--danger);" id="bountyLimitWarning">
               ⚠️ Attention : Vous ne pouvez pas mettre ces deux options en illimité.
             </p>
+          </div>
+
+          <div style="margin-top: 12px;">
+            <label><strong>Chiffres renouvelés après</strong></label>
+            <select id="bountyExpirationSelect">
+              <option value="3">3 tours</option>
+              <option value="5">5 tours</option>
+              <option value="8">8 tours</option>
+              <option value="10">10 tours</option>
+              <option value="999" selected>Non renouvelés</option>
+            </select>
           </div>
 
           <div style="margin-top: 12px;">
