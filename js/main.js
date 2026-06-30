@@ -132,21 +132,6 @@ function renderSelectedPlayers() {
   }
 }
 
-// Dans initPageNouvellePartie(), modifie le onchange :
-selectCommu.onchange = async (e) => {
-  communauteCibleMatchId = e.target.value;
-  await chargerJoueursCommunauteCible(); 
-  joueursSelectionnesMatch = []; 
-  
-  // On ré-ajoute systématiquement le joueur actuel
-  const user = auth.currentUser;
-  if (user) {
-    const doc = await db.collection("players").doc(user.uid).get();
-    joueursSelectionnesMatch.push({ id: user.uid, name: (doc.exists && doc.data().name) ? doc.data().name : user.email.split('@')[0] });
-  }
-  renderSelectedPlayers();
-};
-
 // Navigation de base
 document.getElementById("menuNewGame").addEventListener("click", () => {
   showScreen(screens.newGame);
@@ -991,6 +976,13 @@ async function initPageNouvellePartie() {
     communauteCibleMatchId = e.target.value;
     await chargerJoueursCommunauteCible(); 
     joueursSelectionnesMatch = []; 
+    
+    // On ré-ajoute systématiquement le joueur actuel
+    const user = auth.currentUser;
+    if (user) {
+      const doc = await db.collection("players").doc(user.uid).get();
+      joueursSelectionnesMatch.push({ id: user.uid, name: (doc.exists && doc.data().name) ? doc.data().name : user.email.split('@')[0] });
+    }
     renderSelectedPlayers();
   };
 
