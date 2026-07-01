@@ -50,7 +50,7 @@
             <label><strong>➕ Inviter / Ajouter un membre</strong></label>
             <p class="hint" style="margin-bottom: 6px; justify-content: flex-start;">Inscrivez son nom. Si vous liez son email, son compte fusionnera automatiquement à sa future inscription.</p>
             <input type="text" id="commuAddMemberName" placeholder="Nom du joueur" style="margin-top:0;">
-            <input type="email" id="commuAddMemberEmail" placeholder="Email (Optionnel, pour liaison)" style="margin-top:6px;">
+            <input type="email" id="commuAddMemberEmail" placeholder="Email (Optionnel)" style="margin-top:6px;">
             <button id="btnCommuValidateAddMember" class="primary btn-block" style="padding: 8px; font-size: 13px; margin-top: 8px;">Ajouter à la communauté</button>
           </div>
 
@@ -224,7 +224,7 @@
           <button id="btnValidateCreatePlayer" class="primary btn-block">💾 Enregistrer</button>
         </div>
 
-        <h4 style="margin-top: 10px; opacity: 0.8; font-size: 14px; text-align: left !important;">Joueurs sur la ligne de tir :</h4>
+        <h4 style="margin-top: 10px; opacity: 0.8; font-size: 14px; text-align: left !important;">Joueurs sur la ligne de tir</h4>
         <div id="selectedPlayersMatchList"></div>
       </div>
 
@@ -270,6 +270,7 @@
               <option value="301" selected>301</option>
               <option value="501">501</option>
               <option value="701">701</option>
+              <option value="901">901</option>
               <option value="1001">1001</option>
             </select>
           </div>
@@ -285,8 +286,8 @@
         <div id="worldParamsGroup" class="hidden">
           <div style="margin-top: 12px;">
             <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
-              <span class="stat-label"><strong>Sauter les numéros (Multiplicateurs)</strong></span>
               <input type="checkbox" id="worldJumpCheckbox" style="width: auto; margin-top: 0;" checked>
+              <span class="stat-label"><strong>Comptabiliser les doubles & triples</strong></span>
             </div>
           </div>
           <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -312,7 +313,7 @@
 
         <div id="bountyParamsGroup" class="hidden">
           <div style="margin-top: 12px;">
-            <label><strong>Nombre de primes proposées</strong></label>
+            <label><strong>Nombre de primes</strong></label>
             <select id="bountyPrimeCountSelect">
               <option value="2">2 chiffres</option>
               <option value="3" selected>3 chiffres</option>
@@ -320,7 +321,7 @@
             </select>
           </div>
           <div style="margin-top: 12px;">
-            <label><strong>Nombre de tours max</strong></label>
+            <label><strong>Nombre de tours</strong></label>
             <select id="bountyTurnsSelect">
               <option value="10">10 tours</option>
               <option value="12">12 tours</option>
@@ -329,7 +330,7 @@
               <option value="18">18 tours</option>
               <option value="20" selected>20 tours</option>
               <option value="30">30 tours</option>
-              <option value="999">Sans limite (tours)</option>
+              <option value="999">Sans limite</option>
             </select>
           </div>
 
@@ -340,7 +341,7 @@
               <option value="300" selected>300 points</option>
               <option value="500">500 points</option>
               <option value="1000">1000 points</option>
-              <option value="9999">Sans limite (score)</option>
+              <option value="9999">Sans limite</option>
             </select>
             <p class="hint hidden" style="margin-top: 2px; color: var(--danger);" id="bountyLimitWarning">
               ⚠️ Attention : Vous ne pouvez pas mettre ces deux options en illimité.
@@ -351,10 +352,10 @@
             <label><strong>Chiffres renouvelés après</strong></label>
             <select id="bountyExpirationSelect">
               <option value="3">3 tours</option>
-              <option value="5">5 tours</option>
+              <option value="5" selected></option>5 tours</option>
               <option value="8">8 tours</option>
               <option value="10">10 tours</option>
-              <option value="999" selected>Non renouvelés</option>
+              <option value="999">Non renouvelés</option>
             </select>
           </div>
 

@@ -106,7 +106,7 @@ function renderSelectedPlayers() {
     div.style.justifyContent = "space-between";
     div.style.alignItems = "center";
     
-    div.innerHTML = `<span><strong>Joueur ${index + 1} :</strong> ${p.name}</span>`;
+    div.innerHTML = `<span>${p.name}</span>`;
     
     // Ajout de la croix pour supprimer un joueur
     const btnRemove = document.createElement("button");
@@ -432,7 +432,7 @@ document.getElementById("btnOpenSearchPlayer").addEventListener("click", () => {
     const btn = document.createElement("button");
     btn.className = "ghost btn-block";
     btn.style.marginTop = "4px";
-    btn.innerText = `➕ ${j.name}`;
+    btn.innerText = `${j.name}`;
     btn.onclick = () => {
       joueursSelectionnesMatch.push(j);
       renderSelectedPlayers();
@@ -1038,7 +1038,7 @@ async function chargerHistoriqueParties() {
 
   listeMesCommunautes.forEach(commu => {
     const opt = document.createElement("option");
-    opt.value = commu.id; opt.innerText = `👥 ${commu.name}`;
+    opt.value = commu.id; opt.innerText = `${commu.name}`;
     if (valeurFiltreSelectionnee === commu.id) opt.selected = true;
     selectFiltre.appendChild(opt);
   });
@@ -1079,7 +1079,7 @@ async function chargerHistoriqueParties() {
       card.innerHTML = `
         <div style="display:flex; justify-content:space-between; margin-bottom:6px; align-items:center;">
           <span class="badge" style="background:var(--primary); color:#fff;">${modeAffiche}</span>
-          <span style="font-size:11px; color:var(--accent); font-weight:700;">👥 ${nomCommuAssociee}</span>
+          <span style="font-size:11px; color:var(--accent); font-weight:700;">${nomCommuAssociee}</span>
         </div>
         <p style="padding:4px 0;">🥇 Vainqueur : <strong>${data.winner}</strong></p>
         <p style="padding:4px 0; border:none; font-size:12px; color:var(--text-soft);">⏱️ ${duration} — 📅 ${date}</p>
