@@ -124,7 +124,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.45 - 01/07/2026</p>
+        <p>Version 1.46 - 01/07/2026</p>
       </div>
     </section>
 
@@ -403,24 +403,26 @@
         <div id="lastTurnHistoryText" style="font-size: 13px; color: #6c757d; margin-top: 5px; font-weight: 600;">Coup précédent : Aucun</div>
       </div>
 
-      <div id="bountyTargetsZone" class="hidden" style="padding: 16px; background: #F4EBD0; border-bottom: 3px solid #8B5A2B; text-align: left; flex-shrink: 0; position: relative;">
-        <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: radial-gradient(circle, transparent 20%, #E8D8B8 140%); pointer-events: none;"></div>
+      <div id="bountyTargetsZone" class="hidden" style="padding: 16px; background: #F5EAD2; border-bottom: 2px solid #A67C52; text-align: left; flex-shrink: 0; position: relative;">
+        <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: radial-gradient(circle, transparent 30%, rgba(166,124,82,0.15) 150%); pointer-events: none;"></div>
         
-        <div style="position: relative; z-index: 1;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <p class="hint" style="margin: 0; font-weight: 800; color: #5C3A21; text-transform: uppercase; letter-spacing: 1px;">🤠 Primes actives</p>
-            <span id="bountyTargetScoreBadge" class="badge" style="background: #FFF; border: 2px dashed #8B5A2B; color: #8B5A2B; font-weight: 800;">Objectif : -- pts</span>
+        <div style="position: relative; z-index: 1; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <p class="hint" style="margin: 0; font-weight: 800; color: #5C3A21; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;">🤠 Primes actives</p>
+              <span id="bountyTargetScoreBadge" class="badge" style="background: #FFF; border: 1px dashed #A67C52; color: #5C3A21; font-weight: 700;">Objectif : -- pts</span>
+            </div>
+            <div id="bountyBonusContainer" style="display: flex; gap: 10px; justify-content: flex-start; flex-wrap: wrap; padding: 4px 0;"></div>
           </div>
           
-          <div id="bountyBonusContainer" style="display: flex; gap: 12px; justify-content: flex-start; flex-wrap: wrap; margin-bottom: 16px;">
-            </div>
-          
-          <div id="bountyMalusContainer" style="border-top: 2px dashed rgba(139, 90, 43, 0.3); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-            <p class="hint" style="margin: 0; font-weight: 800; color: #2A2A2A; text-transform: uppercase; letter-spacing: 1px;">☠️ Zone interdite</p>
+          <div id="bountyMalusContainer" style="border-top: 1px dashed rgba(166,124,82,0.3); padding-top: 10px;">
+            <p class="hint" style="margin: 0 0 8px 0; font-weight: 800; color: #A62B2B; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;">☠️ Zone interdite</p>
             <div style="display: flex; justify-content: flex-start;">
               <span id="bountyMalusBadge" class="bounty-malus-badge">—</span>
             </div>
           </div>
+        </div>
+      </div>
 
       <div style="flex: 1; width: 100%; overflow-x: auto; overflow-y: hidden; display: block; background: var(--card-bg);">
         <table id="cricketGridTable" style="width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 13px;"></table>

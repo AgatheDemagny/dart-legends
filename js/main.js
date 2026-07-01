@@ -200,7 +200,7 @@ function renderTeamsConfig() {
     div.style.border = "1px solid var(--divider)";
     div.style.borderRadius = "8px";
     
-    let html = `<div class="team-config-title" style="margin-bottom: 8px;">${eq.name}</div>`;
+    let html = `<div class="team-config-title" style="margin-bottom: 8px; text-align: center;">${eq.name}</div>`;
     
     eq.members.forEach((m, mIndex) => {
       html += `

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "V1.45";
+const CACHE_VERSION = "V1.46";
 const CACHE_NAME = `dart-quest-${CACHE_VERSION}`;
 const FILES_TO_CACHE = [
   "./",
