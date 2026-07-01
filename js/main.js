@@ -1657,9 +1657,16 @@ function renderGrid() {
 
 function renderGridBounty() {
   const table = document.getElementById("cricketGridTable");
+  if (!table) return;
   table.innerHTML = "";
+  
+  // Harmonisation de l'en-tête
   const headerRow = document.createElement("tr");
-  headerRow.innerHTML = `<th style="text-align:left; padding:10px 4px; border-bottom:2px solid var(--divider);">Joueur</th><th style="padding:10px 4px; border-bottom:2px solid var(--divider); border-left:1px solid var(--divider); color:var(--accent); width:30%;">Score</th>`;
+  headerRow.style.background = "rgba(255,255,255,0.02)";
+  headerRow.innerHTML = `
+    <th style="text-align:left; padding:12px 6px; border-bottom:2px solid var(--divider); width:60%;">Joueur</th>
+    <th style="padding:12px 6px; border-bottom:2px solid var(--divider); border-left:1px solid var(--divider); color:var(--accent); width:40%;">Score</th>
+  `;
   table.appendChild(headerRow);
 
   let entitesAAfficher = cricketState.isTeamMode ? listeEquipesFormees : cricketState.players;
@@ -1667,10 +1674,18 @@ function renderGridBounty() {
 
   entitesAAfficher.forEach(entite => {
     const row = document.createElement("tr");
+    // Harmonisation de la ligne de séparation du bas
+    row.style.borderBottom = "1px solid var(--divider)";
+    
     if (cricketState.isTeamMode ? (joueurActuel.teamId === entite.id) : (joueurActuel.id === entite.id)) {
       row.style.backgroundColor = "rgba(192,101,42,0.15)";
     }
-    row.innerHTML = `<td style="text-align:left; padding:12px 4px; font-weight:700;">${entite.name}</td><td style="font-weight:800; padding:12px 2px; border-left:1px solid var(--divider); color:var(--primary-strong); font-size:14px;">${cricketState.scores[entite.id]}</td>`;
+    
+    // Ajout de border-left pour la séparation verticale
+    row.innerHTML = `
+      <td style="text-align:left; padding:14px 6px; font-weight:700;">${entite.name}</td>
+      <td style="font-weight:800; padding:14px 6px; border-left:1px solid var(--divider); color:var(--primary-strong); font-size:16px;">${cricketState.scores[entite.id]}</td>
+    `;
     table.appendChild(row);
   });
 }
@@ -2010,8 +2025,9 @@ function mettreAJourCiblesBountyUI() {
   const scoreBadge = document.getElementById("bountyTargetScoreBadge");
 
   if (bonusContainer) {
+    // Retrait de l'emoji à l'intérieur du badge étoile
     bonusContainer.innerHTML = cricketState.bountyBonusTargets.map(t => 
-      `<div class="bounty-star-badge"><span>🤠</span><span>${t}</span></div>`
+      `<div class="bounty-star-badge">${t}</div>`
     ).join('');
   }
   
@@ -2019,8 +2035,9 @@ function mettreAJourCiblesBountyUI() {
     if (cricketState.bountyHasMalus) { 
       malusContainer.classList.remove("hidden"); 
       if (malusBadge) malusBadge.innerHTML = `☠️ ${cricketState.bountyMalusTarget}`; 
+    } else { 
+      malusContainer.classList.add("hidden"); 
     }
-    else { malusContainer.classList.add("hidden"); }
   }
 
   if (scoreBadge) {
