@@ -205,7 +205,7 @@ function renderTeamsConfig() {
       html += `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
           <span class="team-config-player">${m.name}</span>
-          <button class="ghost" style="padding: 4px 8px; font-size: 11px;" onclick="deplacerJoueurEquipe('${eq.id}', '${m.id}')">🔄 Changer</button>
+          <button class="ghost" style="padding: 4px 8px; font-size: 11px;" onclick="deplacerJoueurEquipe('${eq.id}', '${m.id}')">➡️​ Changer d'équipe</button>
         </div>`;
     });
     
@@ -2172,11 +2172,11 @@ function genererTableauStatistiques() {
   // RENDU DU MODE : CRICKET
   // ==========================================
   if (cricketState.gameMode === "cricket") {
-    const blocGen = creerBlocStats("📊 Statistiques Générales");
+    const blocGen = creerBlocStats("Général");
     genererEnteteJoueurs(blocGen.table);
     
     let rowMpr = document.createElement("tr"); rowMpr.style.borderBottom = "1px solid var(--divider)";
-    let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--accent);">MPR (Marques/Tour)</td>`;
+    let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--accent);">MPR</td>`;
     cricketState.players.forEach(p => {
       const totalTouches = cricketState.statsDetails[p.id].touchesUtiles || 0;
       const totalDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
@@ -2185,7 +2185,7 @@ function genererTableauStatistiques() {
     rowMpr.innerHTML = mprHtml; blocGen.table.appendChild(rowMpr);
 
     let rowTotPts = document.createElement("tr"); rowTotPts.style.borderBottom = "1px solid var(--divider)";
-    let totPtsHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Total points infligés</td>`;
+    let totPtsHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Points infligés</td>`;
     cricketState.players.forEach(p => {
       totPtsHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700; color:var(--danger);">${cricketState.statsDetails[p.id].totalPointsGiven || 0} pts</td>`;
     });
@@ -2194,12 +2194,12 @@ function genererTableauStatistiques() {
     let rowMaxPts = document.createElement("tr"); rowMaxPts.style.borderBottom = "1px solid var(--divider)";
     let maxPtsHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px; color:var(--text-soft);">Max infligé en 1 volée</td>`;
     cricketState.players.forEach(p => {
-      maxPtsHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600;">⚡ ${cricketState.statsDetails[p.id].maxPointsGivenInOneVolley || 0}</td>`;
+      maxPtsHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600;">${cricketState.statsDetails[p.id].maxPointsGivenInOneVolley || 0}</td>`;
     });
     rowMaxPts.innerHTML = maxPtsHtml; blocGen.table.appendChild(rowMaxPts);
     mainWrapper.appendChild(blocGen.blockDiv);
 
-    const blocZone = creerBlocStats("🎯 Performance par Zone");
+    const blocZone = creerBlocStats("Performances par zone");
     genererEnteteJoueurs(blocZone.table);
     cricketState.targets.forEach(cible => {
       const libelleCible = cible === 25 ? "🎯 Bull" : `🎯 Zone ${cible}`;
