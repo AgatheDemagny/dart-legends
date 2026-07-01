@@ -456,6 +456,11 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
   letter-spacing: 1px;
 }
 
+#commuModalCodeBadge.badge {
+  padding-left: 5px !important;
+  padding-right: 5px !important;
+}
+
 /* ================== OPTIMISATION TEXTE CLAVIER ================== */
 #cricketKeyboardZone button {
   font-size: 19px !important;    /* Augmente la taille du texte des chiffres (1 à 20 et B) */
