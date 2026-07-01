@@ -1271,11 +1271,12 @@ function demarrerMatchCricket(listeJoueurs) {
     
     cricketState.statsDetails[p.id] = { 
       dartsThrown: 0, touchesUtiles: 0, touchesNum: {}, pointsGiv: {}, totalPointsGiven: 0,
-      maxPointsGivenInOneVolley: 0, currentVolleyPointsGiven: 0, doublesCount: {}, triplesCount: {} 
+      maxPointsGivenInOneVolley: 0, currentVolleyPointsGiven: 0, simplesCount: {}, doublesCount: {}, triplesCount: {} 
     };
     cricketState.targets.forEach(t => {
       cricketState.statsDetails[p.id].touchesNum[t] = 0;
       cricketState.statsDetails[p.id].pointsGiv[t] = 0;
+      cricketState.statsDetails[p.id].simplesCount[t] = 0;
       cricketState.statsDetails[p.id].doublesCount[t] = 0;
       cricketState.statsDetails[p.id].triplesCount[t] = 0;
     });
@@ -1306,21 +1307,27 @@ function demarrerMatchX01(listeJoueurs) {
       maxVolleyScore: 0, 
       currentVolleyScore: 0,
       first9DartsScore: 0, 
-      scoreFamily60: 0,     // Corrigé (c'était 50 avant)
+      scoreFamily60: 0,    
       scoreFamily100: 0, 
       scoreFamily140: 0, 
       scoreFamily180: 0,
       checkoutHits: 0, 
       touchesNum: {},
-      touchesSimpleNum: {}  // Ajout pour compter le % de simples
+      touchesSimpleNum: {},
+      touchesDoubleNum: {},
+      touchesTripleNum: {}  
     };
 
     for (let i = 1; i <= 20; i++) {
       cricketState.statsDetails[p.id].touchesNum[i] = 0;
-      cricketState.statsDetails[p.id].touchesSimpleNum[i] = 0; // Ajout
+      cricketState.statsDetails[p.id].touchesSimpleNum[i] = 0;
+      cricketState.statsDetails[p.id].touchesDoubleNum[i] = 0;
+      cricketState.statsDetails[p.id].touchesTripleNum[i] = 0;
     }
     cricketState.statsDetails[p.id].touchesNum[25] = 0;
-    cricketState.statsDetails[p.id].touchesSimpleNum[25] = 0;  // Ajout
+    cricketState.statsDetails[p.id].touchesSimpleNum[25] = 0;
+    cricketState.statsDetails[p.id].touchesDoubleNum[i] = 0;
+    cricketState.statsDetails[p.id].touchesTripleNum[i] = 0;
   });
 
   lancerInterfaceJeu("x01");
@@ -1889,6 +1896,7 @@ function traiterCalculCricket(keyStockage, joueurActuel, valeurBouton) {
     if (!cricketState.revealedTargets.includes(valeurBouton)) cricketState.revealedTargets.push(valeurBouton);
     const stats = cricketState.statsDetails[joueurActuel.id];
 
+    if (modificateurEnCours === 1) stats.simplesCount[valeurBouton] += 1;
     if (modificateurEnCours === 2) stats.doublesCount[valeurBouton] += 1;
     if (modificateurEnCours === 3 && valeurBouton !== 25) stats.triplesCount[valeurBouton] += 1;
 
@@ -1926,9 +1934,9 @@ function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
 
   if (valeurBouton !== 0 && stats) {
     stats.touchesNum[valeurBouton] += modificateurEnCours;
-    if (modificateurEnCours === 1) {
-      stats.touchesSimpleNum[valeurBouton] += 1;
-    }
+    if (modificateurEnCours === 1) stats.touchesSimpleNum[valeurBouton] += 1;
+    else if (modificateurEnCours === 2) stats.touchesDoubleNum[valeurBouton] += 1;
+    else if (modificateurEnCours === 3) stats.touchesTripleNum[valeurBouton] += 1;
   }
 
   if (estBust) {
@@ -2182,9 +2190,8 @@ function genererTableauStatistiques() {
   if (!tableEl) return;
   
   const parentContainer = tableEl.parentElement;
-  parentContainer.innerHTML = ""; // On vide proprement l'ancien contenu
+  parentContainer.innerHTML = ""; 
 
-  // Création d'un wrapper de bloc dédié pour accueillir vos cartes
   const mainWrapper = document.createElement("div");
   mainWrapper.style.padding = "0 8px 40px 8px"; 
   mainWrapper.style.display = "flex";
@@ -2193,11 +2200,13 @@ function genererTableauStatistiques() {
   mainWrapper.style.width = "100%";
   parentContainer.appendChild(mainWrapper);
 
-  // Recréation de la table fantôme indispensable pour le cycle de l'app
   const backupTable = document.createElement("table");
   backupTable.id = "matchStatsTable";
   backupTable.style.display = "none";
   parentContainer.appendChild(backupTable);
+
+  const labelStyle = "text-align:left; padding:10px 8px; font-weight:600; color:var(--text-main); font-size:13px;";
+  const valStyle = "text-align:center; border-left:1px solid var(--divider); font-weight:600; font-size:13px;";
 
   function creerBlocStats(titreBloc) {
     const blockDiv = document.createElement("div");
@@ -2205,7 +2214,6 @@ function genererTableauStatistiques() {
     blockDiv.style.border = "1px solid var(--card-border)";
     blockDiv.style.borderRadius = "var(--r-2)";
     blockDiv.style.padding = "12px";
-    blockDiv.style.boxShadow = "0 4px 12px rgba(227, 212, 174, 0.05)";
     blockDiv.style.width = "100%";
     
     const h3 = document.createElement("h3");
@@ -2216,13 +2224,11 @@ function genererTableauStatistiques() {
     h3.style.borderBottom = "2px solid var(--divider)";
     h3.style.paddingBottom = "6px";
     h3.innerText = titreBloc;
-    
     blockDiv.appendChild(h3);
     
     const table = document.createElement("table");
     table.style.width = "100%";
     table.style.borderCollapse = "collapse";
-    table.style.fontSize = "13px";
     blockDiv.appendChild(table);
     
     return { blockDiv, table };
@@ -2231,221 +2237,172 @@ function genererTableauStatistiques() {
   function genererEnteteJoueurs(tableTarget) {
     const rowHeader = document.createElement("tr");
     rowHeader.style.background = "rgba(255,255,255,0.02)";
-    let html = `<th style="text-align:left; padding:8px; border-bottom:1px solid var(--divider); width:35%;">Joueurs</th>`;
+    let html = `<th style="text-align:left; padding:8px; border-bottom:1px solid var(--divider); width:40%;">Joueurs</th>`;
     cricketState.players.forEach(p => {
       let nom = p.name.length > 9 ? p.name.substring(0, 9) + "." : p.name;
-      if (cricketState.isTeamMode) {
-        nom += ` <span style="font-size:9px; color:var(--accent); display:block;">(${p.teamName})</span>`;
-      }
-      html += `<th style="font-weight:700; padding:8px 4px; border-bottom:1px solid var(--divider); border-left:1px solid var(--divider); text-align:center;">${nom}</th>`;
+      html += `<th style="font-weight:700; padding:8px 4px; border-bottom:1px solid var(--divider); border-left:1px solid var(--divider); text-align:center; font-size:13px;">${nom}</th>`;
     });
     rowHeader.innerHTML = html;
     tableTarget.appendChild(rowHeader);
   }
 
-  // ==========================================
-  // RENDU DU MODE : CRICKET
-  // ==========================================
+  function ajouterLigne(tableTarget, label, valuesHtmlArray) {
+    let row = document.createElement("tr"); 
+    row.style.borderBottom = "1px solid var(--divider)";
+    let html = `<td style="${labelStyle}">${label}</td>`;
+    valuesHtmlArray.forEach(val => { html += `<td style="${valStyle}">${val}</td>`; });
+    row.innerHTML = html;
+    tableTarget.appendChild(row);
+  }
+
+  // ================= CRICKET =================
   if (cricketState.gameMode === "cricket") {
-    const blocGen = creerBlocStats("Général");
+    // Bloc 1 : Générales
+    const blocGen = creerBlocStats("📊 Générales");
     genererEnteteJoueurs(blocGen.table);
     
-    let rowMpr = document.createElement("tr"); rowMpr.style.borderBottom = "1px solid var(--divider)";
-    let mprHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--accent);">MPR</td>`;
-    cricketState.players.forEach(p => {
-      const totalTouches = cricketState.statsDetails[p.id].touchesUtiles || 0;
-      const totalDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
-      mprHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--primary-strong); font-size:14px;">${((totalTouches / totalDarts) * 3).toFixed(2)}</td>`;
-    });
-    rowMpr.innerHTML = mprHtml; blocGen.table.appendChild(rowMpr);
-
-    let rowTotPts = document.createElement("tr"); rowTotPts.style.borderBottom = "1px solid var(--divider)";
-    let totPtsHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Points infligés</td>`;
-    cricketState.players.forEach(p => {
-      totPtsHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700; color:var(--danger);">${cricketState.statsDetails[p.id].totalPointsGiven || 0} pts</td>`;
-    });
-    rowTotPts.innerHTML = totPtsHtml; blocGen.table.appendChild(rowTotPts);
-
-    let rowMaxPts = document.createElement("tr"); rowMaxPts.style.borderBottom = "1px solid var(--divider)";
-    let maxPtsHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px; color:var(--text-soft);">Max infligé en 1 volée</td>`;
-    cricketState.players.forEach(p => {
-      maxPtsHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600;">${cricketState.statsDetails[p.id].maxPointsGivenInOneVolley || 0}</td>`;
-    });
-    rowMaxPts.innerHTML = maxPtsHtml; blocGen.table.appendChild(rowMaxPts);
+    ajouterLigne(blocGen.table, "MPR", cricketState.players.map(p => {
+      const touches = cricketState.statsDetails[p.id].touchesUtiles || 0;
+      const darts = cricketState.statsDetails[p.id].dartsThrown || 1;
+      return ((touches / darts) * 3).toFixed(2);
+    }));
+    
+    ajouterLigne(blocGen.table, "Points infligés", cricketState.players.map(p => 
+      cricketState.statsDetails[p.id].totalPointsGiven || 0
+    ));
     mainWrapper.appendChild(blocGen.blockDiv);
 
-    const blocZone = creerBlocStats("Performances par zone");
+    // Bloc 2 : Par Chiffre
+    const blocZone = creerBlocStats("🎯 Détail par zone");
     genererEnteteJoueurs(blocZone.table);
     cricketState.targets.forEach(cible => {
-      const libelleCible = cible === 25 ? "🎯 Bull" : `🎯 Zone ${cible}`;
-      let row = document.createElement("tr"); row.style.borderBottom = "1px solid var(--divider)";
-      let rowHtml = `<td style="text-align:left; padding:8px; font-weight:600;">${libelleCible}</td>`;
-      cricketState.players.forEach(p => {
-        const tNum = cricketState.statsDetails[p.id].touchesNum[cible] || 0;
-        const dCount = cricketState.statsDetails[p.id].doublesCount[cible] || 0;
-        const tCount = cricketState.statsDetails[p.id].triplesCount[cible] || 0;
-        const pGiv = cricketState.statsDetails[p.id].pointsGiv[cible] || 0;
-        let txtBonus = [];
-        if (dCount > 0) txtBonus.push(`${dCount}D`);
-        if (tCount > 0) txtBonus.push(`${tCount}T`);
-        let subText = txtBonus.length > 0 ? `<br><span style="font-size:10px; color:#28a745;">(${txtBonus.join(' / ')})</span>` : '';
-        let penaliteText = pGiv > 0 ? `<br><span style="font-size:10px; color:var(--danger); font-weight:700;">+${pGiv} pts</span>` : '';
-        rowHtml += `<td style="text-align:center; border-left:1px solid var(--divider); padding:6px 2px;"><strong>${tNum} hit${tNum > 1 ? 's' : ''}</strong>${subText}${penaliteText}</td>`;
-      });
-      row.innerHTML = rowHtml; blocZone.table.appendChild(row);
+      const label = cible === 25 ? "Bull" : `Zone ${cible}`;
+      ajouterLigne(blocZone.table, label, cricketState.players.map(p => {
+        const stats = cricketState.statsDetails[p.id];
+        const s = stats.simplesCount[cible] || 0;
+        const d = stats.doublesCount[cible] || 0;
+        const t = stats.triplesCount[cible] || 0;
+        const pts = stats.pointsGiv[cible] || 0;
+        let txt = `${s}S / ${d}D / ${t}T`;
+        if (pts > 0) txt += `<br><span style="font-size:11px; color:var(--text-soft);">+${pts} pts</span>`;
+        return txt;
+      }));
     });
     mainWrapper.appendChild(blocZone.blockDiv);
 
-  // ==========================================
-  // RENDU DU MODE : TOUR DU MONDE
-  // ==========================================
-  } else if (cricketState.gameMode === "world") {
-    const blocGenW = creerBlocStats("📊 Bilan du Voyage");
-    genererEnteteJoueurs(blocGenW.table);
+    // Bloc 3 : Tableau Final (Reproduction de la grille de jeu)
+    const blocGrid = creerBlocStats("📸 Tableau Final");
+    const cloneGrid = document.getElementById("cricketGridTable").cloneNode(true);
+    cloneGrid.style.width = "100%";
+    cloneGrid.style.marginTop = "10px";
+    blocGrid.blockDiv.appendChild(cloneGrid);
+    mainWrapper.appendChild(blocGrid.blockDiv);
+  }
 
-    let rowTotDarts = document.createElement("tr"); rowTotDarts.style.borderBottom = "1px solid var(--divider)";
-    let dartsHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600;">Fléchettes lancées</td>`;
-    cricketState.players.forEach(p => {
-      dartsHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--primary-strong);">${cricketState.statsDetails[p.id].dartsThrown || 0} darts</td>`;
-    });
-    rowTotDarts.innerHTML = dartsHtml; blocGenW.table.appendChild(rowTotDarts);
-
-    let rowAvgTarget = document.createElement("tr"); rowAvgTarget.style.borderBottom = "1px solid var(--divider)";
-    let avgHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px; color:var(--text-soft); font-weight:600;">Moy. fléchettes / cible</td>`;
-    cricketState.players.forEach(p => {
-      const totalThrown = cricketState.statsDetails[p.id].dartsThrown || 0;
-      const targetsHit = cricketState.statsDetails[p.id].totalTargetsHit || 1;
-      avgHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600; color:var(--text-soft);">${(totalThrown / targetsHit).toFixed(1)}</td>`;
-    });
-    rowAvgTarget.innerHTML = avgHtml; blocGenW.table.appendChild(rowAvgTarget);
-    mainWrapper.appendChild(blocGenW.blockDiv);
-
-  // ==========================================
-  // RENDU DU MODE : CHASSEUR DE PRIMES (BOUNTY)
-  // ==========================================
-    } else if (cricketState.gameMode === "bounty") {
-    const blocGenB = creerBlocStats("💰 Tableau de Chasse");
-    genererEnteteJoueurs(blocGenB.table);
-
-    let rowPtsGagnes = document.createElement("tr"); rowPtsGagnes.style.borderBottom = "1px solid var(--divider)";
-    let ptsGHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:#28a745;">Points gagnés</td>`;
-    cricketState.players.forEach(p => { ptsGHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:#28a745;">+${cricketState.statsDetails[p.id].touchesPositives || 0}</td>`; });
-    rowPtsGagnes.innerHTML = ptsGHtml; blocGenB.table.appendChild(rowPtsGagnes);
-
-    let rowPtsPerdus = document.createElement("tr"); rowPtsPerdus.style.borderBottom = "1px solid var(--divider)";
-    let ptsPHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--danger);">Points perdus</td>`;
-    cricketState.players.forEach(p => { ptsPHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--danger);">-${cricketState.statsDetails[p.id].touchesMalus || 0}</td>`; });
-    rowPtsPerdus.innerHTML = ptsPHtml; blocGenB.table.appendChild(rowPtsPerdus);
-    
-    let rowChiffresT = document.createElement("tr"); rowChiffresT.style.borderBottom = "1px solid var(--divider)";
-    let cTHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Chiffres touchés (Total)</td>`;
-    cricketState.players.forEach(p => {
-        const totalHits = (cricketState.statsDetails[p.id].simples || 0) + (cricketState.statsDetails[p.id].doubles || 0) + (cricketState.statsDetails[p.id].triples || 0);
-        cTHtml += `<td style="text-align:center; border-left:1px solid var(--divider);">${totalHits}</td>`;
-    });
-    rowChiffresT.innerHTML = cTHtml; blocGenB.table.appendChild(rowChiffresT);
-    mainWrapper.appendChild(blocGenB.blockDiv);
-
-    const blocMultiplicateurs = creerBlocStats("🎯 Précision des tirs");
-    genererEnteteJoueurs(blocMultiplicateurs.table);
-
-    let rowS = document.createElement("tr"); rowS.style.borderBottom = "1px solid var(--divider)";
-    let sHtml = `<td style="text-align:left; padding:10px 8px;">Simples</td>`;
-    cricketState.players.forEach(p => { sHtml += `<td style="text-align:center; border-left:1px solid var(--divider);">${cricketState.statsDetails[p.id].simples || 0}</td>`; });
-    rowS.innerHTML = sHtml; blocMultiplicateurs.table.appendChild(rowS);
-
-    let rowD = document.createElement("tr"); rowD.style.borderBottom = "1px solid var(--divider)";
-    let dHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600;">Doubles 🥈</td>`;
-    cricketState.players.forEach(p => { dHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600; color:var(--accent);">${cricketState.statsDetails[p.id].doubles || 0}</td>`; });
-    rowD.innerHTML = dHtml; blocMultiplicateurs.table.appendChild(rowD);
-
-    let rowT = document.createElement("tr"); rowT.style.borderBottom = "1px solid var(--divider)";
-    let tHtml = `<td style="text-align:left; padding:10px 8px; font-weight:700;">Triples 🥇</td>`;
-    cricketState.players.forEach(p => { tHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700; color:var(--primary);">${cricketState.statsDetails[p.id].triples || 0}</td>`; });
-    rowT.innerHTML = tHtml; blocMultiplicateurs.table.appendChild(rowT);
-    mainWrapper.appendChild(blocMultiplicateurs.blockDiv);
-
-  // ==========================================
-  // RENDU DU MODE : X01
-  // ==========================================
-  } else if (cricketState.gameMode === "x01") {
-    const blocGenX = creerBlocStats("💯 Bilan X01");
+  // ================= X01 =================
+  else if (cricketState.gameMode === "x01") {
+    const blocGenX = creerBlocStats("💯 Générales");
     genererEnteteJoueurs(blocGenX.table);
 
-    // Ligne Moyenne (corrigée pour être sur 3 fléchettes = PPR)
-    let rowMoy = document.createElement("tr"); rowMoy.style.borderBottom = "1px solid var(--divider)";
-    let moyHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--accent);">Moyenne (3 fléchettes)</td>`;
-    cricketState.players.forEach(p => {
+    ajouterLigne(blocGenX.table, "Moyenne (3 fléchettes)", cricketState.players.map(p => {
       const tPts = cricketState.statsDetails[p.id].totalScoreScored || 0;
       const tDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
-      moyHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--primary-strong); font-size:14px;">${((tPts / tDarts) * 3).toFixed(1)}</td>`;
-    });
-    rowMoy.innerHTML = moyHtml; blocGenX.table.appendChild(rowMoy);
+      return ((tPts / tDarts) * 3).toFixed(1);
+    }));
 
-    // Ligne Score 9 premières fléchettes
-    let row9 = document.createElement("tr"); row9.style.borderBottom = "1px solid var(--divider)";
-    let row9Html = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Score 9 premières fléchettes</td>`;
-    cricketState.players.forEach(p => {
-      row9Html += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700;">${cricketState.statsDetails[p.id].first9DartsScore || 0}</td>`;
-    });
-    row9.innerHTML = row9Html; blocGenX.table.appendChild(row9);
-
-    // Ligne Meilleure Volée
-    let rowMaxX = document.createElement("tr"); rowMaxX.style.borderBottom = "1px solid var(--divider)";
-    let maxXHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Meilleure Volée (3 darts)</td>`;
-    cricketState.players.forEach(p => {
-      maxXHtml += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:700;">⚡ ${cricketState.statsDetails[p.id].maxVolleyScore || 0}</td>`;
-    });
-    rowMaxX.innerHTML = maxXHtml; blocGenX.table.appendChild(rowMaxX);
+    ajouterLigne(blocGenX.table, "Score 9 premières", cricketState.players.map(p => cricketState.statsDetails[p.id].first9DartsScore || 0));
+    ajouterLigne(blocGenX.table, "Score Max / Volée", cricketState.players.map(p => cricketState.statsDetails[p.id].maxVolleyScore || 0));
+    ajouterLigne(blocGenX.table, "Nombre de Busts", cricketState.players.map(p => cricketState.statsDetails[p.id].bustsCount || 0));
+    
+    // Le temps mis pour checkout (Affiché globalement pour le gagnant)
+    let m = String(Math.floor(cricketState.elapsedTime / 60)).padStart(2, "0");
+    let s = String(cricketState.elapsedTime % 60).padStart(2, "0");
+    ajouterLigne(blocGenX.table, "Temps match", cricketState.players.map(() => `${m}:${s}`));
     mainWrapper.appendChild(blocGenX.blockDiv);
 
-    // Compteurs de volées
-    const blocVolees = creerBlocStats("🎯 Performances Volées");
-    genererEnteteJoueurs(blocVolees.table);
-    const paliers = [
-      { label: "Volées 180", key: "scoreFamily180" },
-      { label: "Volées 140+", key: "scoreFamily140" },
-      { label: "Volées 100+", key: "scoreFamily100" },
-      { label: "Volées 60+", key: "scoreFamily60" }
-    ];
-    paliers.forEach(palier => {
-      let r = document.createElement("tr"); r.style.borderBottom = "1px solid var(--divider)";
-      let h = `<td style="text-align:left; padding:8px; font-size:13px;">${palier.label}</td>`;
-      cricketState.players.forEach(p => {
-        const val = cricketState.statsDetails[p.id][palier.key] || 0;
-        h += `<td style="text-align:center; border-left:1px solid var(--divider); font-weight:600;">${val}</td>`;
-      });
-      r.innerHTML = h; blocVolees.table.appendChild(r);
-    });
-    mainWrapper.appendChild(blocVolees.blockDiv);
+    const blocMilestones = creerBlocStats("🚀 Paliers atteints");
+    genererEnteteJoueurs(blocMilestones.table);
+    ajouterLigne(blocMilestones.table, "Volées 180", cricketState.players.map(p => cricketState.statsDetails[p.id].scoreFamily180 || 0));
+    ajouterLigne(blocMilestones.table, "Volées 140+", cricketState.players.map(p => cricketState.statsDetails[p.id].scoreFamily140 || 0));
+    ajouterLigne(blocMilestones.table, "Volées 100+", cricketState.players.map(p => cricketState.statsDetails[p.id].scoreFamily100 || 0));
+    ajouterLigne(blocMilestones.table, "Volées 60+", cricketState.players.map(p => cricketState.statsDetails[p.id].scoreFamily60 || 0));
+    mainWrapper.appendChild(blocMilestones.blockDiv);
 
-    // Détail des chiffres
-    const blocDetail = creerBlocStats("📊 Détail par Chiffre (1-20 & Bull)");
+    const blocDetail = creerBlocStats("🎯 Détail par Chiffre");
     genererEnteteJoueurs(blocDetail.table);
-    // Boucle de 1 à 20, plus le 25
     for (let i = 1; i <= 21; i++) {
       let cible = i === 21 ? 25 : i;
-      let labelCible = cible === 25 ? "Bull" : cible;
-      let r = document.createElement("tr"); r.style.borderBottom = "1px solid var(--divider)";
-      let h = `<td style="text-align:left; padding:8px; font-weight:600;">Zone ${labelCible}</td>`;
-      
-      cricketState.players.forEach(p => {
+      let labelCible = cible === 25 ? "Bull" : `Zone ${cible}`;
+      ajouterLigne(blocDetail.table, labelCible, cricketState.players.map(p => {
         const stat = cricketState.statsDetails[p.id];
-        const tSimple = stat.touchesSimpleNum[cible] || 0;
-        const totalNumTouches = stat.touchesNum[cible] || 0; 
-        const tTriple = (totalNumTouches - tSimple) / 3; // Approximation simple s'il y a eu que des simples/triples, mais le plus propre est d'afficher les touches comptabilisées
+        const s = stat.touchesSimpleNum[cible] || 0;
+        const d = stat.touchesDoubleNum[cible] || 0;
+        const t = stat.touchesTripleNum[cible] || 0;
+        const totalNum = stat.touchesNum[cible] || 0;
         
-        // Calcul du % de fléchettes dans ce chiffre
+        if (totalNum === 0) return "-";
+        
         const totalDarts = stat.dartsThrown || 1;
-        const percent = ((tSimple / totalDarts) * 100).toFixed(1);
-        
-        let detailTxt = `${tSimple} S <span style="color:#6c757d; font-size:10px;">(${percent}%)</span>`;
-        if (tTriple >= 1) detailTxt += `<br><span style="color:var(--primary); font-size:11px;">+ touches multiples</span>`;
-        
-        h += `<td style="text-align:center; border-left:1px solid var(--divider); padding:6px; font-size:12px;">${detailTxt}</td>`;
-      });
-      r.innerHTML = h; blocDetail.table.appendChild(r);
+        const percent = (((s + d + t) / totalDarts) * 100).toFixed(1); // Pourcentage basé sur les fléchettes réelles
+        return `${s}S / ${d}D / ${t}T<br><span style="font-size:11px; color:var(--text-soft);">${percent}%</span>`;
+      }));
     }
     mainWrapper.appendChild(blocDetail.blockDiv);
+  }
+
+  // ================= TOUR DU MONDE =================
+  else if (cricketState.gameMode === "world") {
+    const blocGenW = creerBlocStats("🌍 Générales");
+    genererEnteteJoueurs(blocGenW.table);
+    
+    ajouterLigne(blocGenW.table, "Progression finale", cricketState.players.map(p => formatScoreDisplay("world", cricketState.scores[p.id])));
+    ajouterLigne(blocGenW.table, "Total Simples", cricketState.players.map(p => cricketState.statsDetails[p.id].simplesHitCount || 0));
+    ajouterLigne(blocGenW.table, "Total Doubles", cricketState.players.map(p => cricketState.statsDetails[p.id].doublesHitCount || 0));
+    ajouterLigne(blocGenW.table, "Total Triples", cricketState.players.map(p => cricketState.statsDetails[p.id].triplesHitCount || 0));
+    mainWrapper.appendChild(blocGenW.blockDiv);
+
+    const blocDetailW = creerBlocStats("🎯 Fléchettes par cible");
+    genererEnteteJoueurs(blocDetailW.table);
+    const start = cricketState.worldStartNum;
+    const end = cricketState.worldEndNum;
+    const targetSequence = SEQUENCE_TOUR_DU_MONDE.filter(t => t >= start && t <= end);
+    
+    targetSequence.forEach(cible => {
+      const label = cible === 25 ? "Bull" : `Cible ${cible}`;
+      ajouterLigne(blocDetailW.table, label, cricketState.players.map(p => {
+        const scoreJoueur = cricketState.scores[p.id];
+        const aDepasse = scoreJoueur > cible || scoreJoueur === 26;
+        const dartsNeeded = cricketState.statsDetails[p.id].dartsPerTarget[cible] || 0;
+        
+        if (dartsNeeded === 0 && aDepasse) return "-"; // Sauté
+        if (dartsNeeded === 0 && !aDepasse) return "En cours...";
+        return `${dartsNeeded} flèche(s)`;
+      }));
+    });
+    mainWrapper.appendChild(blocDetailW.blockDiv);
+  }
+
+  // ================= CHASSEUR DE PRIMES =================
+  else if (cricketState.gameMode === "bounty") {
+    const blocGenB = creerBlocStats("💰 Générales");
+    genererEnteteJoueurs(blocGenB.table);
+
+    ajouterLigne(blocGenB.table, "MPR", cricketState.players.map(p => {
+      const stat = cricketState.statsDetails[p.id];
+      const totalHits = (stat.simples || 0) + (stat.doubles || 0) + (stat.triples || 0);
+      const darts = stat.dartsThrown || 1;
+      return ((totalHits / darts) * 3).toFixed(2);
+    }));
+
+    ajouterLigne(blocGenB.table, "Points gagnés", cricketState.players.map(p => `+${cricketState.statsDetails[p.id].touchesPositives || 0}`));
+    ajouterLigne(blocGenB.table, "Points perdus", cricketState.players.map(p => `-${cricketState.statsDetails[p.id].touchesMalus || 0}`));
+    ajouterLigne(blocGenB.table, "Bonus touchés", cricketState.players.map(p => {
+      const stat = cricketState.statsDetails[p.id];
+      return (stat.simples || 0) + (stat.doubles || 0) + (stat.triples || 0);
+    }));
+    ajouterLigne(blocGenB.table, "Doubles", cricketState.players.map(p => cricketState.statsDetails[p.id].doubles || 0));
+    ajouterLigne(blocGenB.table, "Triples", cricketState.players.map(p => cricketState.statsDetails[p.id].triples || 0));
+    
+    mainWrapper.appendChild(blocGenB.blockDiv);
   }
 }
