@@ -1917,17 +1917,13 @@ function traiterCalculCricket(keyStockage, joueurActuel, valeurBouton) {
 
 function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
   const stats = cricketState.statsDetails[joueurActuel.id];
-  
-  // Calcul des points (le double Bullseye vaut 50)
   let pointsMarques = (valeurBouton === 25 && modificateurEnCours === 2 ? 50 : valeurBouton) * modificateurEnCours;
   const scoreResultat = cricketState.scores[keyStockage] - pointsMarques;
 
-  // Détection du Bust
   let estBust = scoreResultat < 0 || 
                 (scoreResultat === 1 && cricketState.x01Checkout === "double") || 
                 (scoreResultat === 0 && cricketState.x01Checkout === "double" && modificateurEnCours !== 2);
 
-  // Comptage des touches générales et spécifiques aux simples
   if (valeurBouton !== 0 && stats) {
     stats.touchesNum[valeurBouton] += modificateurEnCours;
     if (modificateurEnCours === 1) {
@@ -1935,19 +1931,16 @@ function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
     }
   }
 
-  // Application du score ou du Bust
-if (estBust) {
+  if (estBust) {
     showPopup("💥 Bust", true);
-    // On restaure le score du début de volée !
     cricketState.scores[keyStockage] = cricketState.x01TurnStartScore;
-    
     if (stats) { 
       stats.bustsCount += 1; 
-      // On annule les points marqués par les fléchettes précédentes de cette volée ratée
       stats.totalScoreScored = cricketState.x01TurnStartTotalScored;
       stats.first9DartsScore = cricketState.x01TurnStartFirst9;
       stats.currentVolleyScore = 0; 
-      stats.dartsThrown += (3 - cricketState.currentDart); 
+      // On n'ajoute plus artificiellement de fléchettes ici : 
+      // seules les fléchettes VRAIMENT lancées sont comptabilisées !
     }
     cricketState.currentDart = 3; 
   } else {
@@ -1955,22 +1948,18 @@ if (estBust) {
     if (stats) {
       stats.totalScoreScored += pointsMarques; 
       stats.currentVolleyScore += pointsMarques;
-      // Compte le score sur les 9 premières fléchettes
       if (stats.dartsThrown <= 9) stats.first9DartsScore += pointsMarques;
     }
   }
 
-  // Fin de volée : mise à jour des statistiques de famille de scores
   if (cricketState.currentDart === 3 && stats) {
     if (stats.currentVolleyScore > stats.maxVolleyScore) {
       stats.maxVolleyScore = stats.currentVolleyScore;
     }
-    
     if (stats.currentVolleyScore === 180) stats.scoreFamily180 += 1;
     else if (stats.currentVolleyScore >= 140) stats.scoreFamily140 += 1;
     else if (stats.currentVolleyScore >= 100) stats.scoreFamily100 += 1;
-    else if (stats.currentVolleyScore >= 60) stats.scoreFamily60 += 1; // La famille des 60 ajoutée ici
-    
+    else if (stats.currentVolleyScore >= 60) stats.scoreFamily60 += 1; 
     stats.currentVolleyScore = 0; 
   }
 }
@@ -2383,17 +2372,17 @@ function genererTableauStatistiques() {
     const blocGenX = creerBlocStats("💯 Bilan X01");
     genererEnteteJoueurs(blocGenX.table);
 
-    // Moyenne
+    // Ligne Moyenne (corrigée pour être sur 3 fléchettes = PPR)
     let rowMoy = document.createElement("tr"); rowMoy.style.borderBottom = "1px solid var(--divider)";
-    let moyHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--accent);">Score moyen / Fléchette</td>`;
+    let moyHtml = `<td style="text-align:left; padding:10px 8px; font-weight:600; color:var(--accent);">Moyenne (3 fléchettes)</td>`;
     cricketState.players.forEach(p => {
       const tPts = cricketState.statsDetails[p.id].totalScoreScored || 0;
       const tDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
-      moyHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--primary-strong); font-size:14px;">${(tPts / tDarts).toFixed(1)}</td>`;
+      moyHtml += `<td style="font-weight:700; text-align:center; border-left:1px solid var(--divider); color:var(--primary-strong); font-size:14px;">${((tPts / tDarts) * 3).toFixed(1)}</td>`;
     });
     rowMoy.innerHTML = moyHtml; blocGenX.table.appendChild(rowMoy);
 
-    // Score 9 premières fléchettes
+    // Ligne Score 9 premières fléchettes
     let row9 = document.createElement("tr"); row9.style.borderBottom = "1px solid var(--divider)";
     let row9Html = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Score 9 premières fléchettes</td>`;
     cricketState.players.forEach(p => {
@@ -2401,7 +2390,7 @@ function genererTableauStatistiques() {
     });
     row9.innerHTML = row9Html; blocGenX.table.appendChild(row9);
 
-    // Meilleure volée
+    // Ligne Meilleure Volée
     let rowMaxX = document.createElement("tr"); rowMaxX.style.borderBottom = "1px solid var(--divider)";
     let maxXHtml = `<td style="text-align:left; padding:10px 8px; font-size:13px;">Meilleure Volée (3 darts)</td>`;
     cricketState.players.forEach(p => {

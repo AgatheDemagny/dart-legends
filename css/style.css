@@ -434,7 +434,7 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
   background: radial-gradient(circle, #FFD54F 0%, #FFB300 100%);
   color: #3E2723;
   font-weight: 900;
-  font-size: 20px; 
+  font-size: 18px; 
   width: 58px;
   height: 58px;
   /* Étoile de shérif parfaitement symétrique à 6 branches */
