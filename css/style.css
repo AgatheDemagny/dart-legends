@@ -288,7 +288,7 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
 
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; }
 .topbar-center { flex: 1; display: flex; align-items: center; justify-content: center; }
-.badge { font-size: 12px; padding: 4px 8px; border-radius: 20px; color: var(--text-main); background: #E3D4AE; font-weight: 600; border-right: 5px solid #E3D4AE; border-left: 5px solid #E3D4AE }
+.badge { font-size: 12px; padding: 4px 8px; border-radius: 20px; color: var(--text-main); background: #E3D4AE; font-weight: 600; border-right: 5px solid; border-left: 5px solid }
 
 .hidden { display: none !important; }
 
@@ -420,6 +420,42 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
 }
 #cricketKeyboardZone button {
   touch-action: manipulation;
+}
+
+/* ================== THÈME CHASSEUR DE PRIMES (FAR WEST) ================== */
+.bounty-star-badge {
+  background: radial-gradient(circle, #FFE066 0%, #D4AF37 100%);
+  color: #4A2E15;
+  font-weight: 900;
+  font-size: 16px;
+  width: 65px;
+  height: 65px;
+  /* Forme d'étoile à 10 branches (badge de shérif) */
+  clip-path: polygon(50% 0%, 61% 20%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 20%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transform: rotate(-5deg); /* Petit effet cowboy incliné */
+}
+
+.bounty-malus-badge {
+  background: #1A1A1A;
+  color: #FF4444;
+  font-weight: 900;
+  font-size: 18px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 2px solid #FF4444;
+  box-shadow: 0 4px 12px rgba(255, 68, 68, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 /* ================== OPTIMISATION TEXTE CLAVIER ================== */

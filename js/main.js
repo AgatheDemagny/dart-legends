@@ -196,7 +196,8 @@ function renderTeamsConfig() {
   listeEquipesFormees.forEach((eq, teamIndex) => {
     const div = document.createElement("div");
     div.style.padding = "10px";
-    div.style.background = "rgba(15, 76, 129, 0.05)";
+    div.style.background = "#FDFDFB";
+    div.style.border = "1px solid var(--divider)";
     div.style.borderRadius = "8px";
     
     let html = `<div class="team-config-title" style="margin-bottom: 8px;">${eq.name}</div>`;
@@ -1074,15 +1075,38 @@ async function chargerHistoriqueParties() {
       const dictModes = { "cricket": "CRICKET", "x01": "X01", "world": "TOUR DU MONDE", "bounty": "CHASSEUR DE PRIMES" };
       const modeAffiche = dictModes[data.type] || data.type.toUpperCase();
       
+      let rankingHtml = "";
+      if (data.ranking && data.ranking.length > 0) {
+          rankingHtml = `<div style="margin-top: 10px; font-size: 13px;">`;
+          data.ranking.forEach((r, idx) => {
+              // Ajout des noms des joueurs si c'est une équipe
+              let teamText = r.teamMembers ? `<br><span style="font-size: 10px; color: var(--text-soft); font-weight: normal;">👤 ${r.teamMembers}</span>` : "";
+              
+              rankingHtml += `
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                      <div style="flex:1;"><strong>#${idx + 1}</strong> ${r.name} ${teamText}</div>
+                      <div style="font-weight: 800; color: var(--primary-strong); font-size: 12px; text-align: right;">${r.score}</div>
+                  </div>
+              `;
+          });
+          rankingHtml += `</div>`;
+      } else {
+          // Fallback de sécurité pour les anciennes parties enregistrées sans le système de classement
+          rankingHtml = `<p style="padding:4px 0;">🥇 Vainqueur : <strong>${data.winner}</strong></p>`;
+      }
+      
       const card = document.createElement("div");
       card.className = "card"; card.style.marginBottom = "10px";
+      // Restructuration: Nom du jeu, puis Date/Durée, puis Classement
       card.innerHTML = `
-        <div style="display:flex; justify-content:space-between; margin-bottom:6px; align-items:center;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items:center;">
           <span class="badge" style="background:var(--primary); color:#fff;">${modeAffiche}</span>
           <span style="font-size:11px; color:var(--accent); font-weight:700;">${nomCommuAssociee}</span>
         </div>
-        <p style="padding:4px 0;">🥇 Vainqueur : <strong>${data.winner}</strong></p>
-        <p style="padding:4px 0; border:none; font-size:12px; color:var(--text-soft);">⏱️ ${duration} — 📅 ${date}</p>
+        <div style="font-size:12px; color:var(--text-soft); border-bottom: 1px solid var(--divider); padding-bottom: 8px; margin-bottom: 4px;">
+          📅 ${date} — ⏱️ ${duration}
+        </div>
+        ${rankingHtml}
       `;
       container.appendChild(card);
     });
@@ -1987,13 +2011,16 @@ function mettreAJourCiblesBountyUI() {
 
   if (bonusContainer) {
     bonusContainer.innerHTML = cricketState.bountyBonusTargets.map(t => 
-      `<span class="badge" style="background: #E3D4AE; color: var(--primary-strong); border: 1px solid var(--accent); font-size: 18px; padding: 8px 16px; font-weight: 800; box-shadow: 0 4px 8px rgba(227, 212, 174, 0.4);">${t}</span>`
+      `<div class="bounty-star-badge"><span>🤠</span><span>${t}</span></div>`
     ).join('');
   }
   
   if (malusContainer) {
-    if (cricketState.bountyHasMalus) { malusContainer.classList.remove("hidden"); if (malusBadge) malusBadge.innerText = cricketState.bountyMalusTarget; }
-    else malusContainer.classList.add("hidden");
+    if (cricketState.bountyHasMalus) { 
+      malusContainer.classList.remove("hidden"); 
+      if (malusBadge) malusBadge.innerHTML = `☠️ ${cricketState.bountyMalusTarget}`; 
+    }
+    else { malusContainer.classList.add("hidden"); }
   }
 
   if (scoreBadge) {
@@ -2066,6 +2093,23 @@ function verifierConditionsFinMatch() {
   }
 }
 
+function formatScoreDisplay(gameMode, score) {
+  if (gameMode === "world") {
+    const start = cricketState.worldStartNum;
+    const end = cricketState.worldEndNum;
+    const totalEtapes = (end === 25) ? (20 - start + 2) : (end - start + 1);
+    
+    if (score >= 26) return `${totalEtapes}/${totalEtapes}`;
+    
+    let etapeActuelle = (score === 25) ? totalEtapes - 1 : (score - start);
+    let restants = totalEtapes - etapeActuelle;
+    return `${etapeActuelle}/${totalEtapes} (${restants} restant${restants > 1 ? 's' : ''})`;
+  }
+  if (gameMode === "x01") return `${score} pts restants`;
+  if (gameMode === "bounty" || gameMode === "cricket") return `${score} pts`;
+  return score;
+}
+
 function lancerPageVictoire(gagnantId, nomVainqueur) {
   document.getElementById("victoryTitle").innerText = `${nomVainqueur} gagne la partie !`;
   document.getElementById("victorySubtitle").innerText = `Match bouclé en ${document.getElementById("gameTimerDisplay").innerText}`;
@@ -2074,17 +2118,42 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
   classementTrie.sort((a, b) => cricketState.gameMode === "x01" ? cricketState.scores[a.id] - cricketState.scores[b.id] : cricketState.scores[b.id] - cricketState.scores[a.id]);
   
   const containerRanking = document.getElementById("finalRankingList"); containerRanking.innerHTML = "";
+  
+  // Création du classement pour l'historique
+  let historyRanking = [];
+
   classementTrie.forEach((entite, idx) => {
+    let scoreFormate = formatScoreDisplay(cricketState.gameMode, cricketState.scores[entite.id]);
+    
     const row = document.createElement("div"); row.className = "stat-row"; row.style.padding = "10px";
     row.style.background = entite.id === gagnantId ? "rgba(192,101,42,0.15)" : "rgba(255,255,255,0.02)"; row.style.borderRadius = "12px";
-    row.innerHTML = `<span><strong>#${idx + 1}</strong> — 👤 ${entite.name}</span><span style="color:var(--primary-strong); font-weight:800;"> ${cricketState.scores[entite.id]}</span>`;
+    row.innerHTML = `<span><strong>#${idx + 1}</strong> — 👤 ${entite.name}</span><span style="color:var(--primary-strong); font-weight:800; font-size:13px;"> ${scoreFormate}</span>`;
     containerRanking.appendChild(row);
+
+    // Extraction des membres si on est en équipe
+    let joueursEquipe = "";
+    if (cricketState.isTeamMode) {
+        const equipe = listeEquipesFormees.find(e => e.id === entite.id);
+        if (equipe) joueursEquipe = equipe.members.map(m => m.name).join(", ");
+    }
+
+    historyRanking.push({
+      name: entite.name,
+      score: scoreFormate,
+      teamMembers: joueursEquipe
+    });
   });
 
   db.collection("games_history").add({
-    type: cricketState.gameMode, winner: nomVainqueur, duration: cricketState.elapsedTime, createdAt: Date.now(),
-    isTeamMode: cricketState.isTeamMode, maxTurns: cricketState.maxTurns, communityId: communauteCibleMatchId,
-    participantIds: joueursSelectionnesMatch.map(p => p.id)
+    type: cricketState.gameMode, 
+    winner: nomVainqueur, 
+    duration: cricketState.elapsedTime, 
+    createdAt: Date.now(),
+    isTeamMode: cricketState.isTeamMode, 
+    maxTurns: cricketState.maxTurns, 
+    communityId: communauteCibleMatchId,
+    participantIds: joueursSelectionnesMatch.map(p => p.id),
+    ranking: historyRanking // NOUVEAU: Sauvegarde du classement
   }).then(() => console.log("Match enregistré !")).catch(e => console.error(e));
   
   showScreen(screens.gameOver);
