@@ -62,7 +62,7 @@
           <div style="border-top: 1px solid var(--divider); padding-top: 12px;" class="stack" style="gap: 8px;">
             <button id="btnCommuTransferAdmin" class="ghost btn-block" style="padding: 10px; font-size: 13px; margin-top: 10px; display: none;">👑 Transférer l'administration</button>
             <button id="btnCommuLeave" class="danger-btn btn-block" style="padding: 10px; font-size: 13px; margin-top:0;">🏃 Quitter la communauté</button>
-            <button id="btnCommuDelete" class="danger-btn btn-block" style="padding: 10px; font-size: 13px; margin-top: 4px; display: none;">🗑️ Dissoudre la communauté (Admin)</button>
+            <button id="btnCommuDelete" class="danger-btn btn-block" style="padding: 10px; font-size: 13px; margin-top: 4px; display: none;">🗑️ Supprimer la communauté</button>
           </div>
         </div>
 
@@ -124,7 +124,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.51 - 01/07/2026</p>
+        <p>Version 1.52 - 02/07/2026</p>
       </div>
     </section>
 
@@ -284,12 +284,6 @@
         </div>
 
         <div id="worldParamsGroup" class="hidden">
-          <div style="margin-top: 12px;">
-            <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
-              <input type="checkbox" id="worldJumpCheckbox" style="width: auto; margin-top: 0;" checked>
-              <span class="stat-label"><strong>Comptabiliser les doubles & triples</strong></span>
-            </div>
-          </div>
           <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div>
               <label><strong>Départ</strong></label>
@@ -308,6 +302,13 @@
                 <option value="25" selected>🎯 Bull</option>
               </select>
             </div>
+            <div style="margin-top: 12px;">
+            <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
+              <span class="stat-label"><strong>Comptabiliser les doubles & triples</strong></span>
+              <input type="checkbox" id="worldJumpCheckbox" style="width: auto; margin-top: 0;" checked>
+            </div>
+          </div>
+
           </div>
         </div>
 
@@ -315,9 +316,9 @@
           <div style="margin-top: 12px;">
             <label><strong>Nombre de primes</strong></label>
             <select id="bountyPrimeCountSelect">
-              <option value="2">2 chiffres</option>
-              <option value="3" selected>3 chiffres</option>
-              <option value="4">4 chiffres</option>
+              <option value="2">2</option>
+              <option value="3" selected>3</option>
+              <option value="4">4</option>
             </select>
           </div>
           <div style="margin-top: 12px;">

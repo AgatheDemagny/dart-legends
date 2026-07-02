@@ -1299,7 +1299,6 @@ function demarrerMatchX01(listeJoueurs) {
     const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
     cricketState.scores[keyStockage] = cricketState.x01StartPoints;
     
-    // NOUVELLE INITIALISATION DES STATS
     cricketState.statsDetails[p.id] = { 
       dartsThrown: 0, 
       totalScoreScored: 0, 
@@ -1307,14 +1306,14 @@ function demarrerMatchX01(listeJoueurs) {
       maxVolleyScore: 0, 
       currentVolleyScore: 0,
       first9DartsScore: 0, 
-      scoreFamily60: 0,    
+      scoreFamily60: 0,
       scoreFamily100: 0, 
       scoreFamily140: 0, 
       scoreFamily180: 0,
       checkoutHits: 0, 
       touchesNum: {},
-      touchesSimpleNum: {},
-      touchesDoubleNum: {},
+      touchesSimpleNum: {},  
+      touchesDoubleNum: {}, 
       touchesTripleNum: {}  
     };
 
@@ -1326,8 +1325,8 @@ function demarrerMatchX01(listeJoueurs) {
     }
     cricketState.statsDetails[p.id].touchesNum[25] = 0;
     cricketState.statsDetails[p.id].touchesSimpleNum[25] = 0;
-    cricketState.statsDetails[p.id].touchesDoubleNum[i] = 0;
-    cricketState.statsDetails[p.id].touchesTripleNum[i] = 0;
+    cricketState.statsDetails[p.id].touchesDoubleNum[25] = 0;
+    cricketState.statsDetails[p.id].touchesTripleNum[25] = 0;
   });
 
   lancerInterfaceJeu("x01");
@@ -2117,10 +2116,10 @@ function formatScoreDisplay(gameMode, score) {
     
     let etapeActuelle = (score === 25) ? totalEtapes - 1 : (score - start);
     let restants = totalEtapes - etapeActuelle;
-    return `${etapeActuelle}/${totalEtapes} (${restants} restant${restants > 1 ? 's' : ''})`;
+    return `${etapeActuelle}/${totalEtapes}`;
   }
-  if (gameMode === "x01") return `${score} pts restants`;
-  if (gameMode === "bounty" || gameMode === "cricket") return `${score} pts`;
+  if (gameMode === "x01") return `${score} points restants`;
+  if (gameMode === "bounty" || gameMode === "cricket") return `${score} points`;
   return score;
 }
 
@@ -2141,7 +2140,7 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
     
     const row = document.createElement("div"); row.className = "stat-row"; row.style.padding = "10px";
     row.style.background = entite.id === gagnantId ? "rgba(192,101,42,0.15)" : "rgba(255,255,255,0.02)"; row.style.borderRadius = "12px";
-    row.innerHTML = `<span><strong>#${idx + 1}</strong> — 👤 ${entite.name}</span><span style="color:var(--primary-strong); font-weight:800; font-size:13px;"> ${scoreFormate}</span>`;
+    row.innerHTML = `<span><strong>${idx + 1}</strong> — 👤 ${entite.name}</span><span style="color:var(--primary-strong); font-weight:800; font-size:13px;"> ${scoreFormate}</span>`;
     containerRanking.appendChild(row);
 
     // Extraction des membres si on est en équipe
@@ -2215,6 +2214,8 @@ function genererTableauStatistiques() {
     blockDiv.style.borderRadius = "var(--r-2)";
     blockDiv.style.padding = "12px";
     blockDiv.style.width = "100%";
+    blockDiv.style.overflowX = "auto";
+    blockDiv.style.WebkitOverflowScrolling = "touch";
     
     const h3 = document.createElement("h3");
     h3.style.textAlign = "left";
@@ -2229,6 +2230,7 @@ function genererTableauStatistiques() {
     const table = document.createElement("table");
     table.style.width = "100%";
     table.style.borderCollapse = "collapse";
+    table.style.whiteSpace = "nowrap";
     blockDiv.appendChild(table);
     
     return { blockDiv, table };
@@ -2258,7 +2260,7 @@ function genererTableauStatistiques() {
   // ================= CRICKET =================
   if (cricketState.gameMode === "cricket") {
     // Bloc 1 : Générales
-    const blocGen = creerBlocStats("📊 Générales");
+    const blocGen = creerBlocStats("Générales");
     genererEnteteJoueurs(blocGen.table);
     
     ajouterLigne(blocGen.table, "MPR", cricketState.players.map(p => {
@@ -2273,7 +2275,7 @@ function genererTableauStatistiques() {
     mainWrapper.appendChild(blocGen.blockDiv);
 
     // Bloc 2 : Par Chiffre
-    const blocZone = creerBlocStats("🎯 Détail par zone");
+    const blocZone = creerBlocStats("Touches par zone");
     genererEnteteJoueurs(blocZone.table);
     cricketState.targets.forEach(cible => {
       const label = cible === 25 ? "Bull" : `Zone ${cible}`;
@@ -2291,27 +2293,28 @@ function genererTableauStatistiques() {
     mainWrapper.appendChild(blocZone.blockDiv);
 
     // Bloc 3 : Tableau Final (Reproduction de la grille de jeu)
-    const blocGrid = creerBlocStats("📸 Tableau Final");
+    const blocGrid = creerBlocStats("Tableau des scores");
     const cloneGrid = document.getElementById("cricketGridTable").cloneNode(true);
     cloneGrid.style.width = "100%";
     cloneGrid.style.marginTop = "10px";
     blocGrid.blockDiv.appendChild(cloneGrid);
+    blocGrid.blockDiv.style.overflowX = "auto";
     mainWrapper.appendChild(blocGrid.blockDiv);
   }
 
   // ================= X01 =================
   else if (cricketState.gameMode === "x01") {
-    const blocGenX = creerBlocStats("💯 Générales");
+    const blocGenX = creerBlocStats("Générales");
     genererEnteteJoueurs(blocGenX.table);
 
-    ajouterLigne(blocGenX.table, "Moyenne (3 fléchettes)", cricketState.players.map(p => {
+    ajouterLigne(blocGenX.table, "Moyenne 3 fléchettes", cricketState.players.map(p => {
       const tPts = cricketState.statsDetails[p.id].totalScoreScored || 0;
       const tDarts = cricketState.statsDetails[p.id].dartsThrown || 1;
       return ((tPts / tDarts) * 3).toFixed(1);
     }));
 
-    ajouterLigne(blocGenX.table, "Score 9 premières", cricketState.players.map(p => cricketState.statsDetails[p.id].first9DartsScore || 0));
-    ajouterLigne(blocGenX.table, "Score Max / Volée", cricketState.players.map(p => cricketState.statsDetails[p.id].maxVolleyScore || 0));
+    ajouterLigne(blocGenX.table, "Score des 9 premières", cricketState.players.map(p => cricketState.statsDetails[p.id].first9DartsScore || 0));
+    ajouterLigne(blocGenX.table, "Max en une volée", cricketState.players.map(p => cricketState.statsDetails[p.id].maxVolleyScore || 0));
     ajouterLigne(blocGenX.table, "Nombre de Busts", cricketState.players.map(p => cricketState.statsDetails[p.id].bustsCount || 0));
     
     // Le temps mis pour checkout (Affiché globalement pour le gagnant)
@@ -2320,7 +2323,7 @@ function genererTableauStatistiques() {
     ajouterLigne(blocGenX.table, "Temps match", cricketState.players.map(() => `${m}:${s}`));
     mainWrapper.appendChild(blocGenX.blockDiv);
 
-    const blocMilestones = creerBlocStats("🚀 Paliers atteints");
+    const blocMilestones = creerBlocStats("Paliers atteints");
     genererEnteteJoueurs(blocMilestones.table);
     ajouterLigne(blocMilestones.table, "Volées 180", cricketState.players.map(p => cricketState.statsDetails[p.id].scoreFamily180 || 0));
     ajouterLigne(blocMilestones.table, "Volées 140+", cricketState.players.map(p => cricketState.statsDetails[p.id].scoreFamily140 || 0));
@@ -2328,7 +2331,7 @@ function genererTableauStatistiques() {
     ajouterLigne(blocMilestones.table, "Volées 60+", cricketState.players.map(p => cricketState.statsDetails[p.id].scoreFamily60 || 0));
     mainWrapper.appendChild(blocMilestones.blockDiv);
 
-    const blocDetail = creerBlocStats("🎯 Détail par Chiffre");
+    const blocDetail = creerBlocStats("Touches par zone");
     genererEnteteJoueurs(blocDetail.table);
     for (let i = 1; i <= 21; i++) {
       let cible = i === 21 ? 25 : i;
@@ -2352,31 +2355,31 @@ function genererTableauStatistiques() {
 
   // ================= TOUR DU MONDE =================
   else if (cricketState.gameMode === "world") {
-    const blocGenW = creerBlocStats("🌍 Générales");
+    const blocGenW = creerBlocStats("Générales");
     genererEnteteJoueurs(blocGenW.table);
     
     ajouterLigne(blocGenW.table, "Progression finale", cricketState.players.map(p => formatScoreDisplay("world", cricketState.scores[p.id])));
-    ajouterLigne(blocGenW.table, "Total Simples", cricketState.players.map(p => cricketState.statsDetails[p.id].simplesHitCount || 0));
-    ajouterLigne(blocGenW.table, "Total Doubles", cricketState.players.map(p => cricketState.statsDetails[p.id].doublesHitCount || 0));
-    ajouterLigne(blocGenW.table, "Total Triples", cricketState.players.map(p => cricketState.statsDetails[p.id].triplesHitCount || 0));
+    ajouterLigne(blocGenW.table, "Simples", cricketState.players.map(p => cricketState.statsDetails[p.id].simplesHitCount || 0));
+    ajouterLigne(blocGenW.table, "Doubles", cricketState.players.map(p => cricketState.statsDetails[p.id].doublesHitCount || 0));
+    ajouterLigne(blocGenW.table, "Triples", cricketState.players.map(p => cricketState.statsDetails[p.id].triplesHitCount || 0));
     mainWrapper.appendChild(blocGenW.blockDiv);
 
-    const blocDetailW = creerBlocStats("🎯 Fléchettes par cible");
+    const blocDetailW = creerBlocStats("Tentatives de fléchettes par zone");
     genererEnteteJoueurs(blocDetailW.table);
     const start = cricketState.worldStartNum;
     const end = cricketState.worldEndNum;
     const targetSequence = SEQUENCE_TOUR_DU_MONDE.filter(t => t >= start && t <= end);
     
     targetSequence.forEach(cible => {
-      const label = cible === 25 ? "Bull" : `Cible ${cible}`;
+      const label = cible === 25 ? "Bull" : `Zone ${cible}`;
       ajouterLigne(blocDetailW.table, label, cricketState.players.map(p => {
         const scoreJoueur = cricketState.scores[p.id];
         const aDepasse = scoreJoueur > cible || scoreJoueur === 26;
         const dartsNeeded = cricketState.statsDetails[p.id].dartsPerTarget[cible] || 0;
         
         if (dartsNeeded === 0 && aDepasse) return "-"; // Sauté
-        if (dartsNeeded === 0 && !aDepasse) return "En cours...";
-        return `${dartsNeeded} flèche(s)`;
+        if (dartsNeeded === 0 && !aDepasse) return "-"; // Non touché
+        return `${dartsNeeded}`;
       }));
     });
     mainWrapper.appendChild(blocDetailW.blockDiv);
@@ -2384,7 +2387,7 @@ function genererTableauStatistiques() {
 
   // ================= CHASSEUR DE PRIMES =================
   else if (cricketState.gameMode === "bounty") {
-    const blocGenB = creerBlocStats("💰 Générales");
+    const blocGenB = creerBlocStats("Générales");
     genererEnteteJoueurs(blocGenB.table);
 
     ajouterLigne(blocGenB.table, "MPR", cricketState.players.map(p => {
@@ -2393,13 +2396,12 @@ function genererTableauStatistiques() {
       const darts = stat.dartsThrown || 1;
       return ((totalHits / darts) * 3).toFixed(2);
     }));
-
-    ajouterLigne(blocGenB.table, "Points gagnés", cricketState.players.map(p => `+${cricketState.statsDetails[p.id].touchesPositives || 0}`));
-    ajouterLigne(blocGenB.table, "Points perdus", cricketState.players.map(p => `-${cricketState.statsDetails[p.id].touchesMalus || 0}`));
     ajouterLigne(blocGenB.table, "Bonus touchés", cricketState.players.map(p => {
       const stat = cricketState.statsDetails[p.id];
       return (stat.simples || 0) + (stat.doubles || 0) + (stat.triples || 0);
     }));
+    ajouterLigne(blocGenB.table, "Points gagnés", cricketState.players.map(p => `+${cricketState.statsDetails[p.id].touchesPositives || 0}`));
+    ajouterLigne(blocGenB.table, "Points perdus", cricketState.players.map(p => `-${cricketState.statsDetails[p.id].touchesMalus || 0}`));
     ajouterLigne(blocGenB.table, "Doubles", cricketState.players.map(p => cricketState.statsDetails[p.id].doubles || 0));
     ajouterLigne(blocGenB.table, "Triples", cricketState.players.map(p => cricketState.statsDetails[p.id].triples || 0));
     
