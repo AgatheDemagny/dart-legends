@@ -1796,8 +1796,8 @@ function declencherAnimationShot() {
     // Le contenu avec le cocktail et le texte
     popup.innerHTML = `
       <div style="font-size: 90px; transform: scale(1); transition: transform 0.3s ease;">🍸</div>
-      <div style="font-family: 'Space Grotesk', sans-serif; font-size: 60px; font-weight: 800; margin-top: 20px; color: #FFD700; text-shadow: 0 4px 20px rgba(255,215,0,0.5); letter-spacing: 4px;">SHOT !</div>
-      <div style="font-size: 16px; margin-top: 15px; color: #FFF; opacity: 0.8;">(Clique n'importe où pour fermer)</div>
+      <div style="font-family: 'Space Grotesk', sans-serif; font-size: 60px; font-weight: 800; margin-top: 20px; color: #62c91e; text-shadow: 0 4px 20px rgba(255,215,0,0.5); letter-spacing: 4px;">SHOT !</div>
+      <div style="font-size: 16px; margin-top: 15px; color: #FFF; opacity: 0.8;">3 fléchettes dans le 1</div>
     `;
     
     // L'action de fermer au clic
