@@ -1094,7 +1094,7 @@ async function chargerHistoriqueParties() {
                   // Style classique pour les autres
                   rankingHtml += `
                   <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
-                      <div style="flex:1;"><strong>#${idx + 1}</strong> ${r.name} ${teamText}</div>
+                      <div style="flex:1;"><strong>${idx + 1}</strong> ${r.name} ${teamText}</div>
                       <div style="font-weight: 800; color: var(--primary-strong); font-size: 12px; text-align: right;">${r.score}</div>
                   </div>`;
               }
@@ -1780,7 +1780,7 @@ function declencherAnimationShot() {
   if (!popup) {
     popup = document.createElement("div");
     popup.id = "shotPopupOverlay";
-    // Styles pour occuper tout l'écran par-dessus tout le reste
+    // Styles pour occuper tout l'écran
     popup.style.position = "fixed";
     popup.style.top = "0"; popup.style.left = "0"; 
     popup.style.width = "100%"; popup.style.height = "100%";
@@ -1791,23 +1791,25 @@ function declencherAnimationShot() {
     popup.style.alignItems = "center";
     popup.style.justifyContent = "center";
     popup.style.backdropFilter = "blur(5px)";
+    popup.style.cursor = "pointer"; // Indique que c'est cliquable
     
     // Le contenu avec le cocktail et le texte
     popup.innerHTML = `
-      <div style="font-size: 90px; transform: scale(1); transition: transform 0.3s ease;">🍹</div>
+      <div style="font-size: 90px; transform: scale(1); transition: transform 0.3s ease;">🍸</div>
       <div style="font-family: 'Space Grotesk', sans-serif; font-size: 60px; font-weight: 800; margin-top: 20px; color: #FFD700; text-shadow: 0 4px 20px rgba(255,215,0,0.5); letter-spacing: 4px;">SHOT !</div>
-      <div style="font-size: 16px; margin-top: 15px; color: #FFF; opacity: 0.8;">Trois '1' dans le même tour !</div>
+      <div style="font-size: 16px; margin-top: 15px; color: #FFF; opacity: 0.8;">(Clique n'importe où pour fermer)</div>
     `;
+    
+    // L'action de fermer au clic
+    popup.onclick = () => {
+      popup.style.display = "none";
+    };
+    
     document.body.appendChild(popup);
   }
   
   popup.classList.remove("hidden");
   popup.style.display = "flex";
-  
-  // Fait disparaitre le message après 5 secondes
-  setTimeout(() => {
-    popup.style.display = "none";
-  }, 5000);
 }
 
 function taperChiffre(valeurBouton) {
@@ -1851,7 +1853,7 @@ function taperChiffre(valeurBouton) {
   cricketState.currentDart += 1;
   if (cricketState.currentDart > 3) {
     // Vérification de la condition SHOT (3 fléchettes, et toutes sont un 1, un D1 ou un T1)
-    if ((cricketState.gameMode === "cricket" || cricketState.gameMode === "x01") && cricketState.currentTurnDartsText.length === 3) {
+    if (cricketState.gameMode === "x01" && cricketState.currentTurnDartsText.length === 3) {
         const aFaitTroisUn = cricketState.currentTurnDartsText.every(t => t === "1" || t === "D1" || t === "T1");
         if (aFaitTroisUn) {
             declencherAnimationShot();
@@ -2172,7 +2174,7 @@ function formatScoreDisplay(gameMode, score) {
     let restants = totalEtapes - etapeActuelle;
     return `${etapeActuelle}/${totalEtapes}`;
   }
-  if (gameMode === "x01") return `${score} points restants`;
+  if (gameMode === "x01") return `${score} pts restants`;
   if (gameMode === "bounty" || gameMode === "cricket") return `${score} points`;
   return score;
 }
