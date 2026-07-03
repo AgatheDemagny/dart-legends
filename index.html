@@ -124,7 +124,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.56 - 03/07/2026</p>
+        <p>Version 1.57 - 03/07/2026</p>
       </div>
     </section>
 
@@ -481,14 +481,14 @@
           <button id="btnCloseRules" class="icon-btn" style="width: 32px; height: 32px; border: none; font-size: 14px;">❌</button>
         </div>
         
-        <div class="tabs" style="margin-bottom: 15px; flex-shrink: 0; overflow-x: auto; white-space: nowrap; padding-bottom: 4px;">
-          <button class="tab-btn active" data-rule-tab="cricket" style="font-size: 12px; padding: 8px;">🏏 Cricket</button>
-          <button class="tab-btn" data-rule-tab="x01" style="font-size: 12px; padding: 8px;">💯 X01</button>
-          <button class="tab-btn" data-rule-tab="world" style="font-size: 12px; padding: 8px;">🌍 Monde</button>
-          <button class="tab-btn" data-rule-tab="bounty" style="font-size: 12px; padding: 8px;">💰 Primes</button>
+        <div style="margin-bottom: 15px; flex-shrink: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+          <button class="tab-btn active" data-rule-tab="cricket" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">🏏 Cricket</button>
+          <button class="tab-btn" data-rule-tab="x01" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">💯 X01</button>
+          <button class="tab-btn" data-rule-tab="world" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">🌍 Tour du Monde</button>
+          <button class="tab-btn" data-rule-tab="bounty" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">💰 Chasseur de primes</button>
         </div>
 
-        <div id="rulesContent" class="stack" style="overflow-y: auto; text-align: left; font-size: 13px; line-height: 1.5; color: var(--text-main); padding-right: 4px;">
+        <div id="rulesContent" style="display: flex; flex-direction: column; column-count: 1; overflow-y: auto; text-align: left; font-size: 13px; line-height: 1.5; color: var(--text-main); padding-right: 4px;">
           </div>
       </div>
     </div>
