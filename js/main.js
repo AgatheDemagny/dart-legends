@@ -33,29 +33,29 @@ const RULES_DATA = {
     <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
     <p style="margin-bottom: 8px; padding: 0;">Le Cricket classique se joue uniquement sur une partie de la cible : les numéros <strong>15, 16, 17, 18, 19, 20 et le Bull (B)</strong>. Le but est de "fermer" toutes ces zones avant ses adversaires tout en obtenant le score le plus élevé.</p>
     <p style="margin-bottom: 8px; padding: 0;"><strong>Comment fermer un chiffre :</strong> Un joueur doit toucher le numéro 3 fois. Un secteur Simple compte pour 1 touche, un secteur Double compte pour 2 touches, et un secteur Triple compte pour 3 touches (fermeture directe).</p>
-    <p style="margin-bottom: 12px; padding: 0;"><strong>Marquer des points :</strong> Une fois qu'un joueur a fermé un numéro, chaque fléchette supplémentaire qu'il place dans ce même numéro lui rapporte des points (la valeur du chiffre, doublée ou triplée selon le secteur), <em>à condition qu'au moins un de ses adversaires n'ait pas encore fermé ce numéro</em>. Si tout le monde a fermé le numéro, il est définitivement éteint pour la partie.</p>
+    <p style="margin-bottom: 12px; padding: 0;"><strong>Marquer des points :</strong> Une fois qu'un joueur a fermé un numéro, chaque fléchette supplémentaire qu'il place dans ce même numéro met des points à ses adversaires <em>qui n'ont pas encore fermé ce numéro</em>. Si tout le monde a fermé le numéro, il est définitivement éteint pour la partie.</p>
     
     <h4 style="color: var(--primary); margin-bottom: 8px;">🏆 Condition de victoire</h4>
     <p style="margin-bottom: 12px; padding: 0;">Pour gagner, un joueur doit avoir <strong>fermé les 7 zones</strong> ET posséder un <strong>score supérieur ou égal</strong> à celui de tous ses adversaires. Si la limite de tours est atteinte, c'est le joueur avec le score le plus élevé qui l'emporte.</p>
     
     <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
     <ul style="padding-left: 18px; margin-bottom: 0;">
-      <li style="margin-bottom: 6px;"><strong>Nombre de tours :</strong> Définit une limite de manches. Si personne n'a tout fermé à la fin, le score départage les joueurs.</li>
-      <li><strong>Mode n'a qu'un œil :</strong> Variante masquée. Les numéros à cibler ne sont plus les chiffres classiques (15 à 20 + Bulle) , mais 7 chiffres secrets tirés au hasard qu'il faut découvrir en explorant la cible avec ses fléchettes.</li>
+      <li style="margin-bottom: 6px;"><strong>Nombre de tours :</strong> Définit une limite de tours. Si personne n'a tout fermé à la fin, le score départage les joueurs.</li>
+      <li><strong>Mode n'a qu'un œil :</strong> Variante masquée. Les numéros à cibler ne sont plus les chiffres classiques (15 à 20 + Bull) , mais 7 chiffres secrets tirés au hasard qu'il faut découvrir en explorant la cible avec ses fléchettes.</li>
     </ul>
   `,
   x01: `
     <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
-    <p style="margin-bottom: 8px; padding: 0;">Chaque joueur démarre la partie avec un capital de points fixe (301 ou 501). À chaque tour, les points cumulés par vos 3 fléchettes sont soustraits de votre total. Le but ultime est de descendre pour atteindre <strong>exactement zéro point</strong>.</p>
-    <p style="margin-bottom: 12px; padding: 0;"><strong>Valeur des lancers :</strong> Les zones simples rapportent la valeur du chiffre. L'anneau extérieur (Double) multiplie les points par 2. L'anneau intermédiaire (Triple) multiplie les points par 3. La bulle extérieure vaut 25 points et le centre de la bulle vaut 50 points.</p>
+    <p style="margin-bottom: 8px; padding: 0;">Chaque joueur démarre la partie avec un capital de points fixe (301, 501, ...). À chaque tour, les points cumulés par les 3 fléchettes sont soustraits du total. Le but étant de descendre pour atteindre <strong>exactement zéro point</strong>.</p>
+    <p style="margin-bottom: 12px; padding: 0;"><strong>Valeur des lancers :</strong> Les zones Simples rapportent la valeur du chiffre. L'anneau extérieur (Double) multiplie les points de la fléchette par 2. L'anneau intermédiaire (Triple) multiplie les points par 3. Le Bull extérieur vaut 25 points et le centre du Bull vaut 50 points.</p>
     
     <h4 style="color: var(--primary); margin-bottom: 8px;">💥 La règle du "Bust" (Casse)</h4>
-    <p style="margin-bottom: 12px; padding: 0;">Si vous marquez plus de points qu'il ne vous en reste (votre score passe en dessous de 0), ou s'il vous reste exactement 1 point alors que vous jouez avec l'obligation de finir sur un double, votre tour s'arrête immédiatement. Le lancer est considéré comme nul ("Bust") et votre score est réinitialisé à ce qu'il était au début de la manche actuelle.</p>
+    <p style="margin-bottom: 12px; padding: 0;">Si vous marquez plus de points qu'il ne vous en reste, ou s'il vous reste exactement 1 point alors que vous jouez avec l'obligation de finir sur un double, votre tour s'arrête immédiatement. Le lancer est considéré comme nul ("Bust") et votre score est réinitialisé à ce qu'il était au début de votre tour.</p>
     
     <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
     <ul style="padding-left: 18px; margin-bottom: 0;">
-      <li style="margin-bottom: 6px;"><strong>Points de départ :</strong> Le score initial attribué au début du match (ex: 301 pour une partie rapide, 501 pour le format officiel).</li>
-      <li><strong>Checkout :</strong> En mode "Double-out", vous devez impérativement loger votre toute dernière fléchette de victoire dans un secteur <strong>Double</strong> (ou la bulle centrale à 50 points) pour tomber à zéro. Sans contrainte, n'importe quelle zone simple suffit.</li>
+      <li style="margin-bottom: 6px;"><strong>Points de départ :</strong> Le score initial attribué au début du match (ex: 301 pour une partie rapide, 501 pour le format officiel, ...).</li>
+      <li><strong>Checkout :</strong> En mode "Double-out", vous devez impérativement loger votre toute dernière fléchette de victoire dans un secteur <strong>Double</strong> pour tomber à zéro. Sans contrainte, n'importe quelle zone de la cible suffit.</li>
     </ul>
   `,
   world: `
@@ -63,25 +63,25 @@ const RULES_DATA = {
     <p style="margin-bottom: 12px; padding: 0;">Le Tour du Monde est une course de précision chronologique. Tous les joueurs doivent toucher l'intégralité des numéros de la cible les uns après les autres dans l'ordre croissant (de votre chiffre de départ jusqu'au chiffre d'arrivée). Tant que vous n'avez pas réussi à toucher votre numéro cible actuel, vous êtes bloqué dessus et ne pouvez pas viser le suivant.</p>
     
     <h4 style="color: var(--primary); margin-bottom: 8px;">🏆 Condition de victoire</h4>
-    <p style="margin-bottom: 12px; padding: 0;">Le premier joueur à valider avec succès le dernier chiffre de l'itinéraire (ou la Bulle selon la configuration) gagne immédiatement la partie.</p>
+    <p style="margin-bottom: 12px; padding: 0;">Le premier joueur à valider avec succès le dernier chiffre de l'itinéraire gagne immédiatement la partie.</p>
     
     <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
     <ul style="padding-left: 18px; margin-bottom: 0;">
-      <li style="margin-bottom: 6px;"><strong>Départ & Arrivée :</strong> Déterminent les bornes du parcours pour moduler la longueur du jeu (ex: débuter au 1 et terminer à la Bulle).</li>
-      <li><strong>Sauter les numéros (Doubles/Triples) :</strong> Si l'option est cochée, réussir un tir de précision accélère votre voyage! Toucher le Triple de votre numéro cible actuel vous fait bondir de 3 étapes (+3) , et un Double vous fait avancer de 2 étapes (+2). Si l'option est décochée, les doubles et triples n'ont aucun effet bonus et agissent comme des touches simples (+1).</li>
+      <li style="margin-bottom: 6px;"><strong>Départ & Arrivée :</strong> Déterminent les bornes du parcours pour moduler la longueur du jeu (ex: débuter au 1 et terminer au Bull).</li>
+      <li><strong>Sauter les numéros (Doubles/Triples) :</strong> Si l'option est cochée, réussir un tir de précision accélère votre voyage ! Toucher le Triple de votre numéro cible actuel vous fait bondir de 3 étapes (+3), et un Double vous fait avancer de 2 étapes (+2). Si l'option est décochée, les doubles et triples n'ont aucun effet bonus et agissent comme des touches simples (+1).</li>
     </ul>
   `,
   bounty: `
     <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
-    <p style="margin-bottom: 8px; padding: 0;">Le Chasseur de primes est un mode dynamique où la cible change à chaque impact. L'écran affiche plusieurs chiffres aléatoires qui représentent des <strong>Primes</strong>. Lorsqu'un joueur touche une prime active, la valeur du chiffre (multipliée par 2 ou 3 si c'est un double/triple) est ajoutée à son score.</p>
+    <p style="margin-bottom: 8px; padding: 0;">Le Chasseur de primes est un mode dynamique où les zones cibles changent à chaque impact. L'écran affiche plusieurs chiffres aléatoires qui représentent des <strong>Primes</strong>. Lorsqu'un joueur touche une prime active, la valeur du chiffre (multipliée par 2 ou 3 si c'est un Double/Triple) est ajoutée à son score.</p>
     <p style="margin-bottom: 12px; padding: 0;"><strong>Renouvellement instantané :</strong> Dès qu'un chiffre prime est touché, il disparaît et est remplacé sur-le-champ par un nouveau numéro choisi au hasard, garantissant qu'il soit unique et distinct des autres primes ou malus à l'écran.</p>
     
     <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
     <ul style="padding-left: 18px; margin-bottom: 0;">
-      <li style="margin-bottom: 6px;"><strong>Nombre de primes :</strong> Règle la quantité de cibles positives disponibles simultanément sur le panneau (2, 3 ou 4).</li>
-      <li style="margin-bottom: 6px;"><strong>Nombre de tours / Score cible :</strong> Fixent la fin du match. Le but est d'atteindre le score cible en premier ou d'avoir la meilleure cagnotte à la fin des manches. Par sécurité, le jeu bloque le départ si les deux paramètres sont configurés en illimité.</li>
-      <li style="margin-bottom: 6px;"><strong>Chiffres renouvelés après :</strong> Nombre de manches maximum avant qu'une prime non touchée n'expire et ne change automatiquement de place pour éviter les situations de blocage.</li>
-      <li><strong>Activer un chiffre Malus 💀 :</strong> Si coché, un chiffre maudit apparaît en rouge à l'écran. Le premier joueur maladroit qui le touche subit une pénalité financière et perd les points correspondants (multipliés si double/triple). Le malus se déplace aussitôt après l'impact.</li>
+      <li style="margin-bottom: 6px;"><strong>Nombre de primes :</strong> Définit la quantité de primes disponibles simultanément sur le panneau (2, 3 ou 4).</li>
+      <li style="margin-bottom: 6px;"><strong>Nombre de tours / Score cible :</strong> Fixent la fin du match. Le but est d'atteindre le score cible en premier ou d'avoir le meilleur score à la fin des manches. Par sécurité, le jeu bloque le départ si ces deux paramètres sont configurés en illimité.</li>
+      <li style="margin-bottom: 6px;"><strong>Chiffres renouvelés après :</strong> Nombre de tours maximum avant qu'une prime non touchée n'expire et ne change automatiquement de valeur pour éviter les situations de blocage.</li>
+      <li><strong>Activer un chiffre Malus 💀 :</strong> Si coché, un chiffre maudit apparaît en rouge à l'écran. Le premier joueur maladroit qui le touche subit une pénalité financière et perd les points correspondants (multipliés si Double/Triple). Le malus se déplace aussitôt après l'impact.</li>
     </ul>
   `
 };

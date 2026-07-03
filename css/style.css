@@ -548,3 +548,6 @@ button.ghost.btn-action-soft:hover {
 #rulesContent ul {
   display: block !important;
 }
+#rulesContent h4 {
+  text-align: center !important;
+}
