@@ -124,7 +124,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.55 - 02/07/2026</p>
+        <p>Version 1.56 - 03/07/2026</p>
       </div>
     </section>
 
@@ -229,7 +229,10 @@
       </div>
 
       <div class="card form-card">
-        <h3>🛠️ Paramètres du jeu</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <h3 style="margin: 0; text-align: left !important;">🛠️ Paramètres du jeu</h3>
+          <button id="btnOpenRules" class="icon-btn" style="width: 32px; height: 32px; font-size: 16px;">ℹ️</button>
+        </div>
         <div>
           <label><strong>Mode de jeu</strong></label>
           <select id="gameModeSelect">
@@ -471,6 +474,24 @@
       <div style="padding: 0 8px;"><button id="btnGoHomeAfterStats" class="ghost btn-block">Retour à l'accueil</button></div>
     </section>
 
+    <div id="rulesModalOverlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); z-index: 2500; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+      <div class="card" style="width: min(420px, calc(100% - 24px)); margin: 0; padding: 20px; max-height: 85vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--divider); padding-bottom: 10px; margin-bottom: 10px;">
+          <h3 style="margin: 0; color: var(--primary-strong); text-align: left !important;">📖 Règles du jeu</h3>
+          <button id="btnCloseRules" class="icon-btn" style="width: 32px; height: 32px; border: none; font-size: 14px;">❌</button>
+        </div>
+        
+        <div class="tabs" style="margin-bottom: 15px; flex-shrink: 0; overflow-x: auto; white-space: nowrap; padding-bottom: 4px;">
+          <button class="tab-btn active" data-rule-tab="cricket" style="font-size: 12px; padding: 8px;">🏏 Cricket</button>
+          <button class="tab-btn" data-rule-tab="x01" style="font-size: 12px; padding: 8px;">💯 X01</button>
+          <button class="tab-btn" data-rule-tab="world" style="font-size: 12px; padding: 8px;">🌍 Monde</button>
+          <button class="tab-btn" data-rule-tab="bounty" style="font-size: 12px; padding: 8px;">💰 Primes</button>
+        </div>
+
+        <div id="rulesContent" class="stack" style="overflow-y: auto; text-align: left; font-size: 13px; line-height: 1.5; color: var(--text-main); padding-right: 4px;">
+          </div>
+      </div>
+    </div>
     <div id="popup"></div>
 
     <div id="customModalOverlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 3000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
