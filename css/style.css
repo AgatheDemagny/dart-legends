@@ -537,3 +537,14 @@ button.ghost.btn-action-soft:hover {
   -webkit-overflow-scrolling: touch;
   padding-bottom: 40px;
 }
+
+#rulesContent p {
+  display: block !important;
+  border-bottom: none !important;
+  padding: 0 !important;
+  margin-bottom: 12px !important;
+}
+
+#rulesContent ul {
+  display: block !important;
+}
