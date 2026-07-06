@@ -1,16 +1,24 @@
 // --- LOGIQUE MENU ENTRAINEMENT ---
+// --- LOGIQUE MENU ENTRAINEMENT MODIFIÉE ---
 function ouvrirSetupTraining(mode) {
   document.getElementById("trainingModesList").classList.add("hidden");
   document.getElementById("setupTrainCricket").classList.add("hidden");
   document.getElementById("setupTrainTarget").classList.add("hidden");
-  if(mode === 'train_cricket') document.getElementById("setupTrainCricket").classList.remove("hidden");
-  if(mode === 'train_target') document.getElementById("setupTrainTarget").classList.remove("hidden");
+  document.getElementById("viewTrainingHistory").classList.add("hidden");
+  
+  if(mode === 'train_cricket') document.getElementById("setupTrainCricket").remove("hidden");
+  if(mode === 'train_target') document.getElementById("setupTrainTarget").remove("hidden");
+  if(mode === 'train_history') {
+    document.getElementById("viewTrainingHistory").classList.remove("hidden");
+    chargerHistoriqueEntrainements(); // Charge l'historique uniquement quand on clique dessus !
+  }
 }
 
 function retourListeTraining() {
   document.getElementById("trainingModesList").classList.remove("hidden");
   document.getElementById("setupTrainCricket").classList.add("hidden");
   document.getElementById("setupTrainTarget").classList.add("hidden");
+  document.getElementById("viewTrainingHistory").classList.add("hidden");
 }
 
 window.ouvrirSetupTraining = ouvrirSetupTraining;
@@ -139,9 +147,13 @@ window.voirStatsDepuisHistorique = function(gameData) {
   genererTableauStatistiques();
   showScreen(screens.matchStats);
 
-  // Redirection personnalisée du bouton Retour pour revenir à l'entraînement
-  document.getElementById("btnBackToPodium").onclick = () => showScreen(screens.training);
-  document.getElementById("btnGoHomeAfterStats").onclick = () => showScreen(screens.home);
+  const btnPodium = document.getElementById("btnBackToPodium");
+  if (btnPodium) btnPodium.style.display = "none";
+  
+  document.getElementById("btnGoHomeAfterStats").onclick = () => {
+    showScreen(screens.training);
+    if (typeof retourListeTraining === "function") retourListeTraining();
+  };
 };
 
 // ================== INITIALISATION & VUES ==================
@@ -1707,6 +1719,10 @@ window.lancerTrainingCricket = function() {
   const user = auth.currentUser;
   if (!user) return showPopup("Tu dois être connecté à un compte pour t'entraîner.", true);
   
+  let pseudoUser = document.getElementById("accountProfileName")?.value.trim();
+  if (!pseudoUser && user.email) pseudoUser = user.email.split('@')[0];
+  if (!pseudoUser) pseudoUser = "Joueur Solo";
+
   const p = { id: user.uid, name: document.getElementById("accountProfileName").value || "Joueur Solo" };
   cricketState.gameMode = "train_cricket";
   initVariablesMatchGenerales([p]);
@@ -1732,6 +1748,9 @@ window.lancerTrainingCricket = function() {
 window.lancerTrainingTarget = function() {
   const user = auth.currentUser;
   if (!user) return showPopup("Tu dois être connecté à un compte.", true);
+  let pseudoUser = document.getElementById("accountProfileName")?.value.trim();
+  if (!pseudoUser && user.email) pseudoUser = user.email.split('@')[0];
+  if (!pseudoUser) pseudoUser = "Joueur Solo";
   const p = { id: user.uid, name: document.getElementById("accountProfileName").value || "Joueur Solo" };
   
   let selectedTargets = [];
@@ -2704,7 +2723,7 @@ db.collection("games_history").add({
     createdAt: Date.now(),
     isTeamMode: cricketState.isTeamMode, 
     maxTurns: cricketState.maxTurns, 
-    communityId: communauteCibleMatchId || null, 
+    communityId: cricketState.gameMode.startsWith("train_") ? null : (communauteCibleMatchId || null),
     participantIds: joueursSelectionnesMatch.map(p => p.id),
     ranking: historyRanking,
     statsDetails: cricketState.statsDetails,
@@ -2717,7 +2736,34 @@ db.collection("games_history").add({
     currentTurn: cricketState.currentTurn
   }).then(() => console.log("Match enregistré !")).catch(e => console.error(e));
   
-  showScreen(screens.gameOver);
+  if (cricketState.gameMode.startsWith("train_")) {
+        // --- MODE ENTRAÎNEMENT : Accès direct aux stats ---
+        genererTableauStatistiques();
+        showScreen(screens.matchStats);
+        
+        // On cache le bouton "Retour au podium" qui est inutile en solo
+        const btnPodium = document.getElementById("btnBackToPodium");
+        if (btnPodium) btnPodium.style.display = "none";
+        
+        // Le bouton "Retour à l'accueil" ramène au menu d'entraînement
+        document.getElementById("btnGoHomeAfterStats").onclick = () => {
+          showScreen(screens.training);
+          if (typeof retourListeTraining === "function") retourListeTraining();
+        };
+      } else {
+        // --- MODE CLASSIQUE MULTIJOUEUR ---
+        const winnerNameEl = document.getElementById("gameOverWinnerName");
+        if (winnerNameEl) winnerNameEl.innerText = nomVainqueur;
+        
+        const btnPodium = document.getElementById("btnBackToPodium");
+        if (btnPodium) btnPodium.style.display = "inline-block"; // On s'assure qu'il est visible
+        
+        document.getElementById("btnGoHomeAfterStats").onclick = () => {
+          showScreen(screens.home);
+        };
+        
+        showScreen(screens.gameOver);
+      }
 }
 
 document.getElementById("btnGoHomeAfterMatch").onclick = () => showScreen(screens.home);
@@ -2729,11 +2775,25 @@ document.getElementById("btnRematch").onclick = () => {
   else demarrerMatchCricket(cricketState.players);
 };
 
-document.getElementById("btnGoToStats").onclick = () => { 
-  genererTableauStatistiques(); 
-  showScreen(screens.matchStats); 
-  document.getElementById("btnBackToPodium").onclick = () => showScreen(screens.gameOver);
-};
+// Clic sur "Voir les statistiques" depuis le podium multijoueur
+const btnGoToStats = document.getElementById("btnGoToStats");
+if (btnGoToStats) {
+  btnGoToStats.onclick = () => { 
+    genererTableauStatistiques(); 
+    showScreen(screens.matchStats); 
+    
+    // On remet les comportements normaux
+    const btnPodium = document.getElementById("btnBackToPodium");
+    if (btnPodium) {
+      btnPodium.style.display = "inline-block";
+      btnPodium.onclick = () => showScreen(screens.gameOver); 
+    }
+    
+    document.getElementById("btnGoHomeAfterStats").onclick = () => {
+      showScreen(screens.home);
+    };
+  };
+}
 document.getElementById("btnBackToPodium").onclick = () => showScreen(screens.gameOver);
 
 function genererTableauStatistiques() {

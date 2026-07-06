@@ -124,7 +124,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.65 - 06/07/2026</p>
+        <p>Version 1.66 - 06/07/2026</p>
       </div>
     </section>
 
@@ -210,12 +210,18 @@
           <h3 style="margin-bottom: 4px; text-align: left !important;">🎯 Focus Cibles</h3>
           <p style="border: none; padding: 0; font-size: 13px; color: var(--text-soft); line-height: 1.4; display: block;">Sélectionnez des chiffres et acharnez-vous dessus pendant plusieurs tours pour perfectionner votre précision.</p>
         </div>
-        <div style="margin-top: 15px; padding-top: 10px; border-top: 2px solid var(--divider);">
-          <h3 style="text-align: left !important; font-size: 16px; margin-bottom: 10px; color: var(--primary);">📜 Mes entraînements passés</h3>
-          <div id="trainingHistoryContainer" class="stack" style="gap: 10px;">
-            <p class="hint" style="text-align: center; padding: 10px;">Aucun entraînement enregistré.</p>
-          </div>
+        <div class="card" style="padding: 16px; cursor: pointer;" onclick="ouvrirSetupTraining('train_history')">
+          <h3 style="margin-bottom: 4px; text-align: left !important;">📜 Historique des Entraînements</h3>
+          <p style="border: none; padding: 0; font-size: 13px; color: var(--text-soft); line-height: 1.4; display: block;">Consultez vos statistiques et vos sessions d'entraînement solo passées.</p>
         </div>
+      </div>
+
+      <div id="viewTrainingHistory" class="hidden card form-card" style="max-height: 70vh; overflow-y: auto;">
+        <h3 style="text-align: left !important; font-size: 16px; margin-bottom: 10px; color: var(--primary);">Mon Historique Solo</h3>
+        <div id="trainingHistoryContainer" class="stack" style="gap: 10px;">
+          <p class="hint" style="text-align: center; padding: 10px;">Aucun entraînement enregistré.</p>
+        </div>
+        <button class="ghost btn-block" onclick="retourListeTraining()">Retour</button>
       </div>
 
       <div id="setupTrainCricket" class="hidden card form-card">
