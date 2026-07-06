@@ -2084,7 +2084,7 @@ function traiterCalculCricket(keyStockage, joueurActuel, valeurBouton) {
 
 function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
   const stats = cricketState.statsDetails[joueurActuel.id];
-  let pointsMarques = (valeurBouton === 25 && modificateurEnCours === 2 ? 50 : valeurBouton) * modificateurEnCours;
+  let pointsMarques = valeurBouton * modificateurEnCours;
   const scoreResultat = cricketState.scores[keyStockage] - pointsMarques;
 
   let estBust = scoreResultat < 0 || 
@@ -2371,7 +2371,7 @@ function genererTableauStatistiques() {
   parentContainer.appendChild(backupTable);
 
   const labelStyle = "text-align:left; padding:10px 8px; font-weight:600; color:var(--text-main); font-size:13px;";
-  const valStyle = "text-align:center; border-left:1px solid var(--divider); font-weight:600; font-size:13px;";
+  const valStyle = "text-align:center; padding:10px 12px; border-left:1px solid var(--divider); font-weight:600; font-size:13px;";
 
   function creerBlocStats(titreBloc) {
     const blockDiv = document.createElement("div");
@@ -2408,7 +2408,7 @@ function genererTableauStatistiques() {
     let html = `<th style="text-align:left; padding:8px; border-bottom:1px solid var(--divider); width:40%;">Joueurs</th>`;
     cricketState.players.forEach(p => {
       let nom = p.name.length > 9 ? p.name.substring(0, 9) + "." : p.name;
-      html += `<th style="font-weight:700; padding:8px 4px; border-bottom:1px solid var(--divider); border-left:1px solid var(--divider); text-align:center; font-size:13px;">${nom}</th>`;
+      html += `<th style="font-weight:700; padding:10px 12px; border-bottom:1px solid var(--divider); border-left:1px solid var(--divider); text-align:center; font-size:13px;">${nom}</th>`;
     });
     rowHeader.innerHTML = html;
     tableTarget.appendChild(rowHeader);
