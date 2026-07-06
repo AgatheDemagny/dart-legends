@@ -2656,10 +2656,9 @@ function verifierConditionsFinMatch() {
     clearInterval(cricketState.timerInterval);
     let nomVainqueur = cricketState.isTeamMode ? (listeEquipesFormees.find(e => e.id === gagnantId)?.name || "Inconnu") : (cricketState.players.find(p => p.id === gagnantId)?.name || "Inconnu");
 
-    setTimeout(async () => {
-      // On adapte le texte selon le mode (Entraînement vs Match classique)
-      const titreModal = cricketState.gameMode.startsWith("train_") ? "🏆 Entraînement réussi !" : "🏆 Partie Terminée !";
-      const texteModal = cricketState.gameMode.startsWith("train_") ? "As-tu bien terminé cet entraînement ?" : `${nomVainqueur} remporte la partie ! Souhaitez-vous valider et enregistrer ce résultat ?`;
+setTimeout(async () => {
+      const titreModal = cricketState.gameMode.startsWith("train_") ? "🎯 Objectif atteint !" : "🏆 Partie Terminée !";
+      const texteModal = cricketState.gameMode.startsWith("train_") ? "As-tu bien réussi cette dernière touche ?" : `${nomVainqueur} remporte la partie ! Souhaitez-vous valider et enregistrer ce résultat ?`;
 
       const confirmation = await openCustomModal(titreModal, texteModal);
       if (confirmation) {
@@ -2669,6 +2668,7 @@ function verifierConditionsFinMatch() {
         cricketState.timerInterval = setInterval(updateTimer, 1000); 
       }
     }, 100);
+  }
 }
 
 function formatScoreDisplay(gameMode, score) {
