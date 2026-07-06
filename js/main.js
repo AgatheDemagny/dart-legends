@@ -1252,7 +1252,7 @@ async function verifierSauvegardeAuDemarrage() {
   const backupStr = localStorage.getItem("dartLegends_backup");
   if (!backupStr) return;
 
-  const reprise = await openCustomModal("🔄 Partie en cours", "Une partie inachevée a été détectée (suite à une fermeture inattendue). Voulez-vous la reprendre ?");
+  const reprise = await openCustomModal("🏃‍♀️‍➡️​ Partie en cours", "Fermeture innatendue. Une partie inachevée a été détectée. Voulez-vous la reprendre ?");
   if (reprise) {
     const backup = JSON.parse(backupStr);
     cricketState = backup.cricketState;
