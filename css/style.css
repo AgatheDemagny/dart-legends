@@ -441,13 +441,13 @@ tr.active-row { background: rgba(15, 76, 129, 0.06); }
 }
 
 .bounty-malus-badge {
-  background: #1A1A1A;
-  color: #FF4444;
+  background: #a62b2b;
+  color: #ffffff;
   font-weight: 900;
   font-size: 18px;
   padding: 10px 16px;
   border-radius: 8px;
-  border: 2px solid #FF4444;
+  border: 2px solid #ffffff;
   box-shadow: 0 4px 12px rgba(255, 68, 68, 0.25);
   display: flex;
   align-items: center;
