@@ -1,16 +1,17 @@
 // --- LOGIQUE MENU ENTRAINEMENT ---
-// --- LOGIQUE MENU ENTRAINEMENT MODIFIÉE ---
 function ouvrirSetupTraining(mode) {
+  // 1. On cache tous les écrans
   document.getElementById("trainingModesList").classList.add("hidden");
   document.getElementById("setupTrainCricket").classList.add("hidden");
   document.getElementById("setupTrainTarget").classList.add("hidden");
   document.getElementById("viewTrainingHistory").classList.add("hidden");
   
-  if(mode === 'train_cricket') document.getElementById("setupTrainCricket").remove("hidden");
-  if(mode === 'train_target') document.getElementById("setupTrainTarget").remove("hidden");
+  // 2. On affiche celui demandé (avec .classList.remove !)
+  if(mode === 'train_cricket') document.getElementById("setupTrainCricket").classList.remove("hidden");
+  if(mode === 'train_target') document.getElementById("setupTrainTarget").classList.remove("hidden");
   if(mode === 'train_history') {
     document.getElementById("viewTrainingHistory").classList.remove("hidden");
-    chargerHistoriqueEntrainements(); // Charge l'historique uniquement quand on clique dessus !
+    chargerHistoriqueEntrainements(); 
   }
 }
 
@@ -74,7 +75,7 @@ async function chargerHistoriqueEntrainements() {
       const data = doc.data();
       const date = new Date(data.createdAt).toLocaleDateString("fr-FR");
       const duration = `${Math.floor(data.duration / 60)}m ${data.duration % 60}s`;
-      let modeLabel = data.type === "train_cricket" ? "🏏 Fermeture Cricket" : "🎯 Focus Cibles";
+      let modeLabel = data.type === "train_cricket" ? "🏏 Fermeture cricket" : "🔍​ Focus zones";
       
       let performanceInfo = "";
       if (data.statsDetails && data.statsDetails[user.uid]) {
@@ -2880,7 +2881,9 @@ function genererTableauStatistiques() {
       const darts = cricketState.statsDetails[p.id].dartsThrown || 1;
       return ((touches / darts) * 3).toFixed(2);
     }));
-    ajouterLigne(blocGen.table, "Tours joués", cricketState.players.map(p => cricketState.currentTurn));
+    if (cricketState.gameMode === "train_cricket") {
+      ajouterLigne(blocGen.table, "Tours joués", cricketState.players.map(p => cricketState.currentTurn));
+    }
     ajouterLigne(blocGen.table, "Points infligés", cricketState.players.map(p => 
       cricketState.statsDetails[p.id].totalPointsGiven || 0
     ));
@@ -2928,11 +2931,7 @@ function genererTableauStatistiques() {
     ajouterLigne(blocGenX.table, "Score des 9 premières", cricketState.players.map(p => cricketState.statsDetails[p.id].first9DartsScore || 0));
     ajouterLigne(blocGenX.table, "Max en une volée", cricketState.players.map(p => cricketState.statsDetails[p.id].maxVolleyScore || 0));
     ajouterLigne(blocGenX.table, "Nombre de Busts", cricketState.players.map(p => cricketState.statsDetails[p.id].bustsCount || 0));
-    
-    // Le temps mis pour checkout (Affiché globalement pour le gagnant)
-    let m = String(Math.floor(cricketState.elapsedTime / 60)).padStart(2, "0");
-    let s = String(cricketState.elapsedTime % 60).padStart(2, "0");
-    ajouterLigne(blocGenX.table, "Temps match", cricketState.players.map(() => `${m}:${s}`));
+
     mainWrapper.appendChild(blocGenX.blockDiv);
 
     const blocMilestones = creerBlocStats("Paliers atteints");
