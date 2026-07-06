@@ -124,7 +124,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.68 - 06/07/2026</p>
+        <p>Version 1.69 - 06/07/2026</p>
       </div>
     </section>
 
@@ -225,38 +225,41 @@
       </div>
 
       <div id="setupTrainCricket" class="hidden card form-card">
-        <h3>Paramètres : Fermeture</h3>
+        <h3>🏏 Fermeture cricket</h3>
         <div>
-          <label><strong>Nombre de tours max</strong></label>
+          <label><strong>Nombre de tours</strong></label>
           <select id="trainCricketTurnsSelect">
             <option value="10">10 tours</option>
-            <option value="15">15 tours</option>
+            <option value="12">12 tours</option>
+            <option value="14">14 tours</option>
+            <option value="16">16 tours</option>
+            <option value="18">18 tours</option>
             <option value="20">20 tours</option>
             <option value="999" selected>Sans limite</option>
           </select>
         </div>
         <button class="primary btn-block" onclick="lancerTrainingCricket()">🎯 Démarrer l'entraînement</button>
-        <button class="ghost btn-block" onclick="retourListeTraining()">Annuler</button>
+        <button class="ghost btn-block" onclick="retourListeTraining()">Retour</button>
       </div>
 
       <div id="setupTrainTarget" class="hidden card form-card">
-        <h3>Paramètres : Focus</h3>
+        <h3>🔍​ Focus zones</h3>
         <div>
-          <label><strong>Chiffres à travailler</strong></label>
+          <label><strong>Zones à cibler</strong></label>
           <div id="trainTargetGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 8px;"></div>
         </div>
         <div style="margin-top: 12px;">
-          <label><strong>Tours par chiffre</strong></label>
+          <label><strong>Tours par zone</strong></label>
           <select id="trainTargetTurnsSelect">
-            <option value="1">1 tour (3 fléchettes)</option>
-            <option value="3" selected>3 tours (9 fléchettes)</option>
-            <option value="5">5 tours (15 fléchettes)</option>
-            <option value="8">8 tours (24 fléchettes)</option>
-            <option value="10">10 tours (30 fléchettes)</option>
+            <option value="1">1 tour</option>
+            <option value="3" selected>3 tours</option>
+            <option value="5">5 tours</option>
+            <option value="8">8 tours</option>
+            <option value="10">10 tours)</option>
           </select>
         </div>
         <button class="primary btn-block" onclick="lancerTrainingTarget()">🎯 Démarrer l'entraînement</button>
-        <button class="ghost btn-block" onclick="retourListeTraining()">Annuler</button>
+        <button class="ghost btn-block" onclick="retourListeTraining()">Retour</button>
       </div>
     </section>
 
