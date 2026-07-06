@@ -1,3 +1,13 @@
+function getPseudoJoueur() {
+  const user = auth.currentUser;
+  if (!user) return "Joueur Solo";
+  let pseudo = document.getElementById("accountProfileName")?.value.trim();
+  if (pseudo) return pseudo;
+  if (typeof displayName !== "undefined" && displayName) return displayName;
+  if (user.displayName) return user.displayName;
+  if (user.email) return user.email.split('@')[0];
+  return "Joueur Solo";
+}
 // --- LOGIQUE MENU ENTRAINEMENT ---
 function ouvrirSetupTraining(mode) {
   // 1. On cache tous les écrans
@@ -84,39 +94,30 @@ async function chargerHistoriqueEntrainements() {
       const duration = `${Math.floor(data.duration / 60)}m ${data.duration % 60}s`;
       let modeLabel = data.type === "train_cricket" ? "🏏 Fermeture Cricket" : "🎯 Focus Cibles";
       
-      let performanceInfo = "";
-      if (data.statsDetails && data.statsDetails[user.uid]) {
-        const stats = data.statsDetails[user.uid];
-        if (data.type === "train_cricket") {
-          const mpr = stats.dartsThrown > 0 ? ((stats.touchesUtiles / stats.dartsThrown) * 3).toFixed(1) : "0.0";
-          performanceInfo = `MPR: <strong>${mpr}</strong>`;
-        } else if (data.type === "train_target") {
-          performanceInfo = `Touches: <strong>${stats.touchesUtiles || 0}</strong>`;
-        }
-      }
-      
       const card = document.createElement("div");
       card.className = "card subtle";
       card.style.padding = "12px";
-      card.style.margin = "0";
+      card.style.marginBottom = "8px";
       card.style.cursor = "pointer";
       card.style.display = "flex";
       card.style.justifyContent = "space-between";
       card.style.alignItems = "center";
       
+      // Affichage épuré : Mode, Date et Durée uniquement
       card.innerHTML = `
         <div style="text-align: left;">
-          <span class="badge" style="background:var(--primary); color:#fff; font-size:10px; padding:2px 8px;">${modeLabel}</span>
-          <div style="font-size:11px; color:var(--text-soft); margin-top:4px;">📅 ${date} — ⏱️ ${duration}</div>
+          <div style="font-weight: 700; font-size: 14px; color: var(--text-main);">${modeLabel}</div>
+          <div style="font-size: 12px; color: var(--text-soft); margin-top: 4px;">📅 ${date} &nbsp;•&nbsp; ⏱️ ${duration}</div>
         </div>
-        <div style="font-size: 13px; text-align: right; color: var(--text-main);">
-          ${performanceInfo} <span style="margin-left: 6px; color: var(--accent);">📊</span>
+        <div style="font-size: 16px; color: var(--accent);">
+          📊
         </div>
       `;
       
       card.onclick = () => window.voirStatsDepuisHistorique(data);
       container.appendChild(card);
     });
+
   } catch (e) {
     console.error("Erreur historique entraînement:", e);
     container.innerHTML = "<p class='hint' style='text-align:center; color:var(--danger);'>Erreur lors du chargement.</p>";
@@ -1723,12 +1724,9 @@ window.lancerTrainingCricket = function() {
   const user = auth.currentUser;
   if (!user) return showPopup("Tu dois être connecté à un compte pour t'entraîner.", true);
   
-  let pseudoUser = (typeof displayName !== "undefined" && displayName) ? displayName : document.getElementById("accountProfileName")?.value.trim();
-  if (!pseudoUser && user.displayName) pseudoUser = user.displayName;
-  if (!pseudoUser && user.email) pseudoUser = user.email.split('@')[0];
-  if (!pseudoUser) pseudoUser = "Joueur Solo";
-
+  const pseudoUser = getPseudoJoueur();
   const p = { id: user.uid, name: pseudoUser };
+
   cricketState.gameMode = "train_cricket";
   initVariablesMatchGenerales([p]);
   
@@ -1753,10 +1751,8 @@ window.lancerTrainingCricket = function() {
 window.lancerTrainingTarget = function() {
   const user = auth.currentUser;
   if (!user) return showPopup("Tu dois être connecté à un compte.", true);
-  let pseudoUser = document.getElementById("accountProfileName")?.value.trim();
-  if (!pseudoUser && user.email) pseudoUser = user.email.split('@')[0];
-  if (!pseudoUser) pseudoUser = "Joueur Solo";
-  const p = { id: user.uid, name: document.getElementById("accountProfileName").value || "Joueur Solo" };
+  const pseudoUser = getPseudoJoueur();
+  const p = { id: user.uid, name: pseudoUser };
   
   let selectedTargets = [];
   document.querySelectorAll("#trainTargetGrid button.primary").forEach(b => selectedTargets.push(parseInt(b.dataset.val, 10)));
@@ -2088,22 +2084,30 @@ function renderGrid() {
   const table = document.getElementById("cricketGridTable");
   table.innerHTML = "";
   
+  const isTraining = cricketState.gameMode === "train_cricket";
   const headerRow = document.createElement("tr");
   headerRow.style.background = "rgba(255,255,255,0.02)";
   
-  let headerHtml = `<th style="text-align:left; padding: 10px 4px; border-bottom: 2px solid var(--divider); width: 23%;">Ligne</th>`;
+  // On ajuste la largeur si on cache le score (pour prendre toute la place)
+  let colLigneWidth = isTraining ? "23%" : "23%";
+  let colCibleWidth = isTraining ? "13%" : "11%";
+
+  let headerHtml = `<th style="text-align:left; padding: 10px 4px; border-bottom: 2px solid var(--divider); width: ${colLigneWidth};">Ligne</th>`;
   cricketState.targets.forEach(t => {
     let libelle = t === 25 ? "B" : t;
     if (cricketState.isBlind && !cricketState.revealedTargets.includes(t)) libelle = "❓";
-    headerHtml += `<th style="font-weight:bold; padding: 10px 2px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); width: 11%;">${libelle}</th>`;
+    headerHtml += `<th style="font-weight:bold; padding: 10px 2px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); width: ${colCibleWidth};">${libelle}</th>`;
   });
-  headerHtml += `<th style="padding: 10px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 12%;">Score</th>`;
+  
+  // N'affiche le header Score QUE si ce n'est pas un entraînement
+  if (!isTraining) {
+    headerHtml += `<th style="padding: 10px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 12%;">Score</th>`;
+  }
+  
   headerRow.innerHTML = headerHtml; 
   table.appendChild(headerRow);
 
-  // On map correctement les entités pour récupérer les membres (indispensable pour le calcul équipe)
   let entitesAAfficher = cricketState.isTeamMode ? listeEquipesFormees : cricketState.players.map(p => ({ id: p.id, name: p.name, members: [p] }));
-  
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
   
   entitesAAfficher.forEach(entite => {
@@ -2114,7 +2118,6 @@ function renderGrid() {
       row.style.backgroundColor = "rgba(192,101,42,0.15)";
     }
 
-    // --- 1. CALCUL DU MPR EN DIRECT ---
     let totalTouches = 0, totalDarts = 0;
     (entite.members || [entite]).forEach(m => {
       if (cricketState.statsDetails[m.id]) {
@@ -2122,14 +2125,10 @@ function renderGrid() {
         totalDarts += cricketState.statsDetails[m.id].dartsThrown || 0;
       }
     });
-    // On force l'affichage à 1 chiffre après la virgule (ex: 2.3)
     let mpr = totalDarts > 0 ? ((totalTouches / totalDarts) * 3).toFixed(1) : "0.0";
-    
     let nomTronque = entite.name.length > 9 ? entite.name.substring(0, 9) + "." : entite.name;
     
-    // --- 2. AFFICHAGE DU NOM + MPR ---
-    // J'ai légèrement réduit le padding vertical (12px -> 8px) pour que le tableau ne s'étire pas trop en hauteur
-    let cellsHtml = `<td style="text-align:left; padding: 8px 4px; width: 23%;">
+    let cellsHtml = `<td style="text-align:left; padding: 8px 4px; width: ${colLigneWidth};">
         <div style="font-weight:700;">${nomTronque}</div>
         <div style="font-size:10px; color:var(--text-soft); font-weight:600; margin-top: 2px;">MPR: ${mpr}</div>
     </td>`;
@@ -2137,10 +2136,13 @@ function renderGrid() {
     cricketState.targets.forEach(t => {
       const touches = cricketState.marks[entite.id][t];
       let symbole = touches === 1 ? "\\" : touches === 2 ? "X" : touches >= 3 ? `<span style="border:2px solid #ff3838; border-radius:50%; padding:2px 4px; color:#ff3838;">X</span>` : "";
-      cellsHtml += `<td style="padding: 6px 2px; border-left: 1px solid var(--divider); width: 11%;">${symbole}</td>`;
+      cellsHtml += `<td style="padding: 6px 2px; border-left: 1px solid var(--divider); width: ${colCibleWidth};">${symbole}</td>`;
     });
     
-    cellsHtml += `<td style="font-weight:800; padding: 12px 2px; border-left: 1px solid var(--divider); color: var(--primary-strong); width: 12%;">${cricketState.scores[entite.id]}</td>`;
+    // N'affiche la cellule de Score QUE si ce n'est pas un entraînement
+    if (!isTraining) {
+      cellsHtml += `<td style="font-weight:800; padding: 12px 2px; border-left: 1px solid var(--divider); color: var(--primary-strong); width: 12%;">${cricketState.scores[entite.id]}</td>`;
+    }
     
     row.innerHTML = cellsHtml; 
     table.appendChild(row);
@@ -2655,9 +2657,17 @@ function verifierConditionsFinMatch() {
     let nomVainqueur = cricketState.isTeamMode ? (listeEquipesFormees.find(e => e.id === gagnantId)?.name || "Inconnu") : (cricketState.players.find(p => p.id === gagnantId)?.name || "Inconnu");
 
     setTimeout(async () => {
-      const confirmation = await openCustomModal("🏆 Partie Terminée !", `${nomVainqueur} remporte la partie ! Souhaitez-vous valider et enregistrer ce résultat ?`);
-      if (confirmation) lancerPageVictoire(gagnantId, nomVainqueur); 
-      else { annulerDernierCoup(); cricketState.timerInterval = setInterval(updateTimer, 1000); }
+      // On adapte le texte selon le mode (Entraînement vs Match classique)
+      const titreModal = cricketState.gameMode.startsWith("train_") ? "🏆 Entraînement réussi !" : "🏆 Partie Terminée !";
+      const texteModal = cricketState.gameMode.startsWith("train_") ? "As-tu bien terminé cet entraînement ?" : `${nomVainqueur} remporte la partie ! Souhaitez-vous valider et enregistrer ce résultat ?`;
+
+      const confirmation = await openCustomModal(titreModal, texteModal);
+      if (confirmation) {
+        lancerPageVictoire(gagnantId, nomVainqueur); 
+      } else { 
+        annulerDernierCoup(); 
+        cricketState.timerInterval = setInterval(updateTimer, 1000); 
+      }
     }, 100);
   }
 }
@@ -2722,28 +2732,32 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
     });
   });
 
-db.collection("games_history").add({
-    type: cricketState.gameMode, 
-    winner: nomVainqueur, 
-    duration: cricketState.elapsedTime, 
-    createdAt: Date.now(),
-    isTeamMode: cricketState.isTeamMode, 
-    maxTurns: cricketState.maxTurns, 
-    communityId: cricketState.gameMode.startsWith("train_") ? null : (communauteCibleMatchId || null),
-    participantIds: joueursSelectionnesMatch.map(p => p.id),
-    ranking: historyRanking,
-    statsDetails: cricketState.statsDetails,
-    players: cricketState.players,
-    scores: cricketState.scores,
-    marks: cricketState.marks || null,
-    targets: cricketState.targets || null,
-    trainTargets: cricketState.trainTargets || null,
-    trainTurnsPerTarget: cricketState.trainTurnsPerTarget || null,
-    currentTurn: cricketState.currentTurn
-  })
-  .then(() => console.log("Match enregistré !"))
-  .catch(e => console.error("Erreur Firebase :", e))
-  .finally(() => {
+      const participants = (typeof joueursSelectionnesMatch !== "undefined" && joueursSelectionnesMatch && joueursSelectionnesMatch.length > 0)
+        ? joueursSelectionnesMatch.map(p => p.id)
+        : cricketState.players.map(p => p.id);
+
+      db.collection("games_history").add({
+        type: cricketState.gameMode,
+        winner: nomVainqueur,
+        duration: cricketState.elapsedTime,
+        createdAt: Date.now(),
+        isTeamMode: cricketState.isTeamMode || false,
+        maxTurns: cricketState.maxTurns || 0,
+        communityId: cricketState.gameMode.startsWith("train_") ? null : (typeof communauteCibleMatchId !== "undefined" ? communauteCibleMatchId : null),
+        participantIds: participants,
+        ranking: (typeof historyRanking !== "undefined") ? historyRanking : [],
+        statsDetails: cricketState.statsDetails || {},
+        players: cricketState.players || [],
+        scores: cricketState.scores || {},
+        marks: cricketState.marks || null,
+        targets: cricketState.targets || null,
+        trainTargets: cricketState.trainTargets || null,
+        trainTurnsPerTarget: cricketState.trainTurnsPerTarget || null,
+        currentTurn: cricketState.currentTurn || 1
+      })
+      .then(() => console.log("Match enregistré !"))
+      .catch(e => console.error("Erreur Firebase :", e))
+      .finally(() => {
   if (cricketState.gameMode.startsWith("train_")) {
       genererTableauStatistiques();
       showScreen(screens.matchStats);
@@ -3022,7 +3036,7 @@ function genererTableauStatistiques() {
 
   // ================= TRAIN TARGET =================
   else if (cricketState.gameMode === "train_target") {
-    const blocGen = creerBlocStats("Performance globale");
+    const blocGen = creerBlocStats("Générales");
     genererEnteteJoueurs(blocGen.table);
     
     const p = cricketState.players[0];
@@ -3030,11 +3044,11 @@ function genererTableauStatistiques() {
     const darts = cricketState.statsDetails[p.id].dartsThrown || 1;
     const mpr = ((touches / darts) * 3).toFixed(2);
     
-    ajouterLigne(blocGen.table, "MPR Global", [mpr]);
+    ajouterLigne(blocGen.table, "MPR", [mpr]);
     ajouterLigne(blocGen.table, "Touches totales", [cricketState.scores[p.id]]);
     mainWrapper.appendChild(blocGen.blockDiv);
 
-    const blocZone = creerBlocStats("Détails par cible travaillée");
+    const blocZone = creerBlocStats("Touches par zone");
     genererEnteteJoueurs(blocZone.table);
     cricketState.trainTargets.forEach(cible => {
         const label = cible === 25 ? "Bull" : `Cible ${cible}`;
@@ -3043,9 +3057,9 @@ function genererTableauStatistiques() {
         const dartsCible = (cricketState.trainTurnsPerTarget * 3);
         const mprCible = dartsCible > 0 ? ((touchesCible / dartsCible) * 3).toFixed(2) : "0.00";
         
-        let htmlStat = `MPR: <strong>${mprCible}</strong><br>`;
+        let htmlStat = `<strong>${mprCible}</strong> MPR<br>`;
         htmlStat += `<span style="font-size:11px; color:var(--text-soft);">${tStats.s}S / ${tStats.d}D / ${tStats.t}T</span><br>`;
-        htmlStat += `<span style="font-size:11px; color:var(--danger);">Miss: ${tStats.miss}</span> | <span style="font-size:11px; color:var(--primary);">Meilleur tour: ${tStats.bestTurn} touches</span>`;
+        htmlStat += `<span style="font-size:11px; color:var(--text-soft);">${tStats.miss} manqué(s)</span>;
         
         ajouterLigne(blocZone.table, label, [htmlStat]);
     });
