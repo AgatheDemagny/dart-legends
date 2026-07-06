@@ -269,6 +269,7 @@ document.getElementById("btnLeaveGame").addEventListener("click", async () => {
   const quitter = await openCustomModal("⚠️ Abandon", "Voulez-vous vraiment quitter la partie en cours ? Votre progression sera perdue.");
   if (quitter) {
     clearInterval(cricketState.timerInterval);
+    effacerSauvegarde();
     showScreen(screens.home);
   }
 });
@@ -428,6 +429,7 @@ auth.onAuthStateChanged(async (user) => {
         showPopup("👋 Bienvenue ! Crée ou rejoins une communauté pour commencer à jouer.", false);
       } else {
         showScreen(screens.home);
+        setTimeout(verifierSauvegardeAuDemarrage, 600);
       }
     } catch(e) {
       console.error("Erreur d'initialisation au démarrage:", e);
@@ -1231,6 +1233,40 @@ async function chargerHistoriqueParties() {
 
 window.ouvrirModalGestionCommunaute = ouvrirModalGestionCommunaute;
 
+// --- SYSTÈME DE SAUVEGARDE AUTOMATIQUE ---
+function sauvegarderPartie() {
+  const backup = {
+    cricketState: cricketState,
+    joueursSelectionnesMatch: joueursSelectionnesMatch,
+    listeEquipesFormees: listeEquipesFormees,
+    communauteCibleMatchId: communauteCibleMatchId
+  };
+  localStorage.setItem("dartLegends_backup", JSON.stringify(backup));
+}
+
+function effacerSauvegarde() {
+  localStorage.removeItem("dartLegends_backup");
+}
+
+async function verifierSauvegardeAuDemarrage() {
+  const backupStr = localStorage.getItem("dartLegends_backup");
+  if (!backupStr) return;
+
+  const reprise = await openCustomModal("🔄 Partie en cours", "Une partie inachevée a été détectée (suite à une fermeture inattendue). Voulez-vous la reprendre ?");
+  if (reprise) {
+    const backup = JSON.parse(backupStr);
+    cricketState = backup.cricketState;
+    joueursSelectionnesMatch = backup.joueursSelectionnesMatch;
+    listeEquipesFormees = backup.listeEquipesFormees;
+    communauteCibleMatchId = backup.communauteCibleMatchId;
+    
+    lancerInterfaceJeu(cricketState.gameMode, true); // Le "true" indique que c'est une reprise
+    if (cricketState.gameMode === "bounty") mettreAJourCiblesBountyUI();
+  } else {
+    effacerSauvegarde();
+  }
+}
+
 // ================== MOTEUR DE JEU GENERAL ==================
 let cricketState = {
   gameMode: "cricket", isTeamMode: false,
@@ -1573,8 +1609,13 @@ function traiterCalculWorld(keyStockage, joueurActuel, valeurBouton) {
 
 function lancerInterfaceJeu(mode) {
   showScreen(screens.cricket);
-  cricketState.startTime = Date.now(); 
-  cricketState.elapsedTime = 0; 
+  if (!isResume) {
+    cricketState.startTime = Date.now(); 
+    cricketState.elapsedTime = 0; 
+  } else {
+    // Si c'est une reprise, on recule l'heure de départ pour rattraper le temps déjà écoulé
+    cricketState.startTime = Date.now() - (cricketState.elapsedTime * 1000);
+  }
   cricketState.isPaused = false;
   document.getElementById("btnPauseGame").innerText = "⏸️";
   clearInterval(cricketState.timerInterval);
@@ -1972,7 +2013,7 @@ function taperChiffre(valeurBouton) {
   else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); }
   else { renderKeyboard(); renderGrid(); }
   
-  gererEtatBoutonBull(); updateTurnHeader(); verifierConditionsFinMatch();
+  gererEtatBoutonBull(); updateTurnHeader(); verifierConditionsFinMatch(); sauvegarderPartie();
 }
 
 function cloreVoleeActuelle(joueur) {
@@ -2228,7 +2269,7 @@ function annulerDernierCoup() {
   else if (cricketState.gameMode === "world") { renderKeyboardX01(); renderGridWorld(); }
   else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); mettreAJourCiblesBountyUI(); }
   else { renderKeyboard(); renderGrid(); }
-  updateTurnHeader();
+  updateTurnHeader(); sauvegarderPartie();
 }
 function verifierConditionsFinMatch() {
   let gagnantId = null; let clesEntites = Object.keys(cricketState.scores);
@@ -2284,6 +2325,7 @@ function formatScoreDisplay(gameMode, score) {
 }
 
 function lancerPageVictoire(gagnantId, nomVainqueur) {
+  effacerSauvegarde();
   document.getElementById("victoryTitle").innerText = `${nomVainqueur} gagne la partie !`;
   document.getElementById("victorySubtitle").innerText = `Match bouclé en ${document.getElementById("gameTimerDisplay").innerText}`;
   
