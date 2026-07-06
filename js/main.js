@@ -1607,8 +1607,10 @@ function traiterCalculWorld(keyStockage, joueurActuel, valeurBouton) {
   }
 }
 
-function lancerInterfaceJeu(mode) {
+function lancerInterfaceJeu(mode, isResume = false) {
   showScreen(screens.cricket);
+  
+  // 1. Gestion du chrono (Nouveau ou Reprise)
   if (!isResume) {
     cricketState.startTime = Date.now(); 
     cricketState.elapsedTime = 0; 
@@ -1616,25 +1618,34 @@ function lancerInterfaceJeu(mode) {
     // Si c'est une reprise, on recule l'heure de départ pour rattraper le temps déjà écoulé
     cricketState.startTime = Date.now() - (cricketState.elapsedTime * 1000);
   }
+  
+  // 2. Initialisation du chronomètre
   cricketState.isPaused = false;
   document.getElementById("btnPauseGame").innerText = "⏸️";
   clearInterval(cricketState.timerInterval);
   cricketState.timerInterval = setInterval(updateTimer, 1000);
 
+  // 3. Affichage du clavier et de la grille selon le mode
   resetModifierUI(); 
   if (mode === "x01") {
     document.getElementById("bountyTargetsZone").classList.add("hidden");
-    renderKeyboardX01(); renderGridX01();
+    renderKeyboardX01(); 
+    renderGridX01();
   } else if (mode === "world") {
     document.getElementById("bountyTargetsZone").classList.add("hidden");
-    renderKeyboardX01(); renderGridWorld();
+    renderKeyboardX01(); 
+    renderGridWorld();
   } else if (mode === "bounty") {
     document.getElementById("bountyTargetsZone").classList.remove("hidden");
-    renderKeyboardX01(); renderGridBounty();
+    renderKeyboardX01(); 
+    renderGridBounty();
   } else {
     document.getElementById("bountyTargetsZone").classList.add("hidden");
-    renderKeyboard(); renderGrid();
+    renderKeyboard(); 
+    renderGrid();
   }
+  
+  // 4. Mise à jour de l'interface
   gererEtatBoutonBull();
   updateTurnHeader();
 }
@@ -1777,8 +1788,10 @@ function obtenirSuggestionCheckout(score, dartsCount, modeCheckout) {
 function renderGrid() {
   const table = document.getElementById("cricketGridTable");
   table.innerHTML = "";
+  
   const headerRow = document.createElement("tr");
   headerRow.style.background = "rgba(255,255,255,0.02)";
+  
   let headerHtml = `<th style="text-align:left; padding: 10px 4px; border-bottom: 2px solid var(--divider); width: 23%;">Ligne</th>`;
   cricketState.targets.forEach(t => {
     let libelle = t === 25 ? "B" : t;
@@ -1786,33 +1799,52 @@ function renderGrid() {
     headerHtml += `<th style="font-weight:bold; padding: 10px 2px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); width: 11%;">${libelle}</th>`;
   });
   headerHtml += `<th style="padding: 10px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 12%;">Score</th>`;
-  headerRow.innerHTML = headerHtml; table.appendChild(headerRow);
+  headerRow.innerHTML = headerHtml; 
+  table.appendChild(headerRow);
 
-  let entitesAAfficher = [];
-  if (cricketState.isTeamMode) {
-    listeEquipesFormees.forEach(eq => { entitesAAfficher.push({ id: eq.id, name: eq.name }); });
-  } else {
-    cricketState.players.forEach(p => { entitesAAfficher.push({ id: p.id, name: p.name }); });
-  }
-
+  // On map correctement les entités pour récupérer les membres (indispensable pour le calcul équipe)
+  let entitesAAfficher = cricketState.isTeamMode ? listeEquipesFormees : cricketState.players.map(p => ({ id: p.id, name: p.name, members: [p] }));
+  
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
+  
   entitesAAfficher.forEach(entite => {
     const row = document.createElement("tr");
     row.style.borderBottom = "1px solid var(--divider)";
+    
     if(cricketState.isTeamMode ? (joueurActuel.teamId === entite.id) : (joueurActuel.id === entite.id)) {
       row.style.backgroundColor = "rgba(192,101,42,0.15)";
     }
+
+    // --- 1. CALCUL DU MPR EN DIRECT ---
+    let totalTouches = 0, totalDarts = 0;
+    (entite.members || [entite]).forEach(m => {
+      if (cricketState.statsDetails[m.id]) {
+        totalTouches += cricketState.statsDetails[m.id].touchesUtiles || 0;
+        totalDarts += cricketState.statsDetails[m.id].dartsThrown || 0;
+      }
+    });
+    // On force l'affichage à 1 chiffre après la virgule (ex: 2.3)
+    let mpr = totalDarts > 0 ? ((totalTouches / totalDarts) * 3).toFixed(1) : "0.0";
     
     let nomTronque = entite.name.length > 9 ? entite.name.substring(0, 9) + "." : entite.name;
-    let cellsHtml = `<td style="text-align:left; padding: 12px 4px; font-weight:700; width: 23%;">${nomTronque}</td>`;
     
+    // --- 2. AFFICHAGE DU NOM + MPR ---
+    // J'ai légèrement réduit le padding vertical (12px -> 8px) pour que le tableau ne s'étire pas trop en hauteur
+    let cellsHtml = `<td style="text-align:left; padding: 8px 4px; width: 23%;">
+        <div style="font-weight:700;">${nomTronque}</div>
+        <div style="font-size:10px; color:var(--text-soft); font-weight:600; margin-top: 2px;">MPR: ${mpr}</div>
+    </td>`;
+
     cricketState.targets.forEach(t => {
       const touches = cricketState.marks[entite.id][t];
       let symbole = touches === 1 ? "\\" : touches === 2 ? "X" : touches >= 3 ? `<span style="border:2px solid #ff3838; border-radius:50%; padding:2px 4px; color:#ff3838;">X</span>` : "";
       cellsHtml += `<td style="padding: 6px 2px; border-left: 1px solid var(--divider); width: 11%;">${symbole}</td>`;
     });
+    
     cellsHtml += `<td style="font-weight:800; padding: 12px 2px; border-left: 1px solid var(--divider); color: var(--primary-strong); width: 12%;">${cricketState.scores[entite.id]}</td>`;
-    row.innerHTML = cellsHtml; table.appendChild(row);
+    
+    row.innerHTML = cellsHtml; 
+    table.appendChild(row);
   });
 }
 
