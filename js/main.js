@@ -2669,7 +2669,6 @@ function verifierConditionsFinMatch() {
         cricketState.timerInterval = setInterval(updateTimer, 1000); 
       }
     }, 100);
-  }
 }
 
 function formatScoreDisplay(gameMode, score) {
