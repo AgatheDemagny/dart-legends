@@ -3058,7 +3058,7 @@ function genererTableauStatistiques() {
         
         let htmlStat = `<strong>${mprCible}</strong> MPR<br>`;
         htmlStat += `<span style="font-size:11px; color:var(--text-soft);">${tStats.s}S / ${tStats.d}D / ${tStats.t}T</span><br>`;
-        htmlStat += `<span style="font-size:11px; color:var(--text-soft);">${tStats.miss} manqué(s)</span>;
+        htmlStat += `<span style="font-size:11px; color:var(--text-soft);">${tStats.miss} manqué(s)</span>`;
         
         ajouterLigne(blocZone.table, label, [htmlStat]);
     });
