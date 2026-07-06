@@ -58,24 +58,31 @@ async function chargerHistoriqueEntrainements() {
   }
   
   try {
+    // Requête simplifiée pour éviter le blocage d'Index Firestore
     const snap = await db.collection("games_history")
       .where("participantIds", "array-contains", user.uid)
-      .where("type", "in", ["train_cricket", "train_target"])
-      .orderBy("createdAt", "desc")
-      .limit(20)
       .get();
       
     container.innerHTML = "";
-    if (snap.empty) {
+    
+    // On stocke, on filtre et on trie par date en Javascript
+    let docsData = [];
+    snap.forEach(doc => docsData.push(doc.data()));
+    
+    let entrainements = docsData
+      .filter(data => data.type === "train_cricket" || data.type === "train_target")
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 20);
+
+    if (entrainements.length === 0) {
       container.innerHTML = "<p class='hint' style='text-align:center; padding: 10px;'>Aucun entraînement enregistré pour le moment.</p>";
       return;
     }
     
-    snap.forEach(doc => {
-      const data = doc.data();
+    entrainements.forEach(data => {
       const date = new Date(data.createdAt).toLocaleDateString("fr-FR");
       const duration = `${Math.floor(data.duration / 60)}m ${data.duration % 60}s`;
-      let modeLabel = data.type === "train_cricket" ? "🏏 Fermeture cricket" : "🔍​ Focus zones";
+      let modeLabel = data.type === "train_cricket" ? "🏏 Fermeture Cricket" : "🎯 Focus Cibles";
       
       let performanceInfo = "";
       if (data.statsDetails && data.statsDetails[user.uid]) {
@@ -107,11 +114,7 @@ async function chargerHistoriqueEntrainements() {
         </div>
       `;
       
-      // Clic sur l'historique pour voir les stats détaillées
-      card.onclick = () => {
-        window.voirStatsDepuisHistorique(data);
-      };
-      
+      card.onclick = () => window.voirStatsDepuisHistorique(data);
       container.appendChild(card);
     });
   } catch (e) {
@@ -1720,11 +1723,12 @@ window.lancerTrainingCricket = function() {
   const user = auth.currentUser;
   if (!user) return showPopup("Tu dois être connecté à un compte pour t'entraîner.", true);
   
-  let pseudoUser = document.getElementById("accountProfileName")?.value.trim();
+  let pseudoUser = (typeof displayName !== "undefined" && displayName) ? displayName : document.getElementById("accountProfileName")?.value.trim();
+  if (!pseudoUser && user.displayName) pseudoUser = user.displayName;
   if (!pseudoUser && user.email) pseudoUser = user.email.split('@')[0];
   if (!pseudoUser) pseudoUser = "Joueur Solo";
 
-  const p = { id: user.uid, name: document.getElementById("accountProfileName").value || "Joueur Solo" };
+  const p = { id: user.uid, name: pseudoUser };
   cricketState.gameMode = "train_cricket";
   initVariablesMatchGenerales([p]);
   
@@ -1757,7 +1761,8 @@ window.lancerTrainingTarget = function() {
   let selectedTargets = [];
   document.querySelectorAll("#trainTargetGrid button.primary").forEach(b => selectedTargets.push(parseInt(b.dataset.val, 10)));
   if (selectedTargets.length === 0) return showPopup("Sélectionnez au moins une cible !", true);
-
+  selectedTargets = selectedTargets.sort(() => Math.random() - 0.5);
+  
   cricketState.gameMode = "train_target";
   initVariablesMatchGenerales([p]);
   cricketState.trainTargets = selectedTargets;
@@ -2735,36 +2740,32 @@ db.collection("games_history").add({
     trainTargets: cricketState.trainTargets || null,
     trainTurnsPerTarget: cricketState.trainTurnsPerTarget || null,
     currentTurn: cricketState.currentTurn
-  }).then(() => console.log("Match enregistré !")).catch(e => console.error(e));
-  
+  })
+  .then(() => console.log("Match enregistré !"))
+  .catch(e => console.error("Erreur Firebase :", e))
+  .finally(() => {
   if (cricketState.gameMode.startsWith("train_")) {
-        // --- MODE ENTRAÎNEMENT : Accès direct aux stats ---
-        genererTableauStatistiques();
-        showScreen(screens.matchStats);
-        
-        // On cache le bouton "Retour au podium" qui est inutile en solo
-        const btnPodium = document.getElementById("btnBackToPodium");
-        if (btnPodium) btnPodium.style.display = "none";
-        
-        // Le bouton "Retour à l'accueil" ramène au menu d'entraînement
-        document.getElementById("btnGoHomeAfterStats").onclick = () => {
-          showScreen(screens.training);
-          if (typeof retourListeTraining === "function") retourListeTraining();
-        };
-      } else {
-        // --- MODE CLASSIQUE MULTIJOUEUR ---
-        const winnerNameEl = document.getElementById("gameOverWinnerName");
-        if (winnerNameEl) winnerNameEl.innerText = nomVainqueur;
-        
-        const btnPodium = document.getElementById("btnBackToPodium");
-        if (btnPodium) btnPodium.style.display = "inline-block"; // On s'assure qu'il est visible
-        
-        document.getElementById("btnGoHomeAfterStats").onclick = () => {
-          showScreen(screens.home);
-        };
-        
-        showScreen(screens.gameOver);
-      }
+      genererTableauStatistiques();
+      showScreen(screens.matchStats);
+      
+      const btnPodium = document.getElementById("btnBackToPodium");
+      if (btnPodium) btnPodium.style.display = "none";
+      
+      document.getElementById("btnGoHomeAfterStats").onclick = () => {
+        showScreen(screens.training);
+        if (typeof retourListeTraining === "function") retourListeTraining();
+      };
+    } else {
+      const winnerNameEl = document.getElementById("gameOverWinnerName");
+      if (winnerNameEl) winnerNameEl.innerText = nomVainqueur;
+      
+      const btnPodium = document.getElementById("btnBackToPodium");
+      if (btnPodium) btnPodium.style.display = "inline-block";
+      
+      document.getElementById("btnGoHomeAfterStats").onclick = () => showScreen(screens.home);
+      showScreen(screens.gameOver);
+    }
+  });
 }
 
 document.getElementById("btnGoHomeAfterMatch").onclick = () => showScreen(screens.home);
