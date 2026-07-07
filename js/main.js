@@ -306,7 +306,12 @@ function showScreen(activeScreen) {
   Object.values(screens).forEach(s => {
     if(s) s.classList.add("hidden");
   });
-  if(activeScreen) activeScreen.classList.remove("hidden");
+  if(activeScreen) {
+    activeScreen.classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    activeScreen.scrollTop = 0;
+  }
 }
 
 function showPopup(text, isError = false) {
@@ -2872,8 +2877,8 @@ function genererTableauStatistiques() {
     const durationStr = `${Math.floor(cricketState.historyContext.duration / 60)}m ${cricketState.historyContext.duration % 60}s`;
     
     let modeLabel = cricketState.historyContext.type;
-    if(modeLabel === "train_cricket") modeLabel = "🏏 Entraînement : Fermeture Cricket";
-    else if(modeLabel === "train_target") modeLabel = "🎯 Entraînement : Focus Cibles";
+    if(modeLabel === "train_cricket") modeLabel = "🏏 Fermeture Cricket";
+    else if(modeLabel === "train_target") modeLabel = "🎯 Focus Cibles";
     else if(modeLabel === "cricket") modeLabel = "🏏 Match : Cricket";
     
     // On crée un élément séparé pour l'en-tête pour ne pas écraser le contenu
