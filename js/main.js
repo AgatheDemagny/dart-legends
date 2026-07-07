@@ -111,7 +111,7 @@ async function chargerHistoriqueEntrainements() {
       card.innerHTML = `
         <div style="text-align: left;">
           <div style="font-weight: 700; font-size: 14px; color: var(--text-main);">${modeLabel}</div>
-          <div style="font-size: 12px; color: var(--text-soft); margin-top: 4px;">📅 ${date} &nbsp; à &nbsp; ${time} &nbsp;•&nbsp; ⏱️ ${duration}</div>
+          <div style="font-size: 12px; color: var(--text-soft); margin-top: 4px;">📅 ${date} à ${time} &nbsp;•&nbsp; ⏱️ ${duration}</div>
         </div>
         <div style="font-size: 16px; color: var(--accent);">
           📊
@@ -1587,6 +1587,7 @@ function initVariablesMatchGenerales(joueursAlignes) {
   } else {
     cricketState.teamTurnState = null;
   }
+  cricketState.historyContext = null;
 }
 
 function demarrerMatchCricket(listeJoueurs) {
@@ -2838,7 +2839,16 @@ function genererTableauStatistiques() {
   const parentContainer = tableEl.parentElement;
   parentContainer.innerHTML = ""; 
 
+  // 1. On crée D'ABORD le mainWrapper (sinon le code plante s'il essaie de s'en servir)
+  const mainWrapper = document.createElement("div");
+  mainWrapper.style.padding = "0 8px 40px 8px"; 
+  mainWrapper.style.display = "flex";
+  mainWrapper.style.flexDirection = "column";
+  mainWrapper.style.gap = "20px";
+  mainWrapper.style.width = "100%";
+  
   // --- INJECTION DE L'EN-TÊTE D'HISTORIQUE ---
+  // On ne l'affiche QUE si on vient de l'historique (historyContext existe)
   if (cricketState.historyContext) {
     const d = new Date(cricketState.historyContext.createdAt);
     const dateStr = d.toLocaleDateString("fr-FR");
@@ -2850,20 +2860,22 @@ function genererTableauStatistiques() {
     else if(modeLabel === "train_target") modeLabel = "🎯 Entraînement : Focus Cibles";
     else if(modeLabel === "cricket") modeLabel = "🏏 Match : Cricket";
     
-    mainWrapper.innerHTML = `
-      <div style="text-align:center; margin-bottom:15px; padding:12px; background:rgba(255,255,255,0.05); border-radius:8px; border: 1px solid var(--divider);">
+    // On crée un élément séparé pour l'en-tête pour ne pas écraser le contenu
+    const headerDiv = document.createElement("div");
+    headerDiv.style.textAlign = "center";
+    headerDiv.style.marginBottom = "15px";
+    headerDiv.style.padding = "12px";
+    headerDiv.style.background = "rgba(255,255,255,0.05)";
+    headerDiv.style.borderRadius = "8px";
+    headerDiv.style.border = "1px solid var(--divider)";
+    headerDiv.innerHTML = `
         <div style="font-weight:bold; color:var(--primary); font-size:16px;">${modeLabel}</div>
         <div style="font-size:12px; color:var(--text-soft); margin-top:6px;">📅 ${dateStr} à ${timeStr} &nbsp;•&nbsp; ⏱️ ${durationStr}</div>
-      </div>
     `;
+    mainWrapper.appendChild(headerDiv);
   }
 
-  const mainWrapper = document.createElement("div");
-  mainWrapper.style.padding = "0 8px 40px 8px"; 
-  mainWrapper.style.display = "flex";
-  mainWrapper.style.flexDirection = "column";
-  mainWrapper.style.gap = "20px";
-  mainWrapper.style.width = "100%";
+  // On ajoute le mainWrapper au parent
   parentContainer.appendChild(mainWrapper);
 
   const backupTable = document.createElement("table");
@@ -3090,7 +3102,7 @@ function genererTableauStatistiques() {
     const blocZone = creerBlocStats("Touches par zone");
     genererEnteteJoueurs(blocZone.table);
     [...cricketState.trainTargets].sort((a, b) => a - b).forEach(cible => {
-        const label = cible === 25 ? "Bull" : `Cible ${cible}`;
+        const label = cible === 25 ? "Bull" : `Zone ${cible}`;
         const tStats = cricketState.statsDetails[p.id].targets[cible];
         const touchesCible = tStats.s + (tStats.d * 2) + (tStats.t * 3);
         const dartsCible = (cricketState.trainTurnsPerTarget * 3);
@@ -3100,7 +3112,7 @@ function genererTableauStatistiques() {
         
         let htmlStat = `MPR: <strong>${mprCible}</strong><br>`;
         htmlStat += `<span style="font-size:11px; color:var(--text-soft);">${tStats.s}S / ${tStats.d}D / ${tStats.t}T</span><br>`;
-        htmlStat += `<span style="font-size:11px; color:var(--danger);">Miss: ${tStats.miss}</span> | <span style="font-size:11px; color:var(--primary);">Meilleur tour: ${tStats.bestTurn} touches</span>`;
+        htmlStat += `<span style="font-size:11px; color:var(--text-soft);"> ${tStats.miss} manqué(s)</span>`;
         
         ajouterLigne(blocZone.table, label, [htmlStat]);
     });
