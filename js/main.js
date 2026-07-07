@@ -148,8 +148,11 @@ window.voirStatsDepuisHistorique = function(gameData) {
 
   // Sécurité pour le mode train_cricket qui nécessite un clone du tableau HTML de jeu en direct
   if (gameData.type === "train_cricket") {
+    cricketState.scores = gameData.scores || { [user.uid]: 0 };
     cricketState.marks = gameData.marks || { [user.uid]: {15:3, 16:3, 17:3, 18:3, 19:3, 20:3, 25:3} };
-    renderGrid(); // On force le rendu furtif de la grille pour que le système puisse la cloner
+    
+    showScreen(screens.cricket);
+    renderGrid(); 
   }
 
   // Génération du tableau
@@ -2613,10 +2616,14 @@ document.getElementById("btnKeyUndo").onclick = () => { annulerDernierCoup(); };
 function annulerDernierCoup() {
   if (cricketState.history.length === 0) return showPopup("Aucun coup à effacer.", true);
   const precedentState = cricketState.history.pop();
+  
+  // Restauration standard
   cricketState.scores = precedentState.scores; 
-  cricketState.marks = precedentState.marks;
-  cricketState.revealedTargets = precedentState.revealedTargets; 
-  cricketState.currentTurnDartsText = precedentState.currentTurnDartsText;
+  cricketState.marks = precedentState.marks || cricketState.marks;
+  cricketState.revealedTargets = precedentState.revealedTargets || []; 
+  cricketState.currentTurnDartsText = precedentState.currentTurnDartsText || [];
+  
+  // Variables spécifiques (sécurisées avec des "if")
   if (precedentState.teamTurnState) cricketState.teamTurnState = precedentState.teamTurnState;
   if (precedentState.bountyBonusTargets) cricketState.bountyBonusTargets = precedentState.bountyBonusTargets;
   if (precedentState.bountyMalusTarget !== undefined) cricketState.bountyMalusTarget = precedentState.bountyMalusTarget;
@@ -2625,20 +2632,25 @@ function annulerDernierCoup() {
   if (precedentState.trainCurrentTargetIndex !== undefined) cricketState.trainCurrentTargetIndex = precedentState.trainCurrentTargetIndex;
   if (precedentState.trainRoundInCurrentTarget !== undefined) cricketState.trainRoundInCurrentTarget = precedentState.trainRoundInCurrentTarget;
   
+  // Suite de la restauration
   cricketState.statsDetails = precedentState.statsDetails; 
   cricketState.currentPlayerIdx = precedentState.currentPlayerIdx;
   cricketState.currentDart = precedentState.currentDart; 
   cricketState.currentTurn = precedentState.currentTurn; 
   cricketState.lastTurnText = precedentState.lastTurnText;
   
+  // Rafraîchissement visuel
   resetModifierUI(); 
   if (cricketState.gameMode === "x01") { renderKeyboardX01(); renderGridX01(); }
   else if (cricketState.gameMode === "world") { renderKeyboardX01(); renderGridWorld(); }
   else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); mettreAJourCiblesBountyUI(); }
   else if (cricketState.gameMode === "train_target") { renderKeyboardX01(); renderGridTrainTarget(); }
   else { renderKeyboard(); renderGrid(); }
-  updateTurnHeader(); sauvegarderPartie();
+  
+  updateTurnHeader(); 
+  sauvegarderPartie();
 }
+
 function verifierConditionsFinMatch() {
   let gagnantId = null; let clesEntites = Object.keys(cricketState.scores);
   
@@ -2774,6 +2786,10 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
       .finally(() => {
         try {
           if (cricketState.gameMode.startsWith("train_")) {
+            if (cricketState.gameMode === "train_cricket") {
+              renderGrid();
+            }
+            
             genererTableauStatistiques();
             showScreen(screens.matchStats);
             
