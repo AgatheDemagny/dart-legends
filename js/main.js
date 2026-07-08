@@ -1891,7 +1891,6 @@ function renderGridTrainTarget() {
           <div style="font-size:16px; color:var(--accent); font-weight:700;">Tour ${tourActuelCible} / ${cricketState.trainTurnsPerTarget}</div>
           <div style="margin-top:16px; padding-top:12px; border-top:1px dashed var(--divider); display:flex; justify-content:space-around;">
               <div><span style="font-size:12px; color:var(--text-soft);">MPR Global</span><br><strong style="font-size:16px;">${mprGlobal}</strong></div>
-              <div><span style="font-size:12px; color:var(--text-soft);">Touches Totales</span><br><strong style="font-size:16px; color:var(--primary);">${cricketState.scores[joueurActuel.id]}</strong></div>
           </div>
       </td>
   `;
