@@ -1756,66 +1756,35 @@ function demarrerMatchBounty(listeJoueurs) {
   mettreAJourCiblesBountyUI();
 }
 
-window.lancerTrainingTarget = function() {
+window.lancerTrainingCricket = function() {
   const user = auth.currentUser;
-  if (!user) return showPopup("Tu dois être connecté à un compte.", true);
-  const pseudoUser = getPseudoJoueur();
-  const p = { id: user.uid, name: pseudoUser };
+  if (!user) return showPopup("Tu dois être connecté à un compte pour t'entraîner.", true);
   
-  let selectedTargets = [];
-  document.querySelectorAll("#trainTargetGrid button.primary").forEach(b => selectedTargets.push(parseInt(b.dataset.val, 10)));
-  if (selectedTargets.length === 0) return showPopup("Sélectionnez au moins une cible !", true);
-  
-  // 1. Mélange initial des cibles sélectionnées (Algorithme de Fisher-Yates)
-  for (let i = selectedTargets.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [selectedTargets[i], selectedTargets[j]] = [selectedTargets[j], selectedTargets[i]];
-  }
-  
-  const turnsPerTarget = parseInt(document.getElementById("trainTargetTurnsSelect").value, 10);
-  const consecutiveCheckbox = document.getElementById("trainConsecutiveCheckbox");
-  const consecutive = consecutiveCheckbox ? consecutiveCheckbox.checked : false;
+  const p = { id: user.uid, name: getPseudoJoueur() };
 
-  // 2. Création du panier brut avec juste les numéros de cibles
-  let rawPool = [];
-  selectedTargets.forEach(t => {
-      for(let i = 1; i <= turnsPerTarget; i++) {
-          rawPool.push(t);
-      }
-  });
-
-  // 3. On mélange ce panier brut si "Zones à la suite" N'EST PAS coché
-  if (!consecutive && turnsPerTarget > 1) {
-      for (let i = rawPool.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [rawPool[i], rawPool[j]] = [rawPool[j], rawPool[i]];
-      }
-  }
-
-  // 4. MAINTENANT, on compte les occurrences pour attribuer un numéro de tour parfait (1/3, 2/3...)
-  let compteurCibles = {};
-  let turnsPool = rawPool.map(t => {
-      if (!compteurCibles[t]) compteurCibles[t] = 0;
-      compteurCibles[t]++; // S'incrémente de +1 à chaque fois qu'on croise ce chiffre
-      return { target: t, turn: compteurCibles[t] };
-  });
-
-  cricketState.gameMode = "train_target";
+  cricketState.gameMode = "train_cricket";
   initVariablesMatchGenerales([p]);
   
-  cricketState.trainTargets = selectedTargets;
-  cricketState.trainTurnsPool = turnsPool;
-  cricketState.trainCurrentPoolIndex = 0;
-  cricketState.trainTurnsPerTarget = turnsPerTarget;
-  cricketState.maxTurns = turnsPool.length;
-  cricketState.scores[p.id] = 0; 
+  // Sécurité absolue : si l'élément n'est pas trouvé, on met 20 par défaut
+  const selectElement = document.getElementById("trainCricketTurnsSelect");
+  cricketState.maxTurns = (selectElement && selectElement.value) ? parseInt(selectElement.value, 10) : 20;
   
-  cricketState.statsDetails[p.id] = { dartsThrown:0, touchesUtiles:0, targets:{} };
-  selectedTargets.forEach(t => {
-      cricketState.statsDetails[p.id].targets[t] = { s:0, d:0, t:0, miss:0, currentTurnMarks:0, bestTurn:0 };
+  cricketState.isBlind = false;
+  cricketState.targets = [15, 16, 17, 18, 19, 20, 25];
+  cricketState.revealedTargets = [...cricketState.targets];
+  cricketState.marks = { [p.id]: {} };
+  cricketState.scores[p.id] = 0; 
+  cricketState.statsDetails[p.id] = { dartsThrown:0, touchesUtiles:0, touchesNum:{}, simplesCount:{}, doublesCount:{}, triplesCount:{} };
+  
+  cricketState.targets.forEach(t => {
+      cricketState.marks[p.id][t] = 0;
+      cricketState.statsDetails[p.id].touchesNum[t] = 0;
+      cricketState.statsDetails[p.id].simplesCount[t] = 0;
+      cricketState.statsDetails[p.id].doublesCount[t] = 0;
+      cricketState.statsDetails[p.id].triplesCount[t] = 0;
   });
   
-  lancerInterfaceJeu("train_target");
+  lancerInterfaceJeu("train_cricket");
 };
 
 window.lancerTrainingTarget = function() {
@@ -1888,9 +1857,9 @@ function renderGridTrainTarget() {
       <td style="padding:24px 10px; text-align:center;">
           <div style="font-size:14px; color:var(--text-soft); font-weight:700; text-transform:uppercase;">Cible actuelle</div>
           <div style="font-size:48px; font-weight:900; color:var(--primary-strong); margin:12px 0;">${cibleAffichee}</div>
-          <div style="font-size:16px; color:var(--accent); font-weight:700;">Tour ${tourActuelCible} / ${cricketState.trainTurnsPerTarget}</div>
           <div style="margin-top:16px; padding-top:12px; border-top:1px dashed var(--divider); display:flex; justify-content:space-around;">
               <div><span style="font-size:12px; color:var(--text-soft);">MPR Global</span><br><strong style="font-size:16px;">${mprGlobal}</strong></div>
+              <div><span style="font-size:12px; color:var(--text-soft);">Touches Totales</span><br><strong style="font-size:16px; color:var(--primary);">${cricketState.scores[joueurActuel.id]}</strong></div>
           </div>
       </td>
   `;
