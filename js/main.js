@@ -57,6 +57,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+const turnsTargetSelect = document.getElementById("trainTargetTurnsSelect");
+if (turnsTargetSelect) {
+  turnsTargetSelect.addEventListener("change", (e) => {
+    const block = document.getElementById("trainConsecutiveBlock");
+    if (parseInt(e.target.value, 10) > 1) {
+      block.style.display = "block";
+    } else {
+      block.style.display = "none";
+      document.getElementById("trainConsecutiveCheckbox").checked = false;
+    }
+  });
+}
+
 // --- CHARGEMENT HISTORIQUE ENTRAÎNEMENTS SOLO ---
 async function chargerHistoriqueEntrainements() {
   const container = document.getElementById("trainingHistoryContainer");
@@ -1780,16 +1793,36 @@ window.lancerTrainingTarget = function() {
   let selectedTargets = [];
   document.querySelectorAll("#trainTargetGrid button.primary").forEach(b => selectedTargets.push(parseInt(b.dataset.val, 10)));
   if (selectedTargets.length === 0) return showPopup("Sélectionnez au moins une cible !", true);
+  
+  // On mélange la liste de base pour avoir un ordre inattendu même en mode "A la suite"
   selectedTargets = selectedTargets.sort(() => Math.random() - 0.5);
   
+  const turnsPerTarget = parseInt(document.getElementById("trainTargetTurnsSelect").value, 10);
+  const consecutiveCheckbox = document.getElementById("trainConsecutiveCheckbox");
+  const consecutive = consecutiveCheckbox ? consecutiveCheckbox.checked : false;
+
+  // Création du panier contenant l'intégralité des tours à jouer
+  let turnsPool = [];
+  selectedTargets.forEach(t => {
+      for(let i = 1; i <= turnsPerTarget; i++) {
+          turnsPool.push({ target: t, turn: i });
+      }
+  });
+
+  // Si on décoche "À la suite", on mélange tout le panier !
+  if (!consecutive && turnsPerTarget > 1) {
+      turnsPool = turnsPool.sort(() => Math.random() - 0.5);
+  }
+
   cricketState.gameMode = "train_target";
   initVariablesMatchGenerales([p]);
-  cricketState.trainTargets = selectedTargets;
-  cricketState.trainTurnsPerTarget = parseInt(document.getElementById("trainTargetTurnsSelect").value, 10);
-  cricketState.trainCurrentTargetIndex = 0;
-  cricketState.trainRoundInCurrentTarget = 1;
-  cricketState.maxTurns = selectedTargets.length * cricketState.trainTurnsPerTarget;
-  cricketState.scores[p.id] = 0; // Total touches réussies
+  
+  cricketState.trainTargets = selectedTargets; // Gardé intact pour générer les stats à la fin
+  cricketState.trainTurnsPool = turnsPool; // Le nouveau système de progression
+  cricketState.trainCurrentPoolIndex = 0;
+  cricketState.trainTurnsPerTarget = turnsPerTarget;
+  cricketState.maxTurns = turnsPool.length;
+  cricketState.scores[p.id] = 0; 
   
   cricketState.statsDetails[p.id] = { dartsThrown:0, touchesUtiles:0, targets:{} };
   selectedTargets.forEach(t => {
@@ -1803,7 +1836,11 @@ function renderGridTrainTarget() {
   const table = document.getElementById("cricketGridTable");
   table.innerHTML = "";
   const joueurActuel = cricketState.players[0]; 
-  const cibleActuelle = cricketState.trainTargets[cricketState.trainCurrentTargetIndex];
+  
+  // Lecture de la cible actuelle dans le panier
+  const currentTurnData = cricketState.trainTurnsPool[cricketState.trainCurrentPoolIndex];
+  const cibleActuelle = currentTurnData.target;
+  const tourActuelCible = currentTurnData.turn;
   const cibleAffichee = cibleActuelle === 25 ? "🎯 BULL" : cibleActuelle;
   
   const touchesGlobales = cricketState.statsDetails[joueurActuel.id].touchesUtiles || 0;
@@ -1815,7 +1852,7 @@ function renderGridTrainTarget() {
       <td style="padding:24px 10px; text-align:center;">
           <div style="font-size:14px; color:var(--text-soft); font-weight:700; text-transform:uppercase;">Cible actuelle</div>
           <div style="font-size:48px; font-weight:900; color:var(--primary-strong); margin:12px 0;">${cibleAffichee}</div>
-          <div style="font-size:16px; color:var(--accent); font-weight:700;">Tour ${cricketState.trainRoundInCurrentTarget} / ${cricketState.trainTurnsPerTarget}</div>
+          <div style="font-size:16px; color:var(--accent); font-weight:700;">Tour ${tourActuelCible} / ${cricketState.trainTurnsPerTarget}</div>
           <div style="margin-top:16px; padding-top:12px; border-top:1px dashed var(--divider); display:flex; justify-content:space-around;">
               <div><span style="font-size:12px; color:var(--text-soft);">MPR Global</span><br><strong style="font-size:16px;">${mprGlobal}</strong></div>
               <div><span style="font-size:12px; color:var(--text-soft);">Touches Totales</span><br><strong style="font-size:16px; color:var(--primary);">${cricketState.scores[joueurActuel.id]}</strong></div>
@@ -1824,9 +1861,9 @@ function renderGridTrainTarget() {
   `;
   table.appendChild(row);
 }
-
 function traiterCalculTrainTarget(keyStockage, joueurActuel, valeurBouton) {
-  const cibleAttendue = cricketState.trainTargets[cricketState.trainCurrentTargetIndex];
+  // On lit simplement la cible actuelle dans le panier
+  const cibleAttendue = cricketState.trainTurnsPool[cricketState.trainCurrentPoolIndex].target;
   const stats = cricketState.statsDetails[joueurActuel.id].targets[cibleAttendue];
   
   if (valeurBouton === cibleAttendue) {
@@ -1836,7 +1873,8 @@ function traiterCalculTrainTarget(keyStockage, joueurActuel, valeurBouton) {
       stats.currentTurnMarks += modificateurEnCours;
       cricketState.scores[keyStockage] += modificateurEnCours;
       cricketState.statsDetails[joueurActuel.id].touchesUtiles += modificateurEnCours;
-  } else if (valeurBouton !== 0 || valeurBouton === 0) { 
+  } else { 
+      // Si on touche autre chose ou qu'on appuie sur Miss (0)
       stats.miss++;
   }
 }
@@ -2328,7 +2366,7 @@ function taperChiffre(valeurBouton) {
       bountyMalusTarget: cricketState.bountyMalusTarget,
       bountyBonusAges: cricketState.bountyBonusAges ? [...cricketState.bountyBonusAges] : null, // Ajout de l'âge
       bountyMalusAge: cricketState.bountyMalusAge, 
-      trainCurrentTargetIndex: cricketState.trainCurrentTargetIndex,
+      trainCurrentPoolIndex: cricketState.trainCurrentPoolIndex,
       trainRoundInCurrentTarget: cricketState.trainRoundInCurrentTarget,
       statsDetails: JSON.parse(JSON.stringify(cricketState.statsDetails)),
       currentPlayerIdx: cricketState.currentPlayerIdx, currentDart: cricketState.currentDart, currentTurn: cricketState.currentTurn, lastTurnText: cricketState.lastTurnText
@@ -2382,19 +2420,17 @@ function cloreVoleeActuelle(joueur) {
     if (stats.currentVolleyPointsGiven > stats.maxPointsGivenInOneVolley) stats.maxPointsGivenInOneVolley = stats.currentVolleyPointsGiven;
     stats.currentVolleyPointsGiven = 0;
   }
-  if (cricketState.gameMode === "train_target") {
-      const statsCible = cricketState.statsDetails[joueur.id].targets[cricketState.trainTargets[cricketState.trainCurrentTargetIndex]];
-      if (statsCible.currentTurnMarks > statsCible.bestTurn) {
-          statsCible.bestTurn = statsCible.currentTurnMarks;
-      }
-      statsCible.currentTurnMarks = 0;
+if (cricketState.gameMode === "train_target") {
+        const cibleAttendue = cricketState.trainTurnsPool[cricketState.trainCurrentPoolIndex].target;
+        const statsCible = cricketState.statsDetails[joueur.id].targets[cibleAttendue];
+        if (statsCible.currentTurnMarks > statsCible.bestTurn) {
+            statsCible.bestTurn = statsCible.currentTurnMarks;
+        }
+        statsCible.currentTurnMarks = 0;
 
-      cricketState.trainRoundInCurrentTarget++;
-      if (cricketState.trainRoundInCurrentTarget > cricketState.trainTurnsPerTarget) {
-          cricketState.trainRoundInCurrentTarget = 1;
-          cricketState.trainCurrentTargetIndex++;
-      }
-  }
+        // On passe simplement à la case suivante du panier
+        cricketState.trainCurrentPoolIndex++;
+    }
 
   // GESTION DISPARITION DES PRIMES (Mode Bounty) - Code conservé à l'identique...
   if (cricketState.gameMode === "bounty") {
@@ -2634,7 +2670,7 @@ function annulerDernierCoup() {
   if (precedentState.bountyMalusTarget !== undefined) cricketState.bountyMalusTarget = precedentState.bountyMalusTarget;
   if (precedentState.bountyBonusAges) cricketState.bountyBonusAges = precedentState.bountyBonusAges;
   if (precedentState.bountyMalusAge !== undefined) cricketState.bountyMalusAge = precedentState.bountyMalusAge;
-  if (precedentState.trainCurrentTargetIndex !== undefined) cricketState.trainCurrentTargetIndex = precedentState.trainCurrentTargetIndex;
+  if (precedentState.trainCurrentPoolIndex !== undefined) cricketState.trainCurrentPoolIndex = precedentState.trainCurrentPoolIndex;
   if (precedentState.trainRoundInCurrentTarget !== undefined) cricketState.trainRoundInCurrentTarget = precedentState.trainRoundInCurrentTarget;
   
   // Suite de la restauration
@@ -2671,8 +2707,8 @@ function verifierConditionsFinMatch() {
     if (!gagnantId && cricketState.maxTurns !== 999 && cricketState.currentTurn > cricketState.maxTurns) {
       let meilleurScore = -Infinity; clesEntites.forEach(k => { if (cricketState.scores[k] > meilleurScore) { meilleurScore = cricketState.scores[k]; gagnantId = k; } });
     }
-  } else if (cricketState.gameMode === "train_target") { // AJOUT
-    if (cricketState.trainCurrentTargetIndex >= cricketState.trainTargets.length) {
+  } else if (cricketState.gameMode === "train_target") {
+    if (cricketState.trainCurrentPoolIndex >= cricketState.trainTurnsPool.length) {
         gagnantId = clesEntites[0];
     }
   } else {
@@ -2856,7 +2892,9 @@ document.getElementById("btnBackToPodium").onclick = () => showScreen(screens.ga
 function genererTableauStatistiques() {
   const tableEl = document.getElementById("matchStatsTable");
   if (!tableEl) return;
-  
+  const titreStats = document.querySelector("#statsMatchScreen h2");
+  if (titreStats) titreStats.style.textAlign = "center";
+
   const parentContainer = tableEl.parentElement;
   parentContainer.innerHTML = ""; 
 

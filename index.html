@@ -124,7 +124,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.77 - 07/07/2026</p>
+        <p>Version 1.78 - 08/07/2026</p>
       </div>
     </section>
 
@@ -234,8 +234,8 @@
             <option value="14">14 tours</option>
             <option value="16">16 tours</option>
             <option value="18">18 tours</option>
-            <option value="20">20 tours</option>
-            <option value="999" selected>Sans limite</option>
+            <option value="20" selected>20 tours</option>
+            <option value="999">Sans limite</option>
           </select>
         </div>
         <button class="primary btn-block" onclick="lancerTrainingCricket()">🎯 Démarrer l'entraînement</button>
@@ -257,6 +257,15 @@
             <option value="8">8 tours</option>
             <option value="10">10 tours</option>
           </select>
+        </div>
+        <div id="trainConsecutiveBlock" style="margin-top: 15px; display: none;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="trainConsecutiveCheckbox">
+            <span style="font-weight: 600;">Zones à la suite</span>
+          </label>
+          <div style="font-size: 11px; color: var(--text-soft); margin-top: 4px; margin-left: 26px;">
+            Dans ce mode, les tours d'une même zone sont joués à la suite avant de passer à la zone suivante.
+          </div>
         </div>
         <button class="primary btn-block" onclick="lancerTrainingTarget()">🎯 Démarrer l'entraînement</button>
         <button class="ghost btn-block" onclick="retourListeTraining()">Retour</button>
