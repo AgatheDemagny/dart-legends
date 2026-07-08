@@ -1766,14 +1766,17 @@ window.lancerTrainingTarget = function() {
   document.querySelectorAll("#trainTargetGrid button.primary").forEach(b => selectedTargets.push(parseInt(b.dataset.val, 10)));
   if (selectedTargets.length === 0) return showPopup("Sélectionnez au moins une cible !", true);
   
-  // Mélange de base
-  selectedTargets = selectedTargets.sort(() => Math.random() - 0.5);
+  // 1. Mélange initial des cibles sélectionnées (Algorithme de Fisher-Yates)
+  for (let i = selectedTargets.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [selectedTargets[i], selectedTargets[j]] = [selectedTargets[j], selectedTargets[i]];
+  }
   
   const turnsPerTarget = parseInt(document.getElementById("trainTargetTurnsSelect").value, 10);
   const consecutiveCheckbox = document.getElementById("trainConsecutiveCheckbox");
   const consecutive = consecutiveCheckbox ? consecutiveCheckbox.checked : false;
 
-  // 1. Création d'un panier brut avec juste les cibles
+  // 2. Création du panier brut avec juste les numéros de cibles
   let rawPool = [];
   selectedTargets.forEach(t => {
       for(let i = 1; i <= turnsPerTarget; i++) {
@@ -1781,16 +1784,19 @@ window.lancerTrainingTarget = function() {
       }
   });
 
-  // 2. On mélange ce panier si "À la suite" n'est pas coché
+  // 3. On mélange ce panier brut si "Zones à la suite" N'EST PAS coché
   if (!consecutive && turnsPerTarget > 1) {
-      rawPool = rawPool.sort(() => Math.random() - 0.5);
+      for (let i = rawPool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [rawPool[i], rawPool[j]] = [rawPool[j], rawPool[i]];
+      }
   }
 
-  // 3. On compte les occurrences intelligemment pour attribuer le bon numéro de tour (1/3, 2/3...)
+  // 4. MAINTENANT, on compte les occurrences pour attribuer un numéro de tour parfait (1/3, 2/3...)
   let compteurCibles = {};
   let turnsPool = rawPool.map(t => {
       if (!compteurCibles[t]) compteurCibles[t] = 0;
-      compteurCibles[t]++; // S'incrémente à chaque fois qu'on recroise cette cible
+      compteurCibles[t]++; // S'incrémente de +1 à chaque fois qu'on croise ce chiffre
       return { target: t, turn: compteurCibles[t] };
   });
 
@@ -2924,7 +2930,16 @@ function genererTableauStatistiques() {
   const tableEl = document.getElementById("matchStatsTable");
   if (!tableEl) return;
   const titreStats = document.querySelector("#statsMatchScreen h2");
-  if (titreStats) titreStats.style.textAlign = "center";
+  if (titreStats && titreStats.parentElement) {
+    titreStats.parentElement.style.position = "relative";
+    titreStats.parentElement.style.display = "flex";
+    titreStats.parentElement.style.alignItems = "center";   
+    titreStats.style.position = "absolute";
+    titreStats.style.left = "50%";
+    titreStats.style.transform = "translateX(-50%)";
+    titreStats.style.margin = "0";
+    titreStats.style.width = "max-content"; 
+  }
 
   const parentContainer = tableEl.parentElement;
   parentContainer.innerHTML = ""; 
