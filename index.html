@@ -124,7 +124,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.78 - 08/07/2026</p>
+        <p>Version 1.79 - 08/07/2026</p>
       </div>
     </section>
 
@@ -258,15 +258,15 @@
             <option value="10">10 tours</option>
           </select>
         </div>
-        <div id="trainConsecutiveBlock" style="margin-top: 15px; display: none;">
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-            <input type="checkbox" id="trainConsecutiveCheckbox">
-            <span style="font-weight: 600;">Zones à la suite</span>
-          </label>
-          <div style="font-size: 11px; color: var(--text-soft); margin-top: 4px; margin-left: 26px;">
-            Dans ce mode, les tours d'une même zone sont joués à la suite avant de passer à la zone suivante.
-          </div>
+        <div id="trainConsecutiveBlock" style="margin-top: 15px; display: block; background: rgba(255,255,255,0.02); border: 1px solid var(--divider); padding: 12px; border-radius: 8px;">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; width: 100%;">
+          <input type="checkbox" id="trainConsecutiveCheckbox" style="width: 18px; height: 18px; accent-color: var(--primary);">
+          <span style="font-weight: 600; font-size: 14px;">Jouer les zones à la suite</span>
+        </label>
+        <div style="font-size: 11px; color: var(--text-soft); margin-top: 6px; margin-left: 28px;">
+          Cochez pour faire tous les tours d'une cible avant de changer. Si décoché, l'ordre sera totalement aléatoire.
         </div>
+      </div>
         <button class="primary btn-block" onclick="lancerTrainingTarget()">🎯 Démarrer l'entraînement</button>
         <button class="ghost btn-block" onclick="retourListeTraining()">Retour</button>
       </div>

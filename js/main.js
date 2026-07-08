@@ -1756,32 +1756,60 @@ function demarrerMatchBounty(listeJoueurs) {
   mettreAJourCiblesBountyUI();
 }
 
-window.lancerTrainingCricket = function() {
+window.lancerTrainingTarget = function() {
   const user = auth.currentUser;
-  if (!user) return showPopup("Tu dois être connecté à un compte pour t'entraîner.", true);
-  
+  if (!user) return showPopup("Tu dois être connecté à un compte.", true);
   const pseudoUser = getPseudoJoueur();
   const p = { id: user.uid, name: pseudoUser };
+  
+  let selectedTargets = [];
+  document.querySelectorAll("#trainTargetGrid button.primary").forEach(b => selectedTargets.push(parseInt(b.dataset.val, 10)));
+  if (selectedTargets.length === 0) return showPopup("Sélectionnez au moins une cible !", true);
+  
+  // Mélange de base
+  selectedTargets = selectedTargets.sort(() => Math.random() - 0.5);
+  
+  const turnsPerTarget = parseInt(document.getElementById("trainTargetTurnsSelect").value, 10);
+  const consecutiveCheckbox = document.getElementById("trainConsecutiveCheckbox");
+  const consecutive = consecutiveCheckbox ? consecutiveCheckbox.checked : false;
 
-  cricketState.gameMode = "train_cricket";
+  // 1. Création d'un panier brut avec juste les cibles
+  let rawPool = [];
+  selectedTargets.forEach(t => {
+      for(let i = 1; i <= turnsPerTarget; i++) {
+          rawPool.push(t);
+      }
+  });
+
+  // 2. On mélange ce panier si "À la suite" n'est pas coché
+  if (!consecutive && turnsPerTarget > 1) {
+      rawPool = rawPool.sort(() => Math.random() - 0.5);
+  }
+
+  // 3. On compte les occurrences intelligemment pour attribuer le bon numéro de tour (1/3, 2/3...)
+  let compteurCibles = {};
+  let turnsPool = rawPool.map(t => {
+      if (!compteurCibles[t]) compteurCibles[t] = 0;
+      compteurCibles[t]++; // S'incrémente à chaque fois qu'on recroise cette cible
+      return { target: t, turn: compteurCibles[t] };
+  });
+
+  cricketState.gameMode = "train_target";
   initVariablesMatchGenerales([p]);
   
-  cricketState.maxTurns = parseInt(document.getElementById("trainCricketTurnsSelect").value, 10);
-  cricketState.isBlind = false;
-  cricketState.targets = [15, 16, 17, 18, 19, 20, 25];
-  cricketState.revealedTargets = [...cricketState.targets];
-  cricketState.marks = { [p.id]: {} };
-  cricketState.targets.forEach(t => cricketState.marks[p.id][t] = 0);
-  cricketState.scores[p.id] = 0; // Inutile pour l'affichage, mais nécessaire pour le code natif
-  cricketState.statsDetails[p.id] = { dartsThrown:0, touchesUtiles:0, touchesNum:{}, simplesCount:{}, doublesCount:{}, triplesCount:{} };
-  cricketState.targets.forEach(t => {
-      cricketState.statsDetails[p.id].touchesNum[t] = 0;
-      cricketState.statsDetails[p.id].simplesCount[t] = 0;
-      cricketState.statsDetails[p.id].doublesCount[t] = 0;
-      cricketState.statsDetails[p.id].triplesCount[t] = 0;
+  cricketState.trainTargets = selectedTargets;
+  cricketState.trainTurnsPool = turnsPool;
+  cricketState.trainCurrentPoolIndex = 0;
+  cricketState.trainTurnsPerTarget = turnsPerTarget;
+  cricketState.maxTurns = turnsPool.length;
+  cricketState.scores[p.id] = 0; 
+  
+  cricketState.statsDetails[p.id] = { dartsThrown:0, touchesUtiles:0, targets:{} };
+  selectedTargets.forEach(t => {
+      cricketState.statsDetails[p.id].targets[t] = { s:0, d:0, t:0, miss:0, currentTurnMarks:0, bestTurn:0 };
   });
   
-  lancerInterfaceJeu("train_cricket");
+  lancerInterfaceJeu("train_target");
 };
 
 window.lancerTrainingTarget = function() {
@@ -1835,9 +1863,11 @@ window.lancerTrainingTarget = function() {
 function renderGridTrainTarget() {
   const table = document.getElementById("cricketGridTable");
   table.innerHTML = "";
+  
+  if (cricketState.trainCurrentPoolIndex >= cricketState.trainTurnsPool.length) return;
+  
   const joueurActuel = cricketState.players[0]; 
   
-  // Lecture de la cible actuelle dans le panier
   const currentTurnData = cricketState.trainTurnsPool[cricketState.trainCurrentPoolIndex];
   const cibleActuelle = currentTurnData.target;
   const tourActuelCible = currentTurnData.turn;
@@ -1862,10 +1892,11 @@ function renderGridTrainTarget() {
   table.appendChild(row);
 }
 function traiterCalculTrainTarget(keyStockage, joueurActuel, valeurBouton) {
-  // On lit simplement la cible actuelle dans le panier
+  if (cricketState.trainCurrentPoolIndex >= cricketState.trainTurnsPool.length) return;
+
   const cibleAttendue = cricketState.trainTurnsPool[cricketState.trainCurrentPoolIndex].target;
   const stats = cricketState.statsDetails[joueurActuel.id].targets[cibleAttendue];
-  
+    
   if (valeurBouton === cibleAttendue) {
       if(modificateurEnCours===1) stats.s++;
       if(modificateurEnCours===2) stats.d++;
