@@ -15,12 +15,14 @@ function ouvrirSetupTraining(mode) {
   // 1. On cache tous les écrans
   document.getElementById("trainingModesList").classList.add("hidden");
   document.getElementById("setupTrainCricket").classList.add("hidden");
+  document.getElementById("setupTrainCheckout").classList.add("hidden");
   document.getElementById("setupTrainTarget").classList.add("hidden");
   document.getElementById("viewTrainingHistory").classList.add("hidden");
   
   // 2. On affiche celui demandé (avec .classList.remove !)
   if(mode === 'train_cricket') document.getElementById("setupTrainCricket").classList.remove("hidden");
   if(mode === 'train_target') document.getElementById("setupTrainTarget").classList.remove("hidden");
+  if(mode === 'train_checkout') document.getElementById("setupTrainCheckout").classList.remove("hidden");
   if(mode === 'train_history') {
     document.getElementById("viewTrainingHistory").classList.remove("hidden");
     chargerHistoriqueEntrainements(); 
@@ -30,6 +32,7 @@ function ouvrirSetupTraining(mode) {
 function retourListeTraining() {
   document.getElementById("trainingModesList").classList.remove("hidden");
   document.getElementById("setupTrainCricket").classList.add("hidden");
+  document.getElementById("setupTrainCheckout").classList.add("hidden");
   document.getElementById("setupTrainTarget").classList.add("hidden");
   document.getElementById("viewTrainingHistory").classList.add("hidden");
 }
@@ -95,7 +98,7 @@ async function chargerHistoriqueEntrainements() {
     snap.forEach(doc => docsData.push(doc.data()));
     
     let entrainements = docsData
-      .filter(data => data.type === "train_cricket" || data.type === "train_target")
+      .filter(data => data.type === "train_cricket" || data.type === "train_target" || data.type === "train_checkout")
       .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, 20);
 
@@ -109,7 +112,10 @@ async function chargerHistoriqueEntrainements() {
       const date = dateObj.toLocaleDateString("fr-FR");
       const time = dateObj.toLocaleTimeString("fr-FR", {hour: '2-digit', minute:'2-digit'}).replace(':', 'h');
       const duration = `${Math.floor(data.duration / 60)}m ${data.duration % 60}s`;
-      let modeLabel = data.type === "train_cricket" ? "🏏 Fermeture Cricket" : "🎯 Focus Cibles";
+      let modeLabel = "🎯 Entraînement";
+      if (data.type === "train_cricket") modeLabel = "🏏 Fermeture Cricket";
+      else if (data.type === "train_target") modeLabel = "🔍 Focus Cibles";
+      else if (data.type === "train_checkout") modeLabel = "♟️​ Checkout";
       
       const card = document.createElement("div");
       card.className = "card subtle";
@@ -543,7 +549,7 @@ document.getElementById("btnReshuffleTeams").addEventListener("click", () => {
 });
 
 // Autres menus indisponibles
-["menuPlayers", "menuRanking", "menuTournament"].forEach(id => {
+["menuPlayers"].forEach(id => {
   document.getElementById(id).addEventListener("click", () => { showPopup("Arrive dans la prochaine mise à jour !"); });
 });
 
@@ -1778,6 +1784,60 @@ window.lancerTrainingCricket = function() {
   lancerInterfaceJeu("train_cricket");
 };
 
+window.lancerTrainingCheckout = function() {
+  const user = auth.currentUser;
+  if (!user) return showPopup("Tu dois être connecté à un compte.", true);
+
+  let minVal = parseInt(document.getElementById("rangeCheckoutMin").value, 10);
+  let maxVal = parseInt(document.getElementById("rangeCheckoutMax").value, 10);
+
+  if (minVal > maxVal) {
+    let tmp = minVal; minVal = maxVal; maxVal = tmp;
+  }
+
+  // Bogeys impossibles en Double-out (159, 162, 163, 165, 166, 168, 169)
+  const bogeys = [159, 162, 163, 165, 166, 168, 169];
+  const checkoutMode = document.getElementById("trainCheckoutModeSelect").value;
+
+  // Génération des scores aléatoires dans la plage
+  const totalCheckouts = parseInt(document.getElementById("trainCheckoutCountSelect").value, 10);
+  const maxAttempts = parseInt(document.getElementById("trainCheckoutAttemptsSelect").value, 10);
+
+  let checkoutList = [];
+  while (checkoutList.length < totalCheckouts) {
+    let randScore = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+    if (checkoutMode === "double" && bogeys.includes(randScore)) continue;
+    checkoutList.push(randScore);
+  }
+
+  const p = { id: user.uid, name: getPseudoJoueur() };
+
+  cricketState.gameMode = "train_checkout";
+  initVariablesMatchGenerales([p]);
+
+  cricketState.x01Checkout = checkoutMode;
+  cricketState.trainCheckoutList = checkoutList;
+  cricketState.trainCheckoutIndex = 0;
+  cricketState.trainMaxAttemptsPerCheckout = maxAttempts;
+  cricketState.trainCurrentAttempt = 1;
+  
+  // Reprise du premier score
+  cricketState.scores[p.id] = checkoutList[0];
+  cricketState.trainCurrentTargetScore = checkoutList[0];
+
+  cricketState.maxTurns = totalCheckouts;
+
+  // Structure des statistiques
+  cricketState.statsDetails[p.id] = {
+    dartsThrown: 0,
+    checkoutsAttempted: totalCheckouts,
+    checkoutsSucceeded: 0,
+    checkoutResults: [] // { targetScore, success, dartsUsed, attemptsUsed }
+  };
+
+  lancerInterfaceJeu("train_checkout");
+};
+
 window.lancerTrainingTarget = function() {
   const user = auth.currentUser;
   if (!user) return showPopup("Tu dois être connecté à un compte.", true);
@@ -1873,6 +1933,36 @@ function traiterCalculTrainTarget(keyStockage, joueurActuel, valeurBouton) {
       // Si on touche autre chose ou qu'on appuie sur Miss (0)
       stats.miss++;
   }
+}
+
+function renderGridTrainCheckout() {
+  const table = document.getElementById("cricketGridTable");
+  if (!table) return;
+  table.innerHTML = "";
+
+  const p = cricketState.players[0];
+  const targetScore = cricketState.trainCurrentTargetScore;
+  const currentScore = cricketState.scores[p.id];
+  const attempt = cricketState.trainCurrentAttempt;
+  const maxAttempts = cricketState.trainMaxAttemptsPerCheckout;
+  const currentIndex = cricketState.trainCheckoutIndex + 1;
+  const totalCount = cricketState.trainCheckoutList.length;
+
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td style="padding: 20px 10px; text-align: center;">
+      <div style="font-size: 12px; color: var(--text-soft); font-weight: 700; text-transform: uppercase;">
+        Checkout ${currentIndex} / ${totalCount} &nbsp;•&nbsp; Essai ${attempt} / ${maxAttempts}
+      </div>
+      <div style="font-size: 52px; font-weight: 900; color: var(--primary-strong); margin: 8px 0;">
+        ${currentScore}
+      </div>
+      <div style="font-size: 13px; color: var(--text-soft);">
+        Score initial : <strong>${targetScore} pts</strong> (${cricketState.x01Checkout === "double" ? "Double-out" : "Simple"})
+      </div>
+    </td>
+  `;
+  table.appendChild(row);
 }
 
 function renderGridWorld() {
@@ -1987,6 +2077,10 @@ function lancerInterfaceJeu(mode, isResume = false) {
     document.getElementById("bountyTargetsZone").classList.add("hidden");
     renderKeyboardX01(); // Affiche tous les chiffres 1 à 20
     renderGridTrainTarget();
+  } else if (mode === "train_checkout") {
+  document.getElementById("bountyTargetsZone").classList.add("hidden");
+  renderKeyboardX01();
+  renderGridTrainCheckout();
   } else if (mode === "train_cricket") {
     document.getElementById("bountyTargetsZone").classList.add("hidden");
     renderKeyboard(); 
@@ -2383,6 +2477,11 @@ function taperChiffre(valeurBouton) {
     cricketState.x01TurnStartFirst9 = cricketState.statsDetails[joueurActuel.id].first9DartsScore;
   }
   if (cricketState.gameMode === "x01") traiterCalculX01(keyStockage, joueurActuel, valeurBouton);
+  else if (cricketState.gameMode === "train_checkout") {traiterCalculX01(keyStockage, joueurActuel, valeurBouton);
+    if (cricketState.scores[keyStockage] === 0) {
+      enregistrerResultatCheckout(joueurActuel, true);
+    }
+  }
   else if (cricketState.gameMode === "world") traiterCalculWorld(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "bounty") traiterCalculBounty(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "train_target") traiterCalculTrainTarget(keyStockage, joueurActuel, valeurBouton);
@@ -2410,6 +2509,37 @@ function taperChiffre(valeurBouton) {
   gererEtatBoutonBull(); updateTurnHeader(); verifierConditionsFinMatch(); sauvegarderPartie();
 }
 
+function enregistrerResultatCheckout(joueur, estReussi) {
+  const stats = cricketState.statsDetails[joueur.id];
+  const dartsInCurrentVolley = cricketState.currentDart;
+  const attemptsUsed = cricketState.trainCurrentAttempt;
+  const totalDartsForThisCheckout = ((attemptsUsed - 1) * 3) + dartsInCurrentVolley;
+
+  if (estReussi) stats.checkoutsSucceeded++;
+
+  stats.checkoutResults.push({
+    targetScore: cricketState.trainCurrentTargetScore,
+    success: estReussi,
+    attemptsUsed: attemptsUsed,
+    dartsUsed: estReussi ? totalDartsForThisCheckout : (cricketState.trainMaxAttemptsPerCheckout * 3)
+  });
+
+  // Passage au checkout suivant
+  cricketState.trainCheckoutIndex++;
+
+  if (cricketState.trainCheckoutIndex < cricketState.trainCheckoutList.length) {
+    const nextScore = cricketState.trainCheckoutList[cricketState.trainCheckoutIndex];
+    cricketState.trainCurrentTargetScore = nextScore;
+    cricketState.scores[joueur.id] = nextScore;
+    cricketState.trainCurrentAttempt = 1;
+    cricketState.currentDart = 1;
+    cricketState.currentTurnDartsText = [];
+    showPopup(estReussi ? "🎯 Checkout Validé !" : "❌ Checkout Manqué !", !estReussi);
+  } else {
+    // Fin de la session
+    verifierConditionsFinMatch();
+  }
+}
 function cloreVoleeActuelle(joueur) {
   if (cricketState.gameMode === "cricket" && cricketState.statsDetails[joueur.id]) {
     const stats = cricketState.statsDetails[joueur.id];
@@ -2427,7 +2557,20 @@ if (cricketState.gameMode === "train_target") {
         // On passe simplement à la case suivante du panier
         cricketState.trainCurrentPoolIndex++;
     }
-
+    if (cricketState.gameMode === "train_checkout") {
+    // Si le checkout n'est pas fermé à la fin des 3 flèches
+    if (cricketState.scores[joueur.id] > 0) {
+      cricketState.trainCurrentAttempt++;
+      
+      // Si nombre d'essais max dépassé -> ÉCHEC
+      if (cricketState.trainCurrentAttempt > cricketState.trainMaxAttemptsPerCheckout) {
+        enregistrerResultatCheckout(joueur, false);
+      } else {
+        // Réinitialisation du score au chiffre initial pour le nouvel essai
+        cricketState.scores[joueur.id] = cricketState.trainCurrentTargetScore;
+      }
+    }
+  }
   // GESTION DISPARITION DES PRIMES (Mode Bounty) - Code conservé à l'identique...
   if (cricketState.gameMode === "bounty") {
     const selectExpiration = document.getElementById("bountyExpirationSelect");
@@ -2703,6 +2846,9 @@ function verifierConditionsFinMatch() {
     if (!gagnantId && cricketState.maxTurns !== 999 && cricketState.currentTurn > cricketState.maxTurns) {
       let meilleurScore = -Infinity; clesEntites.forEach(k => { if (cricketState.scores[k] > meilleurScore) { meilleurScore = cricketState.scores[k]; gagnantId = k; } });
     }
+  } else if (cricketState.gameMode === "train_checkout") {
+  if (cricketState.trainCheckoutIndex >= cricketState.trainCheckoutList.length) {
+    gagnantId = clesEntites[0];
   } else if (cricketState.gameMode === "train_target") {
     if (cricketState.trainCurrentPoolIndex >= cricketState.trainTurnsPool.length) {
         gagnantId = clesEntites[0];
@@ -2751,6 +2897,10 @@ function formatScoreDisplay(gameMode, score) {
   if (gameMode === "bounty" || gameMode === "cricket") return `${score} points`;
   if (gameMode === "train_cricket") return "Entraînement Terminé";
   if (gameMode === "train_target") return score + " touches au total";
+  if (gameMode === "train_checkout") {
+  const stats = cricketState.statsDetails[cricketState.players[0]?.id];
+  return `${stats?.checkoutsSucceeded || 0}/${stats?.checkoutsAttempted || 0} fermés`;
+}
   return score;
 }
 
@@ -3186,7 +3336,53 @@ function genererTableauStatistiques() {
     
     mainWrapper.appendChild(blocGenB.blockDiv);
   }
+  // ================= TRAINING CHECKOUT =================
+  else if (cricketState.gameMode === "train_checkout") {
+    const blocGen = creerBlocStats("Résultats Globaux");
+    genererEnteteJoueurs(blocGen.table);
 
+    const p = cricketState.players[0];
+    const stats = cricketState.statsDetails[p.id] || {};
+    const total = stats.checkoutsAttempted || 1;
+    const reussis = stats.checkoutsSucceeded || 0;
+    const ratio = ((reussis / total) * 100).toFixed(0);
+
+    ajouterLigne(blocGen.table, "Taux de réussite", [`<strong>${reussis} / ${total}</strong> (${ratio}%)`]);
+    ajouterLigne(blocGen.table, "Total fléchettes", [stats.dartsThrown || 0]);
+    mainWrapper.appendChild(blocGen.blockDiv);
+
+    // Détail par Checkout
+    const blocDetail = creerBlocStats("Détail par Checkout");
+    
+    const tableRes = blocDetail.table;
+    const headerRow = document.createElement("tr");
+    headerRow.innerHTML = `
+      <th style="text-align:left; padding:8px; border-bottom:1px solid var(--divider);">Score Cible</th>
+      <th style="text-align:center; padding:8px; border-bottom:1px solid var(--divider);">Statut</th>
+      <th style="text-align:center; padding:8px; border-bottom:1px solid var(--divider);">Essais</th>
+      <th style="text-align:center; padding:8px; border-bottom:1px solid var(--divider);">Fléchettes</th>
+    `;
+    tableRes.appendChild(headerRow);
+
+    (stats.checkoutResults || []).forEach(res => {
+      const row = document.createElement("tr");
+      row.style.borderBottom = "1px solid var(--divider)";
+      const badgeStatut = res.success 
+        ? `<span style="color:#28a745; font-weight:800;">✅ Réussi</span>`
+        : `<span style="color:var(--danger); font-weight:800;">❌ Échec</span>`;
+
+      row.innerHTML = `
+        <td style="text-align:left; padding:10px 8px; font-weight:800; font-size:15px; color:var(--primary);">${res.targetScore}</td>
+        <td style="text-align:center; padding:10px 8px;">${badgeStatut}</td>
+        <td style="text-align:center; padding:10px 8px; font-weight:600;">${res.attemptsUsed} / ${cricketState.trainMaxAttemptsPerCheckout}</td>
+        <td style="text-align:center; padding:10px 8px; font-weight:600;">${res.dartsUsed} 🎯</td>
+      `;
+      tableRes.appendChild(row);
+    });
+
+    mainWrapper.appendChild(blocGen.blockDiv);
+    mainWrapper.appendChild(blocDetail.blockDiv);
+  }
   // ================= TRAIN TARGET =================
   else if (cricketState.gameMode === "train_target") {
     const blocGen = creerBlocStats("Générales");
