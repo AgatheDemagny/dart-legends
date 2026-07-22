@@ -88,17 +88,17 @@
           </div>
         </button>
 
-        <button class="world-btn" id="menuHistory">
-          <div class="world-row">
-            <div class="world-icon-big">📜</div>
-            <div class="world-right"><div class="world-name">Historique</div></div>
-          </div>
-        </button>
-
         <button class="world-btn" id="menuTraining">
           <div class="world-row">
             <div class="world-icon-big">🏋🏼‍♀️</div>
             <div class="world-right"><div class="world-name">Entraînement</div></div>
+          </div>
+        </button>
+
+        <button class="world-btn" id="menuHistory">
+          <div class="world-row">
+            <div class="world-icon-big">📜</div>
+            <div class="world-right"><div class="world-name">Historique</div></div>
           </div>
         </button>
 
@@ -110,7 +110,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.88 - 22/07/2026</p>
+        <p>Version 1.89 - 22/07/2026</p>
       </div>
     </section>
 
@@ -233,82 +233,58 @@
       </div>
 
       <div id="setupTrainCheckout" class="hidden card form-card">
-      <h3>♟️​ Checkout</h3>
-      
+  <h3>♟️ Checkout Training</h3>
+  
+  <div>
+    <label><strong>Valeurs du checkout</strong></label>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px;">
       <div>
-        <label><strong>Valeurs checkout</strong></label>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
-          <div>
-            <span style="font-size: 11px; color: var(--text-soft);">Minimum : <strong id="valCheckoutMin">2</strong></span>
-            <input type="range" id="rangeCheckoutMin" min="2" max="170" value="2" style="margin-top: 4px;" oninput="document.getElementById('valCheckoutMin').innerText = this.value">
-          </div>
-          <div>
-            <span style="font-size: 11px; color: var(--text-soft);">Maximum : <strong id="valCheckoutMax">100</strong></span>
-            <input type="range" id="rangeCheckoutMax" min="2" max="170" value="100" style="margin-top: 4px;" oninput="document.getElementById('valCheckoutMax').innerText = this.value">
-          </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; color: var(--text-soft); font-weight: 600;">Minimum</span>
+          <span id="valCheckoutMin">2</span>
         </div>
+        <input type="range" id="rangeCheckoutMin" min="2" max="170" value="2" oninput="document.getElementById('valCheckoutMin').innerText = this.value">
       </div>
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; color: var(--text-soft); font-weight: 600;">Maximum</span>
+          <span id="valCheckoutMax">100</span>
+        </div>
+        <input type="range" id="rangeCheckoutMax" min="2" max="170" value="100" oninput="document.getElementById('valCheckoutMax').innerText = this.value">
+      </div>
+    </div>
+  </div>
 
-      <div style="margin-top: 12px;">
-        <label><strong>Type checkout</strong></label>
-        <select id="trainCheckoutModeSelect">
-          <option value="double" selected>Double-out</option>
-          <option value="single">Sans contrainte</option>
-        </select>
-      </div>
+  <div style="margin-top: 10px;">
+    <label><strong>Variante</strong></label>
+    <select id="trainCheckoutModeSelect">
+      <option value="double" selected>Double-out (Officiel)</option>
+      <option value="single">Sans contrainte (Simple)</option>
+    </select>
+  </div>
 
-      <div style="margin-top: 12px">
-          <label><strong>Nombre de checkouts</strong></label>
-          <select id="trainCheckoutCountSelect">
-            <option value="5">5</option>
-            <option value="10" selected>10</option>
-            <option value="15">15</option>
-            <option value="20">20</option>
-          </select>
-      </div>
-      <div style="margin-top: 12px">
-          <label><strong>Tentatives par checkout</strong></label>
-          <select id="trainCheckoutAttemptsSelect">
-            <option value="1">1 tour</option>
-            <option value="2">2 tours</option>
-            <option value="3" selected>3 tours</option>
-            <option value="5">5 tours</option>
-          </select>
-      </div>
-
-      <button class="primary btn-block" style="margin-top: 15px;" onclick="lancerTrainingCheckout()">🎯 Démarrer l'entraînement</button>
-      <button class="ghost btn-block" onclick="retourListeTraining()">Retour</button>
+  <div style="margin-top: 10px;">
+      <label><strong>Nb. Checkouts</strong></label>
+      <select id="trainCheckoutCountSelect">
+        <option value="5">5</option>
+        <option value="10" selected>10</option>
+        <option value="15">15</option>
+        <option value="20">20</option>
+      </select>
+  </div>
+  <div style="margin-top: 10px;">
+      <label><strong>Essais / target</strong></label>
+      <select id="trainCheckoutAttemptsSelect">
+        <option value="1">1 tour</option>
+        <option value="2">2 tours</option>
+        <option value="3" selected>3 tours</option>
+        <option value="5">5 tours</option>
+      </select>
     </div>
 
-      <div id="setupTrainTarget" class="hidden card form-card">
-        <h3>🔍​ Focus Zones</h3>
-        <div>
-          <label><strong>Zones à cibler</strong></label>
-          <div id="trainTargetGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 8px;"></div>
-        </div>
-        <div style="margin-top: 12px;">
-          <label><strong>Tours par zone</strong></label>
-          <select id="trainTargetTurnsSelect">
-            <option value="1">1 tour</option>
-            <option value="3" selected>3 tours</option>
-            <option value="5">5 tours</option>
-            <option value="8">8 tours</option>
-            <option value="10">10 tours</option>
-          </select>
-        </div>
-        <div id="trainConsecutiveBlock" style="margin-top: 15px; display: block; background: rgba(255,255,255,0.02); border: 1px solid var(--divider); padding: 12px; border-radius: 8px;">
-        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; width: 100%;">
-          <input type="checkbox" id="trainConsecutiveCheckbox" style="width: 18px; height: 18px; accent-color: var(--primary);">
-          <span style="font-weight: 600; font-size: 14px;">Jouer les zones à la suite</span>
-        </label>
-        <div style="font-size: 11px; color: var(--text-soft); margin-top: 6px; margin-left: 28px;">
-          Dans ce mode, les tours d'une zone sont joués consécutivement avant de passer à la suivante. Si décoché, l'ordre est totalement aléatoire.
-        </div>
-      </div>
-        <button class="primary btn-block" onclick="lancerTrainingTarget()">🎯 Démarrer l'entraînement</button>
-        <button class="ghost btn-block" onclick="retourListeTraining()">Retour</button>
-      </div>
-    </section>
+  <button class="primary btn-block" style="margin-top: 15px;" onclick="lancerTrainingCheckout()">🎯 Démarrer l'entraînement</button>
+  <button class="ghost btn-block" onclick="retourListeTraining()">Retour</button>
+</div>
 
     <section id="newGameScreen" class="hidden stack">
       <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">

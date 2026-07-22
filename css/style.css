@@ -552,77 +552,59 @@ button.ghost.btn-action-soft:hover {
   text-align: center !important;
 }
 
-/* ================== STYLISATION CUSTOM DES JAUGES SLIDER ================== */
+/* ================== JAUGES CHECKOUT - DA DART LEGENDS ================== */
 
-/* Conteneur individuel pour chaque jauge */
 #setupTrainCheckout input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 8px;
-  background: var(--bg-secondary); /* Couleur crème/sable de la piste */
-  border-radius: 6px;
-  outline: none;
-  margin-top: 8px;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
-  transition: background 0.2s ease;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 100% !important;
+  height: 4px !important;              /* Piste très fine et élégante */
+  padding: 0 !important;               /* Annule le padding global des inputs */
+  border: none !important;             /* Annule la bordure globale des inputs */
+  background: var(--bg-secondary) !important; 
+  border-radius: 4px !important;
+  outline: none !important;
+  margin-top: 10px !important;
+  box-shadow: none !important;
 }
 
-#setupTrainCheckout input[type="range"]:focus {
-  box-shadow: 0 0 0 2px rgba(15, 76, 129, 0.2);
-}
-
-/* --- BOUTON DU CURSEUR (THUMB) --- */
-
-/* Chrome, Safari, Edge, Opera */
+/* CURSEUR CHROME / SAFARI / EDGE */
 #setupTrainCheckout input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--primary);
-  border: 3px solid #FFFFFF;
-  box-shadow: 0 2px 8px rgba(10, 53, 92, 0.35);
-  cursor: pointer;
-  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-#setupTrainCheckout input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
-  background: var(--primary-strong);
-  box-shadow: 0 4px 12px rgba(10, 53, 92, 0.45);
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 18px !important;              /* Curseur compact */
+  height: 18px !important;
+  border-radius: 50% !important;
+  background: var(--primary) !important;
+  border: 2px solid #FFFFFF !important;
+  box-shadow: 0 2px 6px rgba(15, 76, 129, 0.3) !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease, background-color 0.15s ease !important;
 }
 
 #setupTrainCheckout input[type="range"]::-webkit-slider-thumb:active {
-  transform: scale(0.95);
-  background: var(--accent); /* Devient doré au moment du glissement */
-  border-color: #FFFFFF;
+  transform: scale(1.15) !important;
+  background: var(--accent) !important;
 }
 
-/* Firefox */
+/* CURSEUR FIREFOX */
 #setupTrainCheckout input[type="range"]::-moz-range-thumb {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--primary);
-  border: 3px solid #FFFFFF;
-  box-shadow: 0 2px 8px rgba(10, 53, 92, 0.35);
-  cursor: pointer;
-  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-#setupTrainCheckout input[type="range"]::-moz-range-thumb:hover {
-  transform: scale(1.15);
-  background: var(--primary-strong);
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 50% !important;
+  background: var(--primary) !important;
+  border: 2px solid #FFFFFF !important;
+  box-shadow: 0 2px 6px rgba(15, 76, 129, 0.3) !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease, background-color 0.15s ease !important;
 }
 
 #setupTrainCheckout input[type="range"]::-moz-range-thumb:active {
-  transform: scale(0.95);
-  background: var(--accent);
+  transform: scale(1.15) !important;
+  background: var(--accent) !important;
 }
 
-/* --- AFFICHAGE DES VALEURS (BADGES AFFICHEURS) --- */
+/* BADGES DES VALEURS (MIN/MAX) */
 #valCheckoutMin, #valCheckoutMax {
   display: inline-block;
   background: rgba(15, 76, 129, 0.08);

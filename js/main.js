@@ -1795,11 +1795,8 @@ window.lancerTrainingCheckout = function() {
     let tmp = minVal; minVal = maxVal; maxVal = tmp;
   }
 
-  // Bogeys impossibles en Double-out (159, 162, 163, 165, 166, 168, 169)
   const bogeys = [159, 162, 163, 165, 166, 168, 169];
   const checkoutMode = document.getElementById("trainCheckoutModeSelect").value;
-
-  // Génération des scores aléatoires dans la plage
   const totalCheckouts = parseInt(document.getElementById("trainCheckoutCountSelect").value, 10);
   const maxAttempts = parseInt(document.getElementById("trainCheckoutAttemptsSelect").value, 10);
 
@@ -1820,20 +1817,31 @@ window.lancerTrainingCheckout = function() {
   cricketState.trainCheckoutIndex = 0;
   cricketState.trainMaxAttemptsPerCheckout = maxAttempts;
   cricketState.trainCurrentAttempt = 1;
-  
-  // Reprise du premier score
   cricketState.scores[p.id] = checkoutList[0];
   cricketState.trainCurrentTargetScore = checkoutList[0];
-
   cricketState.maxTurns = totalCheckouts;
 
-  // Structure des statistiques
+  // Initialisation complète pour correspondre au moteur X01 sans planter
   cricketState.statsDetails[p.id] = {
     dartsThrown: 0,
+    totalScoreScored: 0,
+    bustsCount: 0,
+    maxVolleyScore: 0,
+    currentVolleyScore: 0,
+    first9DartsScore: 0,
+    scoreFamily60: 0, scoreFamily100: 0, scoreFamily140: 0, scoreFamily180: 0,
+    touchesNum: {}, touchesSimpleNum: {}, touchesDoubleNum: {}, touchesTripleNum: {},
     checkoutsAttempted: totalCheckouts,
     checkoutsSucceeded: 0,
-    checkoutResults: [] // { targetScore, success, dartsUsed, attemptsUsed }
+    checkoutResults: []
   };
+
+  for (let i = 1; i <= 25; i++) {
+    cricketState.statsDetails[p.id].touchesNum[i] = 0;
+    cricketState.statsDetails[p.id].touchesSimpleNum[i] = 0;
+    cricketState.statsDetails[p.id].touchesDoubleNum[i] = 0;
+    cricketState.statsDetails[p.id].touchesTripleNum[i] = 0;
+  }
 
   lancerInterfaceJeu("train_checkout");
 };
