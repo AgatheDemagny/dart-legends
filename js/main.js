@@ -2504,6 +2504,7 @@ function taperChiffre(valeurBouton) {
   else if (cricketState.gameMode === "world") { renderKeyboardX01(); renderGridWorld(); }
   else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); }
   else if (cricketState.gameMode === "train_target") { renderKeyboardX01(); renderGridTrainTarget(); }
+  else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); }
   else { renderKeyboard(); renderGrid(); }
   
   gererEtatBoutonBull(); updateTurnHeader(); verifierConditionsFinMatch(); sauvegarderPartie();
@@ -2557,17 +2558,20 @@ if (cricketState.gameMode === "train_target") {
         // On passe simplement à la case suivante du panier
         cricketState.trainCurrentPoolIndex++;
     }
-    if (cricketState.gameMode === "train_checkout") {
-    // Si le checkout n'est pas fermé à la fin des 3 flèches
-    if (cricketState.scores[joueur.id] > 0) {
+  if (cricketState.gameMode === "train_checkout") {
+    const joueur = cricketState.players[0];
+    const keyStockage = joueur.id;
+    
+    // Si le score n'est toujours pas tombé à zéro à la fin des 3 flèches de la volée
+    if (cricketState.scores[keyStockage] > 0) {
       cricketState.trainCurrentAttempt++;
       
-      // Si nombre d'essais max dépassé -> ÉCHEC
+      // Si le nombre d'essais max est dépassé -> ÉCHEC du checkout
       if (cricketState.trainCurrentAttempt > cricketState.trainMaxAttemptsPerCheckout) {
         enregistrerResultatCheckout(joueur, false);
       } else {
-        // Réinitialisation du score au chiffre initial pour le nouvel essai
-        cricketState.scores[joueur.id] = cricketState.trainCurrentTargetScore;
+        // Nouveau tour/essai : on remet le score au chiffre initial
+        cricketState.scores[keyStockage] = cricketState.trainCurrentTargetScore;
       }
     }
   }
@@ -2825,6 +2829,7 @@ function annulerDernierCoup() {
   else if (cricketState.gameMode === "world") { renderKeyboardX01(); renderGridWorld(); }
   else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); mettreAJourCiblesBountyUI(); }
   else if (cricketState.gameMode === "train_target") { renderKeyboardX01(); renderGridTrainTarget(); }
+  else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); }
   else { renderKeyboard(); renderGrid(); }
   
   updateTurnHeader(); 
