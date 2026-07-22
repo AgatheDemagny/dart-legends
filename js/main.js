@@ -1770,27 +1770,33 @@ window.lancerTrainingCheckout = function() {
   const maxAttempts = parseInt(document.getElementById("trainCheckoutAttemptsSelect").value, 10);
 
   let checkoutList = [];
-  while (checkoutList.length < totalCheckouts) {
+  let preventLoop = 0; // Sécurité pour éviter un freeze
+  while (checkoutList.length < totalCheckouts && preventLoop < 1000) {
     let randScore = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
-    if (checkoutMode === "double" && bogeys.includes(randScore)) continue;
+    if (checkoutMode === "double" && bogeys.includes(randScore)) { preventLoop++; continue; }
     checkoutList.push(randScore);
+    preventLoop++;
   }
 
   const p = { id: user.uid, name: getPseudoJoueur() };
 
+  // 1. Initialisation de base
   cricketState.gameMode = "train_checkout";
   initVariablesMatchGenerales([p]);
 
+  // 2. Variables spécifiques au mode checkout
   cricketState.x01Checkout = checkoutMode;
   cricketState.trainCheckoutList = checkoutList;
   cricketState.trainCheckoutIndex = 0;
   cricketState.trainMaxAttemptsPerCheckout = maxAttempts;
   cricketState.trainCurrentAttempt = 1;
-  cricketState.scores[p.id] = checkoutList[0];
-  cricketState.trainCurrentTargetScore = checkoutList[0];
-  cricketState.maxTurns = totalCheckouts;
+  
+  // 3. Attribution du score initial
+  cricketState.scores[p.id] = checkoutList[0] || 50; // Fallback sécurisé
+  cricketState.trainCurrentTargetScore = checkoutList[0] || 50;
+  cricketState.maxTurns = totalCheckouts; // Utilisé pour afficher l'étape courante
 
-  // Initialisation structurelle renforcée
+  // 4. Initialisation complète des statistiques pour imiter le mode X01
   cricketState.statsDetails[p.id] = {
     dartsThrown: 0,
     totalScoreScored: 0,
@@ -1798,19 +1804,32 @@ window.lancerTrainingCheckout = function() {
     maxVolleyScore: 0,
     currentVolleyScore: 0,
     first9DartsScore: 0,
-    scoreFamily60: 0, scoreFamily100: 0, scoreFamily140: 0, scoreFamily180: 0,
-    touchesNum: {}, touchesSimpleNum: {}, touchesDoubleNum: {}, touchesTripleNum: {},
+    scoreFamily60: 0, 
+    scoreFamily100: 0, 
+    scoreFamily140: 0, 
+    scoreFamily180: 0,
+    checkoutHits: 0,
+    touchesNum: {}, 
+    touchesSimpleNum: {},  
+    touchesDoubleNum: {}, 
+    touchesTripleNum: {},
+    // Stats spécifiques Checkout
     checkoutsAttempted: totalCheckouts,
     checkoutsSucceeded: 0,
     checkoutResults: []
   };
 
-  for (let i = 1; i <= 25; i++) {
+  // 5. Initialisation des zones (1 à 20 + Bull)
+  for (let i = 1; i <= 20; i++) {
     cricketState.statsDetails[p.id].touchesNum[i] = 0;
     cricketState.statsDetails[p.id].touchesSimpleNum[i] = 0;
     cricketState.statsDetails[p.id].touchesDoubleNum[i] = 0;
     cricketState.statsDetails[p.id].touchesTripleNum[i] = 0;
   }
+  cricketState.statsDetails[p.id].touchesNum[25] = 0;
+  cricketState.statsDetails[p.id].touchesSimpleNum[25] = 0;
+  cricketState.statsDetails[p.id].touchesDoubleNum[25] = 0;
+  cricketState.statsDetails[p.id].touchesTripleNum[25] = 0;
 
   lancerInterfaceJeu("train_checkout");
 };
