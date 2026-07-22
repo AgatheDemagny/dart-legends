@@ -1753,6 +1753,40 @@ function demarrerMatchBounty(listeJoueurs) {
   mettreAJourCiblesBountyUI();
 }
 
+// --- LANCEMENT ENTRAINEMENT CRICKET ---
+window.lancerTrainingCricket = function() {
+  const user = auth.currentUser;
+  if (!user) return showPopup("Tu dois être connecté à un compte.", true);
+  const p = { id: user.uid, name: getPseudoJoueur() };
+  
+  cricketState.gameMode = "train_cricket";
+  initVariablesMatchGenerales([p]);
+  
+  cricketState.maxTurns = parseInt(document.getElementById("trainCricketTurnsSelect").value, 10);
+  cricketState.isBlind = false;
+  cricketState.marks = { [p.id]: {} };
+  cricketState.targets = [15, 16, 17, 18, 19, 20, 25];
+  cricketState.revealedTargets = [...cricketState.targets];
+  cricketState.scores[p.id] = 0;
+  
+  cricketState.statsDetails[p.id] = { 
+    dartsThrown: 0, 
+    touchesUtiles: 0, 
+    simplesCount: {}, 
+    doublesCount: {}, 
+    triplesCount: {} 
+  };
+  
+  cricketState.targets.forEach(t => {
+    cricketState.marks[p.id][t] = 0;
+    cricketState.statsDetails[p.id].simplesCount[t] = 0;
+    cricketState.statsDetails[p.id].doublesCount[t] = 0;
+    cricketState.statsDetails[p.id].triplesCount[t] = 0;
+  });
+
+  lancerInterfaceJeu("train_cricket");
+};
+
 window.lancerTrainingCheckout = function() {
   const user = auth.currentUser;
   if (!user) return showPopup("Tu dois être connecté à un compte.", true);
