@@ -156,20 +156,17 @@ window.voirStatsDepuisHistorique = function(gameData) {
     trainTargets: gameData.trainTargets || [],
     trainTurnsPerTarget: gameData.trainTurnsPerTarget || 3,
     currentTurn: gameData.currentTurn || 1,
-    scores: gameData.scores || { [user.uid]: 0 }
+    scores: gameData.scores || { [user.uid]: 0 },
+    marks: gameData.marks || { [user.uid]: {15:3, 16:3, 17:3, 18:3, 19:3, 20:3, 25:3} },
+    historyContext: gameData
   };
 
-  // Sécurité pour le mode train_cricket qui nécessite un clone du tableau HTML de jeu en direct
+  // On régénère la grille uniquement en mémoire pour la structure si nécessaire, sans afficher l'écran de jeu
   if (gameData.type === "train_cricket") {
-    cricketState.scores = gameData.scores || { [user.uid]: 0 };
-    cricketState.marks = gameData.marks || { [user.uid]: {15:3, 16:3, 17:3, 18:3, 19:3, 20:3, 25:3} };
-    
-    showScreen(screens.cricket);
     renderGrid(); 
   }
 
-  // Génération du tableau
-  cricketState.historyContext = gameData;
+  // Génération du tableau et affichage DIRECT de l'écran des statistiques
   genererTableauStatistiques();
   showScreen(screens.matchStats);
 
@@ -2836,6 +2833,7 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
               renderGrid();
             }
             
+            // Génération automatique et transition directe
             genererTableauStatistiques();
             showScreen(screens.matchStats);
             
@@ -2858,7 +2856,6 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
           }
         } catch (erreur) {
           console.error("Erreur lors de l'affichage de fin de match :", erreur);
-          // Parachute de secours : on retourne à l'accueil pour ne pas rester bloqué
           showScreen(screens.home); 
         }
       });
