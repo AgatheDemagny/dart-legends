@@ -110,7 +110,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.87 - 22/07/2026</p>
+        <p>Version 1.88 - 22/07/2026</p>
       </div>
     </section>
 
@@ -236,29 +236,28 @@
       <h3>♟️​ Checkout</h3>
       
       <div>
-        <label><strong>Plage de checkout</strong></label>
+        <label><strong>Valeurs checkout</strong></label>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
           <div>
-            <span style="font-size: 11px; color: var(--text-soft);">Valeur minimum : <strong id="valCheckoutMin">2</strong></span>
+            <span style="font-size: 11px; color: var(--text-soft);">Minimum : <strong id="valCheckoutMin">2</strong></span>
             <input type="range" id="rangeCheckoutMin" min="2" max="170" value="2" style="margin-top: 4px;" oninput="document.getElementById('valCheckoutMin').innerText = this.value">
           </div>
           <div>
-            <span style="font-size: 11px; color: var(--text-soft);">Valeur maximum : <strong id="valCheckoutMax">100</strong></span>
+            <span style="font-size: 11px; color: var(--text-soft);">Maximum : <strong id="valCheckoutMax">100</strong></span>
             <input type="range" id="rangeCheckoutMax" min="2" max="170" value="100" style="margin-top: 4px;" oninput="document.getElementById('valCheckoutMax').innerText = this.value">
           </div>
         </div>
       </div>
 
       <div style="margin-top: 12px;">
-        <label><strong>Checkout</strong></label>
+        <label><strong>Type checkout</strong></label>
         <select id="trainCheckoutModeSelect">
           <option value="double" selected>Double-out</option>
           <option value="single">Sans contrainte</option>
         </select>
       </div>
 
-      <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <div>
+      <div style="margin-top: 12px">
           <label><strong>Nombre de checkouts</strong></label>
           <select id="trainCheckoutCountSelect">
             <option value="5">5</option>
@@ -266,8 +265,8 @@
             <option value="15">15</option>
             <option value="20">20</option>
           </select>
-        </div>
-        <div>
+      </div>
+      <div style="margin-top: 12px">
           <label><strong>Tentatives par checkout</strong></label>
           <select id="trainCheckoutAttemptsSelect">
             <option value="1">1 tour</option>
@@ -275,7 +274,6 @@
             <option value="3" selected>3 tours</option>
             <option value="5">5 tours</option>
           </select>
-        </div>
       </div>
 
       <button class="primary btn-block" style="margin-top: 15px;" onclick="lancerTrainingCheckout()">🎯 Démarrer l'entraînement</button>

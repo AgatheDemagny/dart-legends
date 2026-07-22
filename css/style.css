@@ -551,3 +551,86 @@ button.ghost.btn-action-soft:hover {
 #rulesContent h4 {
   text-align: center !important;
 }
+
+/* ================== STYLISATION CUSTOM DES JAUGES SLIDER ================== */
+
+/* Conteneur individuel pour chaque jauge */
+#setupTrainCheckout input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: var(--bg-secondary); /* Couleur crème/sable de la piste */
+  border-radius: 6px;
+  outline: none;
+  margin-top: 8px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: background 0.2s ease;
+}
+
+#setupTrainCheckout input[type="range"]:focus {
+  box-shadow: 0 0 0 2px rgba(15, 76, 129, 0.2);
+}
+
+/* --- BOUTON DU CURSEUR (THUMB) --- */
+
+/* Chrome, Safari, Edge, Opera */
+#setupTrainCheckout input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 2px 8px rgba(10, 53, 92, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#setupTrainCheckout input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background: var(--primary-strong);
+  box-shadow: 0 4px 12px rgba(10, 53, 92, 0.45);
+}
+
+#setupTrainCheckout input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+  background: var(--accent); /* Devient doré au moment du glissement */
+  border-color: #FFFFFF;
+}
+
+/* Firefox */
+#setupTrainCheckout input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 2px 8px rgba(10, 53, 92, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#setupTrainCheckout input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  background: var(--primary-strong);
+}
+
+#setupTrainCheckout input[type="range"]::-moz-range-thumb:active {
+  transform: scale(0.95);
+  background: var(--accent);
+}
+
+/* --- AFFICHAGE DES VALEURS (BADGES AFFICHEURS) --- */
+#valCheckoutMin, #valCheckoutMax {
+  display: inline-block;
+  background: rgba(15, 76, 129, 0.08);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: 4px;
+}
