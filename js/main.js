@@ -13,28 +13,28 @@ function getPseudoJoueur() {
 // --- LOGIQUE MENU ENTRAINEMENT ---
 function ouvrirSetupTraining(mode) {
   // 1. On cache tous les écrans
-  document.getElementById("trainingModesList").classList.add("hidden");
-  document.getElementById("setupTrainCricket").classList.add("hidden");
-  document.getElementById("setupTrainCheckout").classList.add("hidden");
-  document.getElementById("setupTrainTarget").classList.add("hidden");
-  document.getElementById("viewTrainingHistory").classList.add("hidden");
+  document.getElementById("trainingModesList")?.classList.add("hidden");
+  document.getElementById("setupTrainCricket")?.classList.add("hidden");
+  document.getElementById("setupTrainCheckout")?.classList.add("hidden");
+  document.getElementById("setupTrainTarget")?.classList.add("hidden");
+  document.getElementById("viewTrainingHistory")?.classList.add("hidden");
   
-  // 2. On affiche celui demandé (avec .classList.remove !)
-  if(mode === 'train_cricket') document.getElementById("setupTrainCricket").classList.remove("hidden");
-  if(mode === 'train_target') document.getElementById("setupTrainTarget").classList.remove("hidden");
-  if(mode === 'train_checkout') document.getElementById("setupTrainCheckout").classList.remove("hidden");
+  // 2. On affiche celui demandé
+  if(mode === 'train_cricket') document.getElementById("setupTrainCricket")?.classList.remove("hidden");
+  if(mode === 'train_target') document.getElementById("setupTrainTarget")?.classList.remove("hidden");
+  if(mode === 'train_checkout') document.getElementById("setupTrainCheckout")?.classList.remove("hidden");
   if(mode === 'train_history') {
-    document.getElementById("viewTrainingHistory").classList.remove("hidden");
+    document.getElementById("viewTrainingHistory")?.classList.remove("hidden");
     chargerHistoriqueEntrainements(); 
   }
 }
 
 function retourListeTraining() {
-  document.getElementById("trainingModesList").classList.remove("hidden");
-  document.getElementById("setupTrainCricket").classList.add("hidden");
-  document.getElementById("setupTrainCheckout").classList.add("hidden");
-  document.getElementById("setupTrainTarget").classList.add("hidden");
-  document.getElementById("viewTrainingHistory").classList.add("hidden");
+  document.getElementById("trainingModesList")?.classList.remove("hidden");
+  document.getElementById("setupTrainCricket")?.classList.add("hidden");
+  document.getElementById("setupTrainCheckout")?.classList.add("hidden");
+  document.getElementById("setupTrainTarget")?.classList.add("hidden");
+  document.getElementById("viewTrainingHistory")?.classList.add("hidden");
 }
 
 window.ouvrirSetupTraining = ouvrirSetupTraining;
@@ -1834,67 +1834,6 @@ window.lancerTrainingCheckout = function() {
   lancerInterfaceJeu("train_checkout");
 };
 
-window.lancerTrainingCheckout = function() {
-  const user = auth.currentUser;
-  if (!user) return showPopup("Tu dois être connecté à un compte.", true);
-
-  let minVal = parseInt(document.getElementById("rangeCheckoutMin").value, 10);
-  let maxVal = parseInt(document.getElementById("rangeCheckoutMax").value, 10);
-
-  if (minVal > maxVal) {
-    let tmp = minVal; minVal = maxVal; maxVal = tmp;
-  }
-
-  const bogeys = [159, 162, 163, 165, 166, 168, 169];
-  const checkoutMode = document.getElementById("trainCheckoutModeSelect").value;
-  const totalCheckouts = parseInt(document.getElementById("trainCheckoutCountSelect").value, 10);
-  const maxAttempts = parseInt(document.getElementById("trainCheckoutAttemptsSelect").value, 10);
-
-  let checkoutList = [];
-  while (checkoutList.length < totalCheckouts) {
-    let randScore = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
-    if (checkoutMode === "double" && bogeys.includes(randScore)) continue;
-    checkoutList.push(randScore);
-  }
-
-  const p = { id: user.uid, name: getPseudoJoueur() };
-
-  cricketState.gameMode = "train_checkout";
-  initVariablesMatchGenerales([p]);
-
-  cricketState.x01Checkout = checkoutMode;
-  cricketState.trainCheckoutList = checkoutList;
-  cricketState.trainCheckoutIndex = 0;
-  cricketState.trainMaxAttemptsPerCheckout = maxAttempts;
-  cricketState.trainCurrentAttempt = 1;
-  cricketState.scores[p.id] = checkoutList[0];
-  cricketState.trainCurrentTargetScore = checkoutList[0];
-  cricketState.maxTurns = totalCheckouts;
-
-  // Initialisation complète pour correspondre au moteur X01 sans planter
-  cricketState.statsDetails[p.id] = {
-    dartsThrown: 0,
-    totalScoreScored: 0,
-    bustsCount: 0,
-    maxVolleyScore: 0,
-    currentVolleyScore: 0,
-    first9DartsScore: 0,
-    scoreFamily60: 0, scoreFamily100: 0, scoreFamily140: 0, scoreFamily180: 0,
-    touchesNum: {}, touchesSimpleNum: {}, touchesDoubleNum: {}, touchesTripleNum: {},
-    checkoutsAttempted: totalCheckouts,
-    checkoutsSucceeded: 0,
-    checkoutResults: []
-  };
-
-  for (let i = 1; i <= 25; i++) {
-    cricketState.statsDetails[p.id].touchesNum[i] = 0;
-    cricketState.statsDetails[p.id].touchesSimpleNum[i] = 0;
-    cricketState.statsDetails[p.id].touchesDoubleNum[i] = 0;
-    cricketState.statsDetails[p.id].touchesTripleNum[i] = 0;
-  }
-
-  lancerInterfaceJeu("train_checkout");
-};
 
 window.lancerTrainingTarget = function() {
   const user = auth.currentUser;

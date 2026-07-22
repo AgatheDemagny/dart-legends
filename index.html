@@ -110,7 +110,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.91 - 22/07/2026</p>
+        <p>Version 1.92 - 22/07/2026</p>
       </div>
     </section>
 
@@ -285,7 +285,31 @@
   <button class="primary btn-block" style="margin-top: 15px;" onclick="lancerTrainingCheckout()">🎯 Démarrer l'entraînement</button>
   <button class="ghost btn-block" onclick="retourListeTraining()">Retour</button>
 </div>
+<div id="setupTrainTarget" class="hidden card form-card">
+      <h3>🔍 Focus Zones</h3>
+      <div id="trainTargetGrid"></div>
+      <div style="margin-top: 12px;">
+        <label><strong>Nombre de tours par cible</strong></label>
+        <select id="trainTargetTurnsSelect">
+          <option value="1">1 tour</option>
+          <option value="2">2 tours</option>
+          <option value="3" selected>3 tours</option>
+          <option value="5">5 tours</option>
+        </select>
+      </div>
+      <div id="trainConsecutiveBlock" style="margin-top: 12px; display: none;">
+        <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
+          <span class="stat-label"><strong>Jouer à la suite</strong></span>
+          <input type="checkbox" id="trainConsecutiveCheckbox" style="width: auto; margin-top: 0;">
+        </div>
+      </div>
+      <button class="primary btn-block" style="margin-top: 15px;" onclick="lancerTrainingTarget()">🎯 Démarrer l'entraînement</button>
+      <button class="ghost btn-block" onclick="retourListeTraining()">Retour</button>
+    </div>
 
+  </section> 
+
+  <section id="newGameScreen" class="hidden stack">
     <section id="newGameScreen" class="hidden stack">
       <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
       <header class="topbar">
