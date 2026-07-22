@@ -146,27 +146,21 @@ window.voirStatsDepuisHistorique = function(gameData) {
   const user = auth.currentUser;
   if (!user) return;
 
-  // Reconstitution d'un état de jeu virtuel pour alimenter la fonction genererTableauStatistiques
+  // Reconstitution isolée de l'état
   cricketState = {
     gameMode: gameData.type,
-    players: gameData.players || [{ id: user.uid, name: gameData.winner }],
-    statsDetails: gameData.statsDetails,
-    elapsedTime: gameData.duration,
+    players: gameData.players || [{ id: user.uid, name: gameData.winner || "Joueur Solo" }],
+    statsDetails: gameData.statsDetails || {},
+    elapsedTime: gameData.duration || 0,
     targets: gameData.targets || [15, 16, 17, 18, 19, 20, 25],
     trainTargets: gameData.trainTargets || [],
     trainTurnsPerTarget: gameData.trainTurnsPerTarget || 3,
     currentTurn: gameData.currentTurn || 1,
     scores: gameData.scores || { [user.uid]: 0 },
-    marks: gameData.marks || { [user.uid]: {15:3, 16:3, 17:3, 18:3, 19:3, 20:3, 25:3} },
     historyContext: gameData
   };
 
-  // On régénère la grille uniquement en mémoire pour la structure si nécessaire, sans afficher l'écran de jeu
-  if (gameData.type === "train_cricket") {
-    renderGrid(); 
-  }
-
-  // Génération du tableau et affichage DIRECT de l'écran des statistiques
+  // Affichage direct du composant statistiques
   genererTableauStatistiques();
   showScreen(screens.matchStats);
 
@@ -3007,35 +3001,70 @@ function genererTableauStatistiques() {
   }
 
   // ================= CRICKET =================
-  if (cricketState.gameMode === "cricket" || cricketState.gameMode === "train_cricket") {
-    // Bloc 1 : Générales
-    const blocGen = creerBlocStats("Générales");
+  // ================= CRICKET TRAINING (SOLO) =================
+  if (cricketState.gameMode === "train_cricket") {
+    const blocGen = creerBlocStats("Statistiques d'Entraînement");
     genererEnteteJoueurs(blocGen.table);
     
+    // MPR
     ajouterLigne(blocGen.table, "MPR", cricketState.players.map(p => {
-      const touches = cricketState.statsDetails[p.id].touchesUtiles || 0;
-      const darts = cricketState.statsDetails[p.id].dartsThrown || 1;
+      const touches = cricketState.statsDetails[p.id]?.touchesUtiles || 0;
+      const darts = cricketState.statsDetails[p.id]?.dartsThrown || 1;
       return ((touches / darts) * 3).toFixed(1);
     }));
-    if (cricketState.gameMode === "train_cricket") {
-      ajouterLigne(blocGen.table, "Tours joués", cricketState.players.map(p => cricketState.currentTurn));
-    }
-    ajouterLigne(blocGen.table, "Points infligés", cricketState.players.map(p => 
-      cricketState.statsDetails[p.id].totalPointsGiven || 0
+
+    // Fléchettes lancées
+    ajouterLigne(blocGen.table, "Fléchettes lancées", cricketState.players.map(p => 
+      cricketState.statsDetails[p.id]?.dartsThrown || 0
     ));
+
+    // Tours joués
+    ajouterLigne(blocGen.table, "Tours joués", cricketState.players.map(() => cricketState.currentTurn));
+    
     mainWrapper.appendChild(blocGen.blockDiv);
 
-    // Bloc 2 : Par Chiffre
+    // DÉTAIL PAR ZONE
     const blocZone = creerBlocStats("Touches par zone");
     genererEnteteJoueurs(blocZone.table);
     cricketState.targets.forEach(cible => {
       const label = cible === 25 ? "Bull" : `Zone ${cible}`;
       ajouterLigne(blocZone.table, label, cricketState.players.map(p => {
-        const stats = cricketState.statsDetails[p.id];
-        const s = stats.simplesCount[cible] || 0;
-        const d = stats.doublesCount[cible] || 0;
-        const t = stats.triplesCount[cible] || 0;
-        const pts = stats.pointsGiv[cible] || 0;
+        const stats = cricketState.statsDetails[p.id] || {};
+        const s = stats.simplesCount?.[cible] || 0;
+        const d = stats.doublesCount?.[cible] || 0;
+        const t = stats.triplesCount?.[cible] || 0;
+        return `${s}S / ${d}D / ${t}T`;
+      }));
+    });
+    mainWrapper.appendChild(blocZone.blockDiv);
+  }
+
+  // ================= CRICKET CLASSIQUE (MULTI) =================
+  else if (cricketState.gameMode === "cricket") {
+    const blocGen = creerBlocStats("Générales");
+    genererEnteteJoueurs(blocGen.table);
+    
+    ajouterLigne(blocGen.table, "MPR", cricketState.players.map(p => {
+      const touches = cricketState.statsDetails[p.id]?.touchesUtiles || 0;
+      const darts = cricketState.statsDetails[p.id]?.dartsThrown || 1;
+      return ((touches / darts) * 3).toFixed(1);
+    }));
+    
+    ajouterLigne(blocGen.table, "Points infligés", cricketState.players.map(p => 
+      cricketState.statsDetails[p.id]?.totalPointsGiven || 0
+    ));
+    mainWrapper.appendChild(blocGen.blockDiv);
+
+    const blocZone = creerBlocStats("Touches par zone");
+    genererEnteteJoueurs(blocZone.table);
+    cricketState.targets.forEach(cible => {
+      const label = cible === 25 ? "Bull" : `Zone ${cible}`;
+      ajouterLigne(blocZone.table, label, cricketState.players.map(p => {
+        const stats = cricketState.statsDetails[p.id] || {};
+        const s = stats.simplesCount?.[cible] || 0;
+        const d = stats.doublesCount?.[cible] || 0;
+        const t = stats.triplesCount?.[cible] || 0;
+        const pts = stats.pointsGiv?.[cible] || 0;
         let txt = `${s}S / ${d}D / ${t}T`;
         if (pts > 0) txt += `<br><span style="font-size:11px; color:var(--text-soft);">+${pts} pts</span>`;
         return txt;
@@ -3043,14 +3072,17 @@ function genererTableauStatistiques() {
     });
     mainWrapper.appendChild(blocZone.blockDiv);
 
-    // Bloc 3 : Tableau Final (Reproduction de la grille de jeu)
-    const blocGrid = creerBlocStats("Tableau des scores");
-    const cloneGrid = document.getElementById("cricketGridTable").cloneNode(true);
-    cloneGrid.style.width = "100%";
-    cloneGrid.style.marginTop = "10px";
-    blocGrid.blockDiv.appendChild(cloneGrid);
-    blocGrid.blockDiv.style.overflowX = "auto";
-    mainWrapper.appendChild(blocGrid.blockDiv);
+    // Reproduction de la grille de match
+    const gridEl = document.getElementById("cricketGridTable");
+    if (gridEl && gridEl.children.length > 0) {
+      const blocGrid = creerBlocStats("Tableau des scores");
+      const cloneGrid = gridEl.cloneNode(true);
+      cloneGrid.style.width = "100%";
+      cloneGrid.style.marginTop = "10px";
+      blocGrid.blockDiv.appendChild(cloneGrid);
+      blocGrid.blockDiv.style.overflowX = "auto";
+      mainWrapper.appendChild(blocGrid.blockDiv);
+    }
   }
 
   // ================= X01 =================
