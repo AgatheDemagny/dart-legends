@@ -1753,35 +1753,66 @@ function demarrerMatchBounty(listeJoueurs) {
   mettreAJourCiblesBountyUI();
 }
 
-window.lancerTrainingCricket = function() {
+window.lancerTrainingCheckout = function() {
   const user = auth.currentUser;
-  if (!user) return showPopup("Tu dois être connecté à un compte pour t'entraîner.", true);
-  
+  if (!user) return showPopup("Tu dois être connecté à un compte.", true);
+
+  let minVal = parseInt(document.getElementById("rangeCheckoutMin").value, 10);
+  let maxVal = parseInt(document.getElementById("rangeCheckoutMax").value, 10);
+
+  if (minVal > maxVal) {
+    let tmp = minVal; minVal = maxVal; maxVal = tmp;
+  }
+
+  const bogeys = [159, 162, 163, 165, 166, 168, 169];
+  const checkoutMode = document.getElementById("trainCheckoutModeSelect").value;
+  const totalCheckouts = parseInt(document.getElementById("trainCheckoutCountSelect").value, 10);
+  const maxAttempts = parseInt(document.getElementById("trainCheckoutAttemptsSelect").value, 10);
+
+  let checkoutList = [];
+  while (checkoutList.length < totalCheckouts) {
+    let randScore = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+    if (checkoutMode === "double" && bogeys.includes(randScore)) continue;
+    checkoutList.push(randScore);
+  }
+
   const p = { id: user.uid, name: getPseudoJoueur() };
 
-  cricketState.gameMode = "train_cricket";
+  cricketState.gameMode = "train_checkout";
   initVariablesMatchGenerales([p]);
-  
-  // Sécurité absolue : si l'élément n'est pas trouvé, on met 20 par défaut
-  const selectElement = document.getElementById("trainCricketTurnsSelect");
-  cricketState.maxTurns = (selectElement && selectElement.value) ? parseInt(selectElement.value, 10) : 20;
-  
-  cricketState.isBlind = false;
-  cricketState.targets = [15, 16, 17, 18, 19, 20, 25];
-  cricketState.revealedTargets = [...cricketState.targets];
-  cricketState.marks = { [p.id]: {} };
-  cricketState.scores[p.id] = 0; 
-  cricketState.statsDetails[p.id] = { dartsThrown:0, touchesUtiles:0, touchesNum:{}, simplesCount:{}, doublesCount:{}, triplesCount:{} };
-  
-  cricketState.targets.forEach(t => {
-      cricketState.marks[p.id][t] = 0;
-      cricketState.statsDetails[p.id].touchesNum[t] = 0;
-      cricketState.statsDetails[p.id].simplesCount[t] = 0;
-      cricketState.statsDetails[p.id].doublesCount[t] = 0;
-      cricketState.statsDetails[p.id].triplesCount[t] = 0;
-  });
-  
-  lancerInterfaceJeu("train_cricket");
+
+  cricketState.x01Checkout = checkoutMode;
+  cricketState.trainCheckoutList = checkoutList;
+  cricketState.trainCheckoutIndex = 0;
+  cricketState.trainMaxAttemptsPerCheckout = maxAttempts;
+  cricketState.trainCurrentAttempt = 1;
+  cricketState.scores[p.id] = checkoutList[0];
+  cricketState.trainCurrentTargetScore = checkoutList[0];
+  cricketState.maxTurns = totalCheckouts;
+
+  // Initialisation structurelle renforcée
+  cricketState.statsDetails[p.id] = {
+    dartsThrown: 0,
+    totalScoreScored: 0,
+    bustsCount: 0,
+    maxVolleyScore: 0,
+    currentVolleyScore: 0,
+    first9DartsScore: 0,
+    scoreFamily60: 0, scoreFamily100: 0, scoreFamily140: 0, scoreFamily180: 0,
+    touchesNum: {}, touchesSimpleNum: {}, touchesDoubleNum: {}, touchesTripleNum: {},
+    checkoutsAttempted: totalCheckouts,
+    checkoutsSucceeded: 0,
+    checkoutResults: []
+  };
+
+  for (let i = 1; i <= 25; i++) {
+    cricketState.statsDetails[p.id].touchesNum[i] = 0;
+    cricketState.statsDetails[p.id].touchesSimpleNum[i] = 0;
+    cricketState.statsDetails[p.id].touchesDoubleNum[i] = 0;
+    cricketState.statsDetails[p.id].touchesTripleNum[i] = 0;
+  }
+
+  lancerInterfaceJeu("train_checkout");
 };
 
 window.lancerTrainingCheckout = function() {
@@ -2512,7 +2543,7 @@ function taperChiffre(valeurBouton) {
   else if (cricketState.gameMode === "world") { renderKeyboardX01(); renderGridWorld(); }
   else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); }
   else if (cricketState.gameMode === "train_target") { renderKeyboardX01(); renderGridTrainTarget(); }
-  else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); }
+  else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); } // <-- Ligne ajoutée !
   else { renderKeyboard(); renderGrid(); }
   
   gererEtatBoutonBull(); updateTurnHeader(); verifierConditionsFinMatch(); sauvegarderPartie();
@@ -2567,8 +2598,8 @@ if (cricketState.gameMode === "train_target") {
         cricketState.trainCurrentPoolIndex++;
     }
   if (cricketState.gameMode === "train_checkout") {
-    const joueur = cricketState.players[0];
-    const keyStockage = joueur.id;
+    const p = cricketState.players[0]; // Correction ici, on l'appelle "p" pour ne pas écraser "joueur"
+    const keyStockage = p.id;
     
     // Si le score n'est toujours pas tombé à zéro à la fin des 3 flèches de la volée
     if (cricketState.scores[keyStockage] > 0) {
@@ -2576,7 +2607,7 @@ if (cricketState.gameMode === "train_target") {
       
       // Si le nombre d'essais max est dépassé -> ÉCHEC du checkout
       if (cricketState.trainCurrentAttempt > cricketState.trainMaxAttemptsPerCheckout) {
-        enregistrerResultatCheckout(joueur, false);
+        enregistrerResultatCheckout(p, false);
       } else {
         // Nouveau tour/essai : on remet le score au chiffre initial
         cricketState.scores[keyStockage] = cricketState.trainCurrentTargetScore;
@@ -2831,13 +2862,13 @@ function annulerDernierCoup() {
   cricketState.currentTurn = precedentState.currentTurn; 
   cricketState.lastTurnText = precedentState.lastTurnText;
   
-  // Rafraîchissement visuel
+// Rafraîchissement visuel
   resetModifierUI(); 
   if (cricketState.gameMode === "x01") { renderKeyboardX01(); renderGridX01(); }
   else if (cricketState.gameMode === "world") { renderKeyboardX01(); renderGridWorld(); }
   else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); mettreAJourCiblesBountyUI(); }
   else if (cricketState.gameMode === "train_target") { renderKeyboardX01(); renderGridTrainTarget(); }
-  else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); }
+  else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); } // <-- Ligne ajoutée !
   else { renderKeyboard(); renderGrid(); }
   
   updateTurnHeader(); 
