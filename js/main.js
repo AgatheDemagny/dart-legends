@@ -2832,41 +2832,66 @@ function annulerDernierCoup() {
 }
 
 function verifierConditionsFinMatch() {
-  let gagnantId = null; let clesEntites = Object.keys(cricketState.scores);
+  let gagnantId = null; 
+  let clesEntites = Object.keys(cricketState.scores);
   
   if (cricketState.gameMode === "x01") {
-    for (let k of clesEntites) { if (cricketState.scores[k] === 0) { gagnantId = k; break; } }
+    for (let k of clesEntites) { 
+      if (cricketState.scores[k] === 0) { gagnantId = k; break; } 
+    }
   } else if (cricketState.gameMode === "world") {
-    for (let k of clesEntites) { if (cricketState.scores[k] > cricketState.worldEndNum) { gagnantId = k; break; } }
+    for (let k of clesEntites) { 
+      if (cricketState.scores[k] > cricketState.worldEndNum) { gagnantId = k; break; } 
+    }
   } else if (cricketState.gameMode === "bounty") {
     const scoreCible = document.getElementById("bountyTargetScoreSelect") ? parseInt(document.getElementById("bountyTargetScoreSelect").value, 10) : 300;
     if (scoreCible !== 9999) {
-      for (let k of clesEntites) { if (cricketState.scores[k] >= scoreCible) { gagnantId = k; break; } }
+      for (let k of clesEntites) { 
+        if (cricketState.scores[k] >= scoreCible) { gagnantId = k; break; } 
+      }
     }
     if (!gagnantId && cricketState.maxTurns !== 999 && cricketState.currentTurn > cricketState.maxTurns) {
-      let meilleurScore = -Infinity; clesEntites.forEach(k => { if (cricketState.scores[k] > meilleurScore) { meilleurScore = cricketState.scores[k]; gagnantId = k; } });
+      let meilleurScore = -Infinity; 
+      clesEntites.forEach(k => { 
+        if (cricketState.scores[k] > meilleurScore) { 
+          meilleurScore = cricketState.scores[k]; 
+          gagnantId = k; 
+        } 
+      });
     }
   } else if (cricketState.gameMode === "train_checkout") {
-  if (cricketState.trainCheckoutIndex >= cricketState.trainCheckoutList.length) {
-    gagnantId = clesEntites[0];
+    if (cricketState.trainCheckoutIndex >= cricketState.trainCheckoutList.length) {
+      gagnantId = clesEntites[0];
+    }
   } else if (cricketState.gameMode === "train_target") {
     if (cricketState.trainCurrentPoolIndex >= cricketState.trainTurnsPool.length) {
-        gagnantId = clesEntites[0];
+      gagnantId = clesEntites[0];
     }
   } else {
     for (let k of clesEntites) {
-      if (cricketState.targets.every(t => cricketState.marks[k][t] >= 3) && clesEntites.every(autreKey => cricketState.scores[k] >= cricketState.scores[autreKey])) { gagnantId = k; break; }
+      if (cricketState.targets.every(t => cricketState.marks[k][t] >= 3) && clesEntites.every(autreKey => cricketState.scores[k] >= cricketState.scores[autreKey])) { 
+        gagnantId = k; 
+        break; 
+      }
     }
     if (!gagnantId && cricketState.currentTurn > cricketState.maxTurns && cricketState.maxTurns !== 999) {
-      let meilleurScore = -Infinity; clesEntites.forEach(k => { if (cricketState.scores[k] > meilleurScore) { meilleurScore = cricketState.scores[k]; gagnantId = k; } });
+      let meilleurScore = -Infinity; 
+      clesEntites.forEach(k => { 
+        if (cricketState.scores[k] > meilleurScore) { 
+          meilleurScore = cricketState.scores[k]; 
+          gagnantId = k; 
+        } 
+      });
     }
   }
 
   if (gagnantId) {
     clearInterval(cricketState.timerInterval);
-    let nomVainqueur = cricketState.isTeamMode ? (listeEquipesFormees.find(e => e.id === gagnantId)?.name || "Inconnu") : (cricketState.players.find(p => p.id === gagnantId)?.name || "Inconnu");
+    let nomVainqueur = cricketState.isTeamMode 
+      ? (listeEquipesFormees.find(e => e.id === gagnantId)?.name || "Inconnu") 
+      : (cricketState.players.find(p => p.id === gagnantId)?.name || "Inconnu");
 
-setTimeout(async () => {
+    setTimeout(async () => {
       const titreModal = cricketState.gameMode.startsWith("train_") ? "🎯 Objectif atteint !" : "🏆 Partie Terminée !";
       const texteModal = cricketState.gameMode.startsWith("train_") ? "As-tu bien réussi cette dernière touche ?" : `${nomVainqueur} remporte la partie ! Souhaitez-vous valider et enregistrer ce résultat ?`;
 
