@@ -2306,7 +2306,7 @@ function lancerInterfaceJeu(mode, isResume = false) {
   // 1. Gestion du chrono et de l'état de Pause
   cricketState.isPaused = false;
   document.getElementById("btnPauseGame").innerText = "⏸️";
-    document.getElementById("cricketKeyboardZone").style.pointerEvents = "auto";
+  document.getElementById("cricketKeyboardZone").style.pointerEvents = "auto";
   document.getElementById("cricketKeyboardZone").style.opacity = "1";
 
   if (!isResume) {
