@@ -1763,10 +1763,10 @@ window.lancerTrainingCricket = function() {
   initVariablesMatchGenerales([p]);
   
   cricketState.maxTurns = parseInt(document.getElementById("trainCricketTurnsSelect").value, 10);
-  cricketState.isBlind = false;
+  cricketState.isBlind = false; // Désactivation explicite du mode masqué
   cricketState.marks = { [p.id]: {} };
   cricketState.targets = [15, 16, 17, 18, 19, 20, 25];
-  cricketState.revealedTargets = [...cricketState.targets];
+  cricketState.revealedTargets = [...cricketState.targets]; // Révélation complète des cibles
   cricketState.scores[p.id] = 0;
   
   cricketState.statsDetails[p.id] = { 
@@ -2600,9 +2600,6 @@ if (cricketState.gameMode === "train_target") {
       // Si le nombre d'essais max est dépassé -> ÉCHEC du checkout
       if (cricketState.trainCurrentAttempt > cricketState.trainMaxAttemptsPerCheckout) {
         enregistrerResultatCheckout(p, false);
-      } else {
-        // Nouveau tour/essai : on remet le score au chiffre initial
-        cricketState.scores[keyStockage] = cricketState.trainCurrentTargetScore;
       }
     }
   }
