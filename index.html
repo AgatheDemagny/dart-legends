@@ -110,7 +110,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 2.00 - 21/08/2026</p>
+        <p>Version 2.01 - 21/08/2026</p>
       </div>
     </section>
 
@@ -360,6 +360,7 @@
             <option value="bounty">💰 Chasseur de primes</option>
             <option value="world">🌍 Tour du Monde</option>
             <option value="shanghai">🐉 Shanghai</option>
+            <option value="golf">⛳ Golf</option>
           </select>
         </div>
 
@@ -495,23 +496,21 @@
           </div>
         </div>
 
-<div id="shanghaiParamsGroup" class="hidden">
-          <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div>
-              <label><strong>Nombre de tours</strong></label>
-              <select id="shanghaiTurnsSelect">
-                <option value="7" selected>7 tours</option>
-                <option value="10">10 tours</option>
-                <option value="15">15 tours</option>
-                <option value="20">20 tours</option>
-              </select>
-            </div>
-            <div id="shanghaiStartDiv">
-              <label><strong>Départ</strong></label>
-              <select id="shanghaiStartSelect">
-                <!-- Rempli dynamiquement par Javascript -->
-              </select>
-            </div>
+        <div id="shanghaiParamsGroup" class="hidden">
+          <div style="margin-top: 12px;">
+            <label><strong>Nombre de tours</strong></label>
+            <select id="shanghaiTurnsSelect">
+              <option value="7" selected>7 tours</option>
+              <option value="10">10 tours</option>
+              <option value="15">15 tours</option>
+              <option value="20">20 tours</option>
+            </select>
+          </div>
+          <div id="shanghaiStartDiv" style="margin-top: 12px;">
+            <label><strong>Départ</strong></label>
+            <select id="shanghaiStartSelect">
+              <!-- Rempli dynamiquement par Javascript -->
+            </select>
           </div>
           <div style="margin-top: 12px;">
             <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
@@ -519,6 +518,28 @@
               <input type="checkbox" id="shanghaiRandomCheckbox" style="width: auto; margin-top: 0;">
             </div>
             <p class="hint" style="margin-top: 2px;">Dans ce mode, au lieu de jouer les chiffres dans l'ordre, les cibles sont tirées au sort et découvertes à chaque tour.</p>
+          </div>
+        </div>
+        
+        <div id="golfParamsGroup" class="hidden">
+          <div style="margin-top: 12px;">
+            <label><strong>Nombre de trous</strong></label>
+            <select id="golfTurnsSelect">
+              <option value="9" selected>9 trous</option>
+              <option value="18">18 trous</option>
+            </select>
+          </div>
+          <div id="golfStartDiv" style="margin-top: 12px;">
+            <label><strong>Départ</strong></label>
+            <select id="golfStartSelect">
+            </select>
+          </div>
+          <div style="margin-top: 12px;">
+            <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
+              <span class="stat-label"><strong>Mode n'a qu'un œil</strong></span>
+              <input type="checkbox" id="golfRandomCheckbox" style="width: auto; margin-top: 0;">
+            </div>
+            <p class="hint" style="margin-top: 2px;">Dans ce mode, les chiffres du parcours sont tirées au sort et découverts à chaque tour.</p>
           </div>
         </div>
       </div>
@@ -637,7 +658,8 @@
           <button class="tab-btn" data-rule-tab="x01" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">💯 X01</button>
           <button class="tab-btn" data-rule-tab="world" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">🌍 Tour du Monde</button>
           <button class="tab-btn" data-rule-tab="bounty" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">💰 Chasseur de primes</button>
-          <button class="tab-btn" data-rule-tab="shanghai" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; grid-column: span 2;">🐉 Shanghai</button>
+          <button class="tab-btn" data-rule-tab="shanghai" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">🐉 Shanghai</button>
+          <button class="tab-btn" data-rule-tab="golf" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">⛳ Golf</button>
         </div>
 
         <div id="rulesContent" style="display: flex; flex-direction: column; column-count: 1; overflow-y: auto; text-align: left; font-size: 13px; line-height: 1.5; color: var(--text-main); padding-right: 4px;">

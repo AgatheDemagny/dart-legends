@@ -279,6 +279,22 @@ const RULES_DATA = {
       <li><strong>Nombres aléatoires inconnus :</strong> Si cette option est cochée, l'ordre chronologique et le choix du départ sont ignorés. Les cibles deviennent des numéros secrets tirés au hasard (de 1 à 20) qui ne se dévoilent qu'à chaque nouveau tour.</li>
     </ul>
   `,
+  golf: `
+    <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
+    <p style="margin-bottom: 12px; padding: 0;">Ce mode simule un parcours de golf de 9 ou 18 trous. À chaque tour, vous tentez de réaliser le meilleur score sur le numéro du trou en cours. Votre score correspond au résultat de votre <strong>dernière fléchette lancée</strong> lors de la volée. Vous pouvez choisir de vous arrêter à la 1ère, 2ème, ou 3ème fléchette.</p>
+    
+    <h4 style="color: var(--primary); margin-bottom: 8px;">🏌🏻‍♀️ Décompte des coups</h4>
+    <ul style="padding-left: 18px; margin-bottom: 12px;">
+      <li><strong>Triple = </strong> 1 coup (Eagle)</li>
+      <li><strong>Double = </strong> 2 coups (Birdie)</li>
+      <li><strong>Simple intérieur = </strong> 3 coups (Par)</li>
+      <li><strong>Simple extérieur = </strong> 4 coups (Bogey)</li>
+      <li><strong>Raté = </strong> 5 coups</li>
+    </ul>
+    <p style="margin-bottom: 12px; padding: 0;"><strong>Exception pour le Bull :</strong> Double Bull = 1 coup, Simple Bull = 2 coups, Raté = 4 coups.</p>
+    <h4 style="color: var(--primary); margin-bottom: 8px;">🏆 Condition de victoire</h4>
+    <p style="margin-bottom: 12px; padding: 0;">Contrairement aux autres modes, le vainqueur est le joueur qui termine le parcours avec le score le plus <strong>bas</strong> possible !</p>
+  `,
 };
 
 // Gestion de l'ouverture et fermeture
@@ -676,6 +692,39 @@ if (shanghaiRandomCheckbox) {
   shanghaiRandomCheckbox.addEventListener("change", (e) => {
     // Cache la sélection du départ si le mode "Aléatoire" est coché
     if (shanghaiStartDiv) shanghaiStartDiv.style.display = e.target.checked ? "none" : "block";
+  });
+}
+
+// --- LOGIQUE DE DÉPART DYNAMIQUE GOLF ---
+const golfTurnsSelect = document.getElementById("golfTurnsSelect");
+const golfStartSelect = document.getElementById("golfStartSelect");
+const golfRandomCheckbox = document.getElementById("golfRandomCheckbox");
+const golfStartDiv = document.getElementById("golfStartDiv");
+
+function updateGolfStartOptions() {
+  if (!golfTurnsSelect || !golfStartSelect) return;
+  const turns = parseInt(golfTurnsSelect.value, 10);
+  
+  // Si on joue 9 trous, on peut commencer max au 13 (pour finir au 21 qui est le Bull)
+  const maxStart = Math.max(1, 22 - turns); 
+  
+  let currentVal = parseInt(golfStartSelect.value, 10) || 1;
+  if (currentVal > maxStart) currentVal = maxStart; 
+
+  golfStartSelect.innerHTML = "";
+  for (let i = 1; i <= maxStart; i++) {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.innerText = i;
+    if (i === currentVal) opt.selected = true;
+    golfStartSelect.appendChild(opt);
+  }
+}
+
+if (golfTurnsSelect) golfTurnsSelect.addEventListener("change", updateGolfStartOptions);
+if (golfRandomCheckbox) {
+  golfRandomCheckbox.addEventListener("change", (e) => {
+    if (golfStartDiv) golfStartDiv.style.display = e.target.checked ? "none" : "block";
   });
 }
 
@@ -1497,7 +1546,7 @@ async function chargerHistoriqueParties() {
       const duration = `${Math.floor(data.duration / 60)}m ${data.duration % 60}s`;
       const nomCommuAssociee = listeMesCommunautes.find(c => c.id === data.communityId)?.name || "Inconnue";
       
-      const dictModes = { "cricket": "CRICKET", "x01": "X01", "world": "TOUR DU MONDE", "bounty": "CHASSEUR DE PRIMES" };
+      const dictModes = { "cricket": "CRICKET", "x01": "X01", "world": "TOUR DU MONDE", "bounty": "CHASSEUR DE PRIMES", "shanghai": "SHANGHAI", "golf": "GOLF" };
       const modeAffiche = dictModes[data.type] || data.type.toUpperCase();
       
       let rankingHtml = "";
@@ -1673,6 +1722,8 @@ document.getElementById("startGameBtn").addEventListener("click", () => {
     demarrerMatchBounty(ordonnancementTireurs);
   } else if (mode === "shanghai") {
     demarrerMatchShanghai(ordonnancementTireurs);
+  } else if (mode === "golf") {
+    demarrerMatchGolf(ordonnancementTireurs);
   } else {
     demarrerMatchCricket(ordonnancementTireurs);
   }
@@ -1892,6 +1943,42 @@ function demarrerMatchShanghai(listeJoueurs) {
   lancerInterfaceJeu("shanghai");
 }
 
+function demarrerMatchGolf(listeJoueurs) {
+  cricketState.gameMode = "golf";
+  initVariablesMatchGenerales(listeJoueurs);
+
+  const selectTours = document.getElementById("golfTurnsSelect");
+  cricketState.maxTurns = selectTours ? parseInt(selectTours.value, 10) : 9;
+  cricketState.isBlindGolf = document.getElementById("golfRandomCheckbox").checked;
+  
+  const selectStart = document.getElementById("golfStartSelect");
+  const startNum = selectStart ? parseInt(selectStart.value, 10) : 1;
+
+  let cibles = [];
+  if (cricketState.isBlindGolf) {
+    let pool = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,25]; 
+    for (let i = 0; i < cricketState.maxTurns; i++) {
+      let idx = Math.floor(Math.random() * pool.length);
+      cibles.push(pool.splice(idx, 1)[0]);
+    }
+  } else {
+    let currentTarget = startNum;
+    for (let i = 0; i < cricketState.maxTurns; i++) {
+      cibles.push(currentTarget > 20 ? 25 : currentTarget);
+      currentTarget++;
+    }
+  }
+  cricketState.golfTargets = cibles;
+
+  cricketState.players.forEach(p => {
+    const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
+    cricketState.scores[keyStockage] = 0;
+    cricketState.statsDetails[p.id] = { holesPlayed: 0, historyPerHole: {} };
+  });
+
+  lancerInterfaceJeu("golf");
+}
+
 // --- RENDU GRILLE SHANGHAI ---
 function renderGridShanghai() {
   const table = document.getElementById("cricketGridTable");
@@ -1939,6 +2026,88 @@ function renderGridShanghai() {
   });
 }
 
+function renderGridGolf() {
+  const table = document.getElementById("cricketGridTable");
+  if(!table) return; table.innerHTML = "";
+  
+  const cibleActuelle = cricketState.golfTargets[cricketState.currentTurn - 1];
+  const headerRow = document.createElement("tr");
+  headerRow.style.background = "rgba(255,255,255,0.02)";
+  headerRow.innerHTML = `
+    <th style="text-align:left; padding: 12px 6px; border-bottom: 2px solid var(--divider); width: 40%;">Joueurs</th>
+    <th style="padding: 12px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--text-soft); width: 30%;">Trou n°${cricketState.currentTurn}</th>
+    <th style="padding: 12px 6px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 30%;">Score Total</th>
+  `;
+  table.appendChild(headerRow);
+
+  let entitesAAfficher = cricketState.isTeamMode ? listeEquipesFormees : cricketState.players;
+  const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
+
+  entitesAAfficher.forEach(entite => {
+    const row = document.createElement("tr");
+    row.style.borderBottom = "1px solid var(--divider)";
+    
+    let estActif = cricketState.isTeamMode ? (joueurActuel.teamId === entite.id) : (joueurActuel.id === entite.id);
+    if(estActif) row.style.backgroundColor = "rgba(192,101,42,0.15)";
+    
+    row.innerHTML = `
+      <td style="text-align:left; padding: 14px 6px; font-weight:700;">${entite.name}</td>
+      <td style="padding: 14px 4px; border-left: 1px solid var(--divider); font-weight:900; color: var(--primary-strong); font-size: 20px; text-align:center;">${cibleActuelle === 25 ? "BULL" : cibleActuelle}</td>
+      <td style="font-weight:800; padding: 14px 6px; border-left: 1px solid var(--divider); color: var(--accent); font-size: 16px; text-align:center;">${cricketState.scores[entite.id]}</td>
+    `;
+    table.appendChild(row);
+  });
+}
+
+function renderKeyboardGolf() {
+  const container = document.getElementById("cricketDynamicRows");
+  if (!container) return; container.innerHTML = "";
+
+  const modZone = document.getElementById("cricketKeyboardZone").children[1];
+  if (modZone) modZone.style.display = "none"; // Cache les modificateurs
+
+  const cibleActuelle = cricketState.golfTargets[cricketState.currentTurn - 1];
+  if (!cibleActuelle) return;
+
+  const grid = document.createElement("div");
+  grid.style.display = "grid";
+  grid.style.gap = "8px";
+
+  const createBtn = (title, pts, bgColor, textColor) => {
+     const btn = document.createElement("button");
+     btn.style.display = "flex"; btn.style.flexDirection = "column"; btn.style.alignItems = "center"; btn.style.justifyContent = "center";
+     btn.style.padding = "14px 8px"; btn.style.borderRadius = "12px"; btn.style.border = `none`;
+     btn.style.background = bgColor; btn.style.color = textColor; btn.style.boxShadow = "0 4px 10px rgba(0,0,0,0.05)";
+     btn.style.fontWeight = "800"; btn.style.fontSize = "15px";
+     
+     btn.innerHTML = `${title}<span style="font-size:12px; opacity:0.8; margin-top:2px;">${pts} coup${pts>1?'s':''}</span>`;
+     btn.onclick = () => { taperChiffre(pts); }; // On transmet directement la valeur en points
+     return btn;
+  };
+
+  if (cibleActuelle === 25) {
+     grid.style.gridTemplateColumns = "1fr 1fr 1fr";
+     grid.appendChild(createBtn("Double Bull", 1, "var(--primary)", "#FFF"));
+     grid.appendChild(createBtn("Simple Bull", 2, "#78909C", "#FFF"));
+     grid.appendChild(createBtn("Raté", 4, "#a62b2b", "#FFF"));
+  } else {
+     grid.style.gridTemplateColumns = "1fr 1fr";
+     grid.appendChild(createBtn("Triple", 1, "radial-gradient(circle, #FFD54F 0%, #FFB300 100%)", "#3E2723"));
+     grid.appendChild(createBtn("Double", 2, "var(--primary)", "#FFF"));
+     grid.appendChild(createBtn("Petit Simple", 3, "#78909C", "#FFF"));
+     grid.appendChild(createBtn("Grand Simple", 4, "#90A4AE", "#FFF"));
+     const btnRate = createBtn("Raté", 5, "#a62b2b", "#FFF");
+     btnRate.style.gridColumn = "span 2";
+     grid.appendChild(btnRate);
+  }
+  container.appendChild(grid);
+  
+  const rowUndo = document.createElement("div"); rowUndo.style.marginTop = "10px";
+  const btnUndo = document.createElement("button"); btnUndo.className = "ghost btn-block";
+  btnUndo.style.padding = "12px"; btnUndo.innerText = "Retour"; btnUndo.onclick = () => annulerDernierCoup();
+  rowUndo.appendChild(btnUndo); container.appendChild(rowUndo);
+}
+
 // --- LOGIQUE DE TIR SHANGHAI ---
 function traiterCalculShanghai(keyStockage, joueurActuel, valeurBouton) {
   const stats = cricketState.statsDetails[joueurActuel.id];
@@ -1968,6 +2137,17 @@ function traiterCalculShanghai(keyStockage, joueurActuel, valeurBouton) {
   } else {
     stats.historyPerTarget[cibleAttendue].push("X");
   }
+}
+
+function traiterCalculGolf(keyStockage, joueurActuel, valeurBouton) {
+  const stats = cricketState.statsDetails[joueurActuel.id];
+  const cibleAttendue = cricketState.golfTargets[cricketState.currentTurn - 1];
+
+  cricketState.scores[keyStockage] += valeurBouton;
+  stats.holesPlayed += 1;
+  stats.historyPerHole[cricketState.currentTurn] = { cible: cibleAttendue, score: valeurBouton };
+  
+  cricketState.currentDart = 3; // Force la fin de volée immédiate car 1 bouton = le score final choisi !
 }
 
 window.lancerTrainingCricket = function() {
@@ -2345,6 +2525,8 @@ function lancerInterfaceJeu(mode, isResume = false) {
   } else if (mode === "shanghai") {
     renderSmartKeyboard();
     renderGridShanghai();
+  } else if (mode === "golf") { 
+    renderKeyboardGolf(); renderGridGolf();
   } else if (mode === "train_target") {
     renderSmartKeyboard();
     renderGridTrainTarget();
@@ -2754,7 +2936,7 @@ function renderSmartKeyboard() {
 
   // Bouton Retour
   const rowUndo = document.createElement("div");
-  rowUndo.style.marginTop = "10px"; // <-- CORRECTION : 10px au lieu de 12px pour un espacement parfait avec la grille
+  rowUndo.style.marginTop = "10px";
   const btnUndo = document.createElement("button");
   btnUndo.className = "ghost btn-block";
   btnUndo.style.padding = "12px";
@@ -2833,8 +3015,13 @@ function taperChiffre(valeurBouton) {
       currentPlayerIdx: cricketState.currentPlayerIdx, currentDart: cricketState.currentDart, currentTurn: cricketState.currentTurn, lastTurnText: cricketState.lastTurnText
     });
 
-  let prefixeText = modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "";
-  cricketState.currentTurnDartsText.push(valeurBouton === 0 ? "0" : valeurBouton === 25 ? prefixeText + "Bull" : prefixeText + valeurBouton);
+  if (cricketState.gameMode === "golf") {
+      const labels = {1: "Eagle (1)", 2: "Birdie (2)", 3: "Par (3)", 4: "4 coups", 5: "Raté (5)"}; 
+      cricketState.currentTurnDartsText.push(labels[valeurBouton] || `${valeurBouton} coups`);
+  } else {
+      let prefixeText = modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "";
+      cricketState.currentTurnDartsText.push(valeurBouton === 0 ? "0" : valeurBouton === 25 ? prefixeText + "Bull" : prefixeText + valeurBouton);
+  }
   let estChiffreFermePourTous = false;
   if (cricketState.gameMode === "cricket" && valeurBouton !== 0 && cricketState.targets.includes(valeurBouton)) {
       const clesEntites = Object.keys(cricketState.scores);
@@ -2856,6 +3043,7 @@ function taperChiffre(valeurBouton) {
   else if (cricketState.gameMode === "world") traiterCalculWorld(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "bounty") traiterCalculBounty(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "shanghai") traiterCalculShanghai(keyStockage, joueurActuel, valeurBouton);
+  else if (cricketState.gameMode === "golf") traiterCalculGolf(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "train_target") traiterCalculTrainTarget(keyStockage, joueurActuel, valeurBouton);
   else traiterCalculCricket(keyStockage, joueurActuel, valeurBouton);
 
@@ -2875,9 +3063,9 @@ function taperChiffre(valeurBouton) {
   if (cricketState.gameMode === "x01") { renderKeyboardX01(); renderGridX01(); }
   else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); }
   else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); }
-  else if (cricketState.gameMode === "world") { renderSmartKeyboard(); renderGridWorld(); } // <-- CORRIGÉ
-  else if (cricketState.gameMode === "shanghai") { renderSmartKeyboard(); renderGridShanghai(); } // <-- CORRIGÉ
-  else if (cricketState.gameMode === "train_target") { renderSmartKeyboard(); renderGridTrainTarget(); } // <-- CORRIGÉ
+  else if (cricketState.gameMode === "world") { renderSmartKeyboard(); renderGridWorld(); }
+  else if (cricketState.gameMode === "shanghai") { renderSmartKeyboard(); renderGridShanghai(); }
+  else if (cricketState.gameMode === "train_target") { renderSmartKeyboard(); renderGridTrainTarget(); }
   else { renderKeyboard(); renderGrid(); }
   
   gererEtatBoutonBull(); updateTurnHeader(); verifierConditionsFinMatch(); sauvegarderPartie();
@@ -3199,9 +3387,10 @@ function annulerDernierCoup() {
   if (cricketState.gameMode === "x01") { renderKeyboardX01(); renderGridX01(); }
   else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); }
   else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); }
-  else if (cricketState.gameMode === "world") { renderSmartKeyboard(); renderGridWorld(); } // <-- CORRIGÉ
-  else if (cricketState.gameMode === "shanghai") { renderSmartKeyboard(); renderGridShanghai(); } // <-- CORRIGÉ
-  else if (cricketState.gameMode === "train_target") { renderSmartKeyboard(); renderGridTrainTarget(); } // <-- CORRIGÉ
+  else if (cricketState.gameMode === "world") { renderSmartKeyboard(); renderGridWorld(); }
+  else if (cricketState.gameMode === "shanghai") { renderSmartKeyboard(); renderGridShanghai(); }
+  else if (cricketState.gameMode === "golf") { renderKeyboardGolf(); renderGridGolf(); }
+  else if (cricketState.gameMode === "train_target") { renderSmartKeyboard(); renderGridTrainTarget(); }
   else { renderKeyboard(); renderGrid(); }
   
   updateTurnHeader(); 
@@ -3243,6 +3432,16 @@ function verifierConditionsFinMatch() {
       let meilleurScore = -Infinity;
       clesEntites.forEach(k => {
         if (cricketState.scores[k] > meilleurScore) {
+          meilleurScore = cricketState.scores[k];
+          gagnantId = k;
+        }
+      });
+    }
+  } else if (cricketState.gameMode === "golf") {
+    if (cricketState.currentTurn > cricketState.maxTurns) {
+      let meilleurScore = Infinity;
+      clesEntites.forEach(k => {
+        if (cricketState.scores[k] < meilleurScore) {
           meilleurScore = cricketState.scores[k];
           gagnantId = k;
         }
@@ -3309,6 +3508,7 @@ function formatScoreDisplay(gameMode, score) {
   }
   if (gameMode === "x01") return `${score} pts restants`;
   if (gameMode === "bounty" || gameMode === "cricket" || gameMode === "shanghai") return `${score} points`;
+  if (gameMode === "golf") return `${score} coups`;
   if (gameMode === "train_cricket") return "Entraînement Terminé";
   if (gameMode === "train_target") return score + " touches au total";
   if (gameMode === "train_checkout") {
@@ -3324,8 +3524,13 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
   document.getElementById("victorySubtitle").innerText = `Match bouclé en ${document.getElementById("gameTimerDisplay").innerText}`;
   
   let classementTrie = cricketState.isTeamMode ? listeEquipesFormees.map(e => ({ id: e.id, name: e.name })) : cricketState.players.map(p => ({ id: p.id, name: p.name }));
-  classementTrie.sort((a, b) => cricketState.gameMode === "x01" ? cricketState.scores[a.id] - cricketState.scores[b.id] : cricketState.scores[b.id] - cricketState.scores[a.id]);
-  
+  classementTrie.sort((a, b) => {
+      if (cricketState.gameMode === "x01" || cricketState.gameMode === "golf") {
+          return cricketState.scores[a.id] - cricketState.scores[b.id]; // Le plus bas gagne !
+      } else {
+          return cricketState.scores[b.id] - cricketState.scores[a.id];
+      }
+  });
   const containerRanking = document.getElementById("finalRankingList"); containerRanking.innerHTML = "";
   
   // Création du classement pour l'historique
@@ -3449,6 +3654,7 @@ document.getElementById("btnRematch").onclick = () => {
   else if (cricketState.gameMode === "world") demarrerMatchWorld(nouvelOrdre); 
   else if (cricketState.gameMode === "bounty") demarrerMatchBounty(nouvelOrdre);
   else if (cricketState.gameMode === "shanghai") demarrerMatchShanghai(nouvelOrdre);
+  else if (cricketState.gameMode === "golf") demarrerMatchGolf(ordonnancementTireurs);
   else demarrerMatchCricket(nouvelOrdre);
 };
 
@@ -3820,6 +4026,33 @@ function genererTableauStatistiques() {
     mainWrapper.appendChild(blocDetail.blockDiv);
   }
 
+  // ================= GOLF =================
+  else if (cricketState.gameMode === "golf") {
+    const blocGen = creerBlocStats("Générales");
+    genererEnteteJoueurs(blocGen.table);
+    
+    ajouterLigne(blocGen.table, "Score Final", cricketState.players.map(p => `${cricketState.scores[p.id]} coups`));
+    ajouterLigne(blocGen.table, "Moyenne par trou", cricketState.players.map(p => {
+      const holes = cricketState.statsDetails[p.id].holesPlayed || 1;
+      return (cricketState.scores[p.id] / holes).toFixed(1);
+    }));
+    mainWrapper.appendChild(blocGen.blockDiv);
+
+    const blocDetail = creerBlocStats("Carte de score (Parcours)");
+    genererEnteteJoueurs(blocDetail.table);
+    
+    for (let i = 1; i <= cricketState.maxTurns; i++) {
+        // N'afficher que les trous joués
+        if (i < cricketState.currentTurn || (i === cricketState.currentTurn && document.getElementById("victoryTitle"))) {
+            const cibleAff = cricketState.golfTargets[i-1] === 25 ? "BULL" : cricketState.golfTargets[i-1];
+            ajouterLigne(blocDetail.table, `Trou ${i} (Cible ${cibleAff})`, cricketState.players.map(p => {
+                const hist = cricketState.statsDetails[p.id].historyPerHole[i];
+                return hist ? `<strong>${hist.score}</strong>` : "-";
+            }));
+        }
+    }
+    mainWrapper.appendChild(blocDetail.blockDiv);
+  }
   // ================= TRAIN TARGET =================
   else if (cricketState.gameMode === "train_target") {
     const blocGen = creerBlocStats("Générales");
