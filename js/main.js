@@ -2108,8 +2108,8 @@ function renderKeyboardGolf() {
      grid.style.gridTemplateColumns = "1fr 1fr";
      grid.appendChild(createBtn("Triple", 1, "radial-gradient(circle, #FFD54F 0%, #FFB300 100%)", "#3E2723"));
      grid.appendChild(createBtn("Double", 2, "var(--primary)", "#FFF"));
-     grid.appendChild(createBtn("Petit Simple", 3, "#78909C", "#FFF"));
-     grid.appendChild(createBtn("Grand Simple", 4, "#90A4AE", "#FFF"));
+     grid.appendChild(createBtn("Simple Intérieur", 3, "#78909C", "#FFF"));
+     grid.appendChild(createBtn("Simple Extérieur", 4, "#90A4AE", "#FFF"));
      const btnRate = createBtn("Raté", 5, "#a62b2b", "#FFF");
      btnRate.style.gridColumn = "span 2";
      grid.appendChild(btnRate);
