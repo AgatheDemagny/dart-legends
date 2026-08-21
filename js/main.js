@@ -2918,16 +2918,7 @@ function renderSmartKeyboard() {
      return btn;
   };
 
-  // 1. Raté : Fond Bordeaux, bordure bordeaux (invisible), texte blanc
-  grid.appendChild(createBtn(0, "Raté", "0 pt", "#a62b2b", "#ffffff", "#a62b2b"));
-  
-  // 2. Simple : Fond Gris-Bleu (Slate Gray), bordure identique, texte blanc
-  grid.appendChild(createBtn(1, "Simple", `+${cibleActuelle} pts`, "#78909C", "#ffffff", "#78909C"));
-  
-  // 3. Double : Fond Bleu primaire
-  grid.appendChild(createBtn(2, "Double", `+${cibleActuelle * 2} pts`, "var(--primary)", "#FFF", "var(--primary)"));
-  
-  // 4. Triple : Fond Dégradé Or
+  // 1. Triple : Fond Dégradé Or
   const btnTriple = createBtn(3, "Triple", `+${cibleActuelle * 3} pts`, "radial-gradient(circle, #FFD54F 0%, #FFB300 100%)", "#3E2723", "#FFB300");
   if (cibleActuelle === 25) {
       btnTriple.disabled = true;
@@ -2935,6 +2926,15 @@ function renderSmartKeyboard() {
       btnTriple.style.filter = "grayscale(100%)";
   }
   grid.appendChild(btnTriple);
+
+  // 2. Double : Fond Bleu primaire
+  grid.appendChild(createBtn(2, "Double", `+${cibleActuelle * 2} pts`, "var(--primary)", "#FFF", "var(--primary)"));
+  
+  // 3. Simple : Fond Gris-Bleu (Slate Gray), bordure identique, texte blanc
+  grid.appendChild(createBtn(1, "Simple", `+${cibleActuelle} pts`, "#78909C", "#ffffff", "#78909C"));
+
+  // 4. Raté : Fond Bordeaux, bordure bordeaux (invisible), texte blanc
+  grid.appendChild(createBtn(0, "Raté", "0 pt", "#a62b2b", "#ffffff", "#a62b2b"));
 
   container.appendChild(grid);
 
@@ -3069,6 +3069,7 @@ function taperChiffre(valeurBouton) {
   else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); }
   else if (cricketState.gameMode === "world") { renderSmartKeyboard(); renderGridWorld(); }
   else if (cricketState.gameMode === "shanghai") { renderSmartKeyboard(); renderGridShanghai(); }
+  else if (cricketState.gameMode === "golf") { renderKeyboardGolf(); renderGridGolf(); }
   else if (cricketState.gameMode === "train_target") { renderSmartKeyboard(); renderGridTrainTarget(); }
   else { renderKeyboard(); renderGrid(); }
   
