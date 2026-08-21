@@ -2303,33 +2303,42 @@ function traiterCalculWorld(keyStockage, joueurActuel, valeurBouton) {
 function lancerInterfaceJeu(mode, isResume = false) {
   showScreen(screens.cricket);
   
-  // 1. Gestion du chrono (Nouveau ou Reprise)
+  // 1. Gestion du chrono et de l'état de Pause
+  cricketState.isPaused = false;
+  document.getElementById("btnPauseGame").innerText = "⏸️";
+    document.getElementById("cricketKeyboardZone").style.pointerEvents = "auto";
+  document.getElementById("cricketKeyboardZone").style.opacity = "1";
+
   if (!isResume) {
     cricketState.startTime = Date.now(); 
     cricketState.elapsedTime = 0; 
+    document.getElementById("gameTimerDisplay").innerText = "00:00"; // Forcer l'affichage immédiat
   } else {
     // Si c'est une reprise, on recule l'heure de départ pour rattraper le temps déjà écoulé
     cricketState.startTime = Date.now() - (cricketState.elapsedTime * 1000);
+    updateTimer(); // Mise à jour immédiate de l'affichage
   }
   
-  // 2. Initialisation du chronomètre
-  cricketState.isPaused = false;
-  document.getElementById("btnPauseGame").innerText = "⏸️";
   clearInterval(cricketState.timerInterval);
   cricketState.timerInterval = setInterval(updateTimer, 1000);
 
-  // 3. Affichage du clavier et de la grille selon le mode
+  // 2. Initialisation du clavier
   resetModifierUI(); 
   const modZone = document.getElementById("cricketKeyboardZone").children[1];
   if (modZone) modZone.style.display = "grid";
+
+  // SÉCURITÉ : On cache TOUJOURS la zone de primes par défaut
+  document.getElementById("bountyTargetsZone").classList.add("hidden");
+
+  // 3. Affichage de la grille selon le mode
   if (mode === "x01") {
-    document.getElementById("bountyTargetsZone").classList.add("hidden");
     renderKeyboardX01(); 
     renderGridX01();
   } else if (mode === "world") {
     renderSmartKeyboard(); 
     renderGridWorld();
   } else if (mode === "bounty") {
+    // On l'affiche UNIQUEMENT pour ce mode
     document.getElementById("bountyTargetsZone").classList.remove("hidden");
     renderKeyboardX01(); 
     renderGridBounty();
@@ -2340,15 +2349,12 @@ function lancerInterfaceJeu(mode, isResume = false) {
     renderSmartKeyboard();
     renderGridTrainTarget();
   } else if (mode === "train_checkout") {
-  document.getElementById("bountyTargetsZone").classList.add("hidden");
     renderKeyboardX01();
     renderGridTrainCheckout();
   } else if (mode === "train_cricket") {
-    document.getElementById("bountyTargetsZone").classList.add("hidden");
     renderKeyboard(); 
     renderGrid();
   } else {
-    document.getElementById("bountyTargetsZone").classList.add("hidden");
     renderKeyboard(); 
     renderGrid();
   }
