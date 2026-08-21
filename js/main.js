@@ -465,7 +465,8 @@ document.getElementById("gameModeSelect").addEventListener("change", (e) => {
   document.getElementById("worldParamsGroup").classList.add("hidden");
   document.getElementById("bountyParamsGroup").classList.add("hidden");
   document.getElementById("shanghaiParamsGroup").classList.add("hidden");
- 
+  document.getElementById("golfParamsGroup").classList.add("hidden");
+
   // Remise à zéro visuelle
   document.getElementById("startGameBtn").disabled = false;
   document.getElementById("worldLimitWarning")?.classList.add("hidden");
@@ -481,7 +482,10 @@ document.getElementById("gameModeSelect").addEventListener("change", (e) => {
     checkBountyLimits();
   } else if (e.target.value === "shanghai") {
     document.getElementById("shanghaiParamsGroup").classList.remove("hidden");
-    updateShanghaiStartOptions(); // <-- On génère la liste des départs
+    updateShanghaiStartOptions(); 
+  } else if (e.target.value === "golf") {
+    document.getElementById("golfParamsGroup").classList.remove("hidden");
+    updateGolfStartOptions();
   } else {
     document.getElementById("cricketParamsGroup").classList.remove("hidden");
   }
