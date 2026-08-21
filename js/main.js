@@ -1754,6 +1754,7 @@ function demarrerMatchBounty(listeJoueurs) {
 }
 
 // --- LANCEMENT ENTRAINEMENT CRICKET ---
+// --- LANCEMENT ENTRAINEMENT CRICKET ---
 window.lancerTrainingCricket = function() {
   const user = auth.currentUser;
   if (!user) return showPopup("Tu dois être connecté à un compte.", true);
@@ -1769,9 +1770,15 @@ window.lancerTrainingCricket = function() {
   cricketState.revealedTargets = [...cricketState.targets]; // Révélation complète des cibles
   cricketState.scores[p.id] = 0;
   
+  // Correction ici : Ajout des variables manquantes pour éviter le crash
   cricketState.statsDetails[p.id] = { 
     dartsThrown: 0, 
     touchesUtiles: 0, 
+    touchesNum: {},              // <-- AJOUT
+    pointsGiv: {},               // <-- AJOUT
+    totalPointsGiven: 0,         // <-- AJOUT
+    maxPointsGivenInOneVolley: 0,// <-- AJOUT
+    currentVolleyPointsGiven: 0, // <-- AJOUT
     simplesCount: {}, 
     doublesCount: {}, 
     triplesCount: {} 
@@ -1779,6 +1786,8 @@ window.lancerTrainingCricket = function() {
   
   cricketState.targets.forEach(t => {
     cricketState.marks[p.id][t] = 0;
+    cricketState.statsDetails[p.id].touchesNum[t] = 0; // <-- AJOUT
+    cricketState.statsDetails[p.id].pointsGiv[t] = 0;  // <-- AJOUT
     cricketState.statsDetails[p.id].simplesCount[t] = 0;
     cricketState.statsDetails[p.id].doublesCount[t] = 0;
     cricketState.statsDetails[p.id].triplesCount[t] = 0;
