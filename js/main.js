@@ -263,20 +263,20 @@ const RULES_DATA = {
     <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
     <ul style="padding-left: 18px; margin-bottom: 0;">
       <li style="margin-bottom: 6px;"><strong>Départ & Arrivée :</strong> Déterminent les bornes du parcours pour moduler la longueur du jeu (ex: débuter au 1 et terminer au Bull).</li>
-      <li><strong>Sauter les numéros (Doubles/Triples) :</strong> Si l'option est cochée, réussir un tir de précision accélère votre voyage ! Toucher le Triple de votre numéro cible actuel vous fait bondir de 3 étapes (+3), et un Double vous fait avancer de 2 étapes (+2). Si l'option est décochée, les doubles et triples n'ont aucun effet bonus et agissent comme des touches simples (+1).</li>
-    </ul>
+      <li><strong>Sauter les numéros (Doubles/Triples) :</strong> Si l'option est cochée, réussir un tir de précision accélère votre voyage ! Toucher le Triple de votre numéro cible actuel vous fait bondir de 3 étapes (+3), et un Double vous fait avancer de 2 étapes (+2). <strong>Attention : la cible d'arrivée doit obligatoirement être touchée pour gagner. Si l'effet d'un bond vous fait dépasser la fin du parcours, votre progression est stoppée sur cet ultime chiffre, qu'il faudra viser avec une nouvelle fléchette.</strong> Si l'option est décochée, les doubles et triples n'ont aucun effet bonus et agissent comme des touches simples (+1).</li>    </ul>
   `,
   shanghai: `
     <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
-    <p style="margin-bottom: 12px; padding: 0;">Le jeu se déroule sur un nombre de tours défini. À chaque tour, <strong>une seule cible est active</strong> (le 1 au tour 1, le 2 au tour 2, etc.). Vous marquez des points uniquement en touchant cette cible. <strong>Un Simple vaut la valeur du chiffre, un Double vaut 2 fois la valeur, et un Triple vaut 3 fois la valeur.</strong></p>
+    <p style="margin-bottom: 12px; padding: 0;">Le jeu se déroule sur un nombre de tours défini. À chaque tour, <strong>une seule cible est active</strong>. Vous marquez des points uniquement en touchant cette cible. <strong>Un Simple vaut la valeur du chiffre, un Double vaut 2 fois la valeur, et un Triple vaut 3 fois la valeur.</strong></p>
     
     <h4 style="color: var(--primary); margin-bottom: 8px;">🏆 Condition de victoire</h4>
-    <p style="margin-bottom: 12px; padding: 0;">À la fin du dernier tour, le joueur ayant accumulé le <strong>plus de points</strong> remporte le match. Cependant, il existe un moyen de <strong>gagner instantannément la partie</strong> : si lors d'une même volée (3 fléchettes), vous parvenez à loger un <strong>Simple, un Double ET un Triple</strong> dans le numéro actif, vous gagnez immédiatement la partie, quel que soit votre score !</p>
+    <p style="margin-bottom: 12px; padding: 0;">À la fin du dernier tour, le joueur ayant accumulé le <strong>plus de points</strong> remporte le match. Cependant, il existe un moyen de <strong>gagner instantanément la partie (Le Shanghai)</strong> : si lors d'une même volée (3 fléchettes), vous parvenez à loger un <strong>Simple, un Double ET un Triple</strong> dans le numéro actif, vous gagnez immédiatement la partie, quel que soit votre score précédent !</p>
     
-    <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Paramètres</h4>
+    <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
     <ul style="padding-left: 18px; margin-bottom: 0;">
-      <li style="margin-bottom: 6px;"><strong>Nombre de tours :</strong> De 7 à 20.</li>
-      <li><strong>Nombres aléatoires inconnus :</strong> L'ordre chronologique est remplacé par des cibles secrètes tirées au sort, découvertes à chaque nouveau tour.</li>
+      <li style="margin-bottom: 6px;"><strong>Nombre de tours :</strong> Définit la durée de la partie (de 7 à 20 tours).</li>
+      <li style="margin-bottom: 6px;"><strong>Départ :</strong> Permet de choisir le chiffre par lequel la partie commence. Par exemple, avec 10 tours et un départ fixé à 11, vous jouerez l'itinéraire des chiffres 11 à 20.</li>
+      <li><strong>Nombres aléatoires inconnus :</strong> Si cette option est cochée, l'ordre chronologique et le choix du départ sont ignorés. Les cibles deviennent des numéros secrets tirés au hasard (de 1 à 20) qui ne se dévoilent qu'à chaque nouveau tour.</li>
     </ul>
   `,
 };
@@ -450,17 +450,22 @@ document.getElementById("gameModeSelect").addEventListener("change", (e) => {
   document.getElementById("bountyParamsGroup").classList.add("hidden");
   document.getElementById("shanghaiParamsGroup").classList.add("hidden");
  
+  // Remise à zéro visuelle
   document.getElementById("startGameBtn").disabled = false;
+  document.getElementById("worldLimitWarning")?.classList.add("hidden");
+  document.getElementById("bountyLimitWarning")?.classList.add("hidden");
 
   if (e.target.value === "x01") {
     document.getElementById("x01ParamsGroup").classList.remove("hidden");
   } else if (e.target.value === "world") {
     document.getElementById("worldParamsGroup").classList.remove("hidden");
+    checkWorldLimits(); // <-- On vérifie la règle des 10 cibles min
   } else if (e.target.value === "bounty") {
     document.getElementById("bountyParamsGroup").classList.remove("hidden");
     checkBountyLimits();
   } else if (e.target.value === "shanghai") {
-  document.getElementById("shanghaiParamsGroup").classList.remove("hidden");
+    document.getElementById("shanghaiParamsGroup").classList.remove("hidden");
+    updateShanghaiStartOptions(); // <-- On génère la liste des départs
   } else {
     document.getElementById("cricketParamsGroup").classList.remove("hidden");
   }
@@ -595,6 +600,83 @@ function checkBountyLimits() {
         bountyWarning.classList.add('hidden');
         startGameBtnForBountyCheck.disabled = false;
     }
+}
+
+// --- SÉCURITÉ TOUR DU MONDE (10 cibles minimum) ---
+const worldStartSelect = document.getElementById("worldStartSelect");
+const worldEndSelect = document.getElementById("worldEndSelect");
+const worldLimitWarning = document.getElementById("worldLimitWarning");
+
+function checkWorldLimits() {
+  if (!worldStartSelect || !worldEndSelect || !worldLimitWarning) return;
+  const start = parseInt(worldStartSelect.value, 10);
+  
+  // 1. Griser les options d'arrivée qui créeraient un parcours trop court
+  Array.from(worldEndSelect.options).forEach(opt => {
+    const endVal = parseInt(opt.value, 10);
+    const steps = (endVal === 25) ? (20 - start + 2) : (endVal - start + 1);
+    opt.disabled = steps < 10;
+  });
+
+  // 2. Si l'arrivée actuelle est devenue invalide, forcer la première option valide
+  const currentEnd = parseInt(worldEndSelect.value, 10);
+  const currentSteps = (currentEnd === 25) ? (20 - start + 2) : (currentEnd - start + 1);
+  if (currentSteps < 10) {
+    const firstValid = Array.from(worldEndSelect.options).find(o => !o.disabled);
+    if (firstValid) worldEndSelect.value = firstValid.value;
+  }
+  
+  // 3. Sécurité finale sur le bouton Démarrer
+  const finalEnd = parseInt(worldEndSelect.value, 10);
+  const finalSteps = (finalEnd === 25) ? (20 - start + 2) : (finalEnd - start + 1);
+  const btnStart = document.getElementById("startGameBtn");
+  
+  if (finalSteps < 10) {
+    worldLimitWarning.classList.remove("hidden");
+    if (btnStart) btnStart.disabled = true;
+  } else {
+    worldLimitWarning.classList.add("hidden");
+    if (btnStart) btnStart.disabled = false;
+  }
+}
+
+if (worldStartSelect) worldStartSelect.addEventListener("change", checkWorldLimits);
+if (worldEndSelect) worldEndSelect.addEventListener("change", checkWorldLimits);
+
+
+// --- LOGIQUE DE DÉPART DYNAMIQUE SHANGHAI ---
+const shanghaiTurnsSelect = document.getElementById("shanghaiTurnsSelect");
+const shanghaiStartSelect = document.getElementById("shanghaiStartSelect");
+const shanghaiRandomCheckbox = document.getElementById("shanghaiRandomCheckbox");
+const shanghaiStartDiv = document.getElementById("shanghaiStartDiv");
+
+function updateShanghaiStartOptions() {
+  if (!shanghaiTurnsSelect || !shanghaiStartSelect) return;
+  const turns = parseInt(shanghaiTurnsSelect.value, 10);
+  
+  // Le départ max correspond à : 21 - nombre de tours
+  // Ex: 10 tours -> 21 - 10 = 11 (le joueur jouera de 11 à 20)
+  const maxStart = Math.max(1, 21 - turns); 
+  
+  let currentVal = parseInt(shanghaiStartSelect.value, 10) || 1;
+  if (currentVal > maxStart) currentVal = maxStart; // On rétrograde si la valeur devient invalide
+
+  shanghaiStartSelect.innerHTML = "";
+  for (let i = 1; i <= maxStart; i++) {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.innerText = i;
+    if (i === currentVal) opt.selected = true;
+    shanghaiStartSelect.appendChild(opt);
+  }
+}
+
+if (shanghaiTurnsSelect) shanghaiTurnsSelect.addEventListener("change", updateShanghaiStartOptions);
+if (shanghaiRandomCheckbox) {
+  shanghaiRandomCheckbox.addEventListener("change", (e) => {
+    // Cache la sélection du départ si le mode "Aléatoire" est coché
+    if (shanghaiStartDiv) shanghaiStartDiv.style.display = e.target.checked ? "none" : "block";
+  });
 }
 
 // ================== GESTION VISIBILITÉ MOT DE PASSE ==================
@@ -1777,17 +1859,22 @@ function demarrerMatchShanghai(listeJoueurs) {
   const selectTours = document.getElementById("shanghaiTurnsSelect");
   cricketState.maxTurns = selectTours ? parseInt(selectTours.value, 10) : 7;
   cricketState.isBlindShanghai = document.getElementById("shanghaiRandomCheckbox").checked;
+  
+  const selectStart = document.getElementById("shanghaiStartSelect");
+  const startNum = selectStart ? parseInt(selectStart.value, 10) : 1;
 
   // Création du parcours
   let cibles = [];
   if (cricketState.isBlindShanghai) {
-    let pool = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]; // Pas de 25 car impossible d'y faire un Triple pour le Shanghai
+    let pool = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]; 
     for (let i = 0; i < cricketState.maxTurns; i++) {
       let idx = Math.floor(Math.random() * pool.length);
       cibles.push(pool.splice(idx, 1)[0]);
     }
   } else {
-    for (let i = 1; i <= cricketState.maxTurns; i++) cibles.push(i);
+    for (let i = 0; i < cricketState.maxTurns; i++) {
+      cibles.push(startNum + i);
+    }
   }
   cricketState.shanghaiTargets = cibles;
   cricketState.shanghaiWinner = null;
@@ -2233,7 +2320,7 @@ function lancerInterfaceJeu(mode, isResume = false) {
 
   // 3. Affichage du clavier et de la grille selon le mode
   resetModifierUI(); 
-  const modZone = document.getElementById("cricketKeyboardZone").querySelector("div:nth-child(2)");
+  const modZone = document.getElementById("cricketKeyboardZone").children[1];
   if (modZone) modZone.style.display = "grid";
   if (mode === "x01") {
     document.getElementById("bountyTargetsZone").classList.add("hidden");
@@ -2578,7 +2665,7 @@ function renderSmartKeyboard() {
   container.innerHTML = "";
 
   // On cache la barre des modificateurs classique (Double, Triple, Retour)
-  const modZone = document.getElementById("cricketKeyboardZone").querySelector("div:nth-child(2)");
+  const modZone = document.getElementById("cricketKeyboardZone").children[1]; // <-- CORRECTION ICI
   if (modZone) modZone.style.display = "none";
 
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
@@ -2665,7 +2752,7 @@ function renderSmartKeyboard() {
   btnUndo.style.fontSize = "14px";
   btnUndo.style.border = "1px solid var(--divider)";
   btnUndo.style.color = "var(--text-soft)";
-  btnUndo.innerHTML = "↩️ Annuler le dernier coup";
+  btnUndo.innerHTML = "Retour";
   btnUndo.onclick = () => annulerDernierCoup();
   rowUndo.appendChild(btnUndo);
   

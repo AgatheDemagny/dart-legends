@@ -110,7 +110,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 1.98 - 21/08/2026</p>
+        <p>Version 1.99 - 21/08/2026</p>
       </div>
     </section>
 
@@ -425,7 +425,11 @@
                 <option value="25" selected>🎯 Bull</option>
               </select>
             </div>
-          </div> <div style="margin-top: 12px;">
+          </div> 
+          <p class="hint hidden" style="margin-top: 4px; color: var(--danger);" id="worldLimitWarning">
+            ⚠️ Le parcours doit comporter au moins 10 cibles.
+          </p>
+          <div style="margin-top: 12px;">
             <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
               <span class="stat-label"><strong>Comptabiliser les doubles & triples</strong></span>
               <input type="checkbox" id="worldJumpCheckbox" style="width: auto; margin-top: 0;" checked>
@@ -491,22 +495,30 @@
           </div>
         </div>
 
-        <div id="shanghaiParamsGroup" class="hidden">
-          <div style="margin-top: 12px;">
-            <label><strong>Nombre de tours</strong></label>
-            <select id="shanghaiTurnsSelect">
-              <option value="7" selected>7 tours</option>
-              <option value="10">10 tours</option>
-              <option value="15">15 tours</option>
-              <option value="20">20 tours</option>
-            </select>
+<div id="shanghaiParamsGroup" class="hidden">
+          <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label><strong>Nombre de tours</strong></label>
+              <select id="shanghaiTurnsSelect">
+                <option value="7" selected>7 tours</option>
+                <option value="10">10 tours</option>
+                <option value="15">15 tours</option>
+                <option value="20">20 tours</option>
+              </select>
+            </div>
+            <div id="shanghaiStartDiv">
+              <label><strong>Départ</strong></label>
+              <select id="shanghaiStartSelect">
+                <!-- Rempli dynamiquement par Javascript -->
+              </select>
+            </div>
           </div>
           <div style="margin-top: 12px;">
             <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
               <span class="stat-label"><strong>Mode n'a qu'un œil</strong></span>
               <input type="checkbox" id="shanghaiRandomCheckbox" style="width: auto; margin-top: 0;">
             </div>
-            <p class="hint" style="margin-top: 2px;">Dans ce mode, au lieu de jouer les chiffres dans l'ordre (1, 2, 3...), les chiffres sont tirés au sort et découverts à chaque tour.</p>
+            <p class="hint" style="margin-top: 2px;">Dans ce mode, au lieu de jouer les chiffres dans l'ordre, les cibles sont tirées au sort et découvertes à chaque tour.</p>
           </div>
         </div>
       </div>
