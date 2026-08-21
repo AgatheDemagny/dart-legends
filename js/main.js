@@ -232,12 +232,25 @@ const RULES_DATA = {
     <p style="margin-bottom: 12px; padding: 0;"><strong>Valeur des lancers :</strong> Les zones Simples rapportent la valeur du chiffre. L'anneau extérieur (Double) multiplie les points de la fléchette par 2. L'anneau intermédiaire (Triple) multiplie les points par 3. Le Bull extérieur vaut 25 points et le centre du Bull vaut 50 points.</p>
     
     <h4 style="color: var(--primary); margin-bottom: 8px;">💥 La règle du "Bust" (Casse)</h4>
-    <p style="margin-bottom: 12px; padding: 0;">Si vous marquez plus de points qu'il ne vous en reste, ou s'il vous reste exactement 1 point alors que vous jouez avec l'obligation de finir sur un double, votre tour s'arrête immédiatement. Le lancer est considéré comme nul ("Bust") et votre score est réinitialisé à ce qu'il était au début de votre tour.</p>
+    <p style="margin-bottom: 12px; padding: 0;">Si vous marquez plus de points qu'il ne vous en reste, s'il vous reste exactement 1 point alors que vous jouez avec l'obligation de finir sur un double, ou si vous tombez à zéro sans que votre fléchette soit un double en mode Double-out, votre tour s'arrête immédiatement. Le lancer est considéré comme nul ("Bust") et votre score est réinitialisé à ce qu'il était au début de votre tour.</p>
     
     <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
     <ul style="padding-left: 18px; margin-bottom: 0;">
       <li style="margin-bottom: 6px;"><strong>Points de départ :</strong> Le score initial attribué au début du match (ex: 301 pour une partie rapide, 501 pour le format officiel, ...).</li>
       <li><strong>Checkout :</strong> En mode "Double-out", vous devez impérativement loger votre toute dernière fléchette de victoire dans un secteur <strong>Double</strong> pour tomber à zéro. Sans contrainte, n'importe quelle zone de la cible suffit.</li>
+    </ul>
+  `,
+  bounty: `
+    <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
+    <p style="margin-bottom: 8px; padding: 0;">Le Chasseur de primes est un mode dynamique où les zones cibles changent à chaque impact. L'écran affiche plusieurs chiffres aléatoires qui représentent des <strong>Primes</strong>. Lorsqu'un joueur touche une prime active, la valeur du chiffre (multipliée par 2 ou 3 si c'est un Double/Triple) est ajoutée à son score.</p>
+    <p style="margin-bottom: 12px; padding: 0;"><strong>Renouvellement instantané :</strong> Dès qu'un chiffre prime est touché, il disparaît et est remplacé sur-le-champ par un nouveau numéro choisi au hasard, garantissant qu'il soit unique et distinct des autres primes ou malus à l'écran.</p>
+    
+    <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
+    <ul style="padding-left: 18px; margin-bottom: 0;">
+      <li style="margin-bottom: 6px;"><strong>Nombre de primes :</strong> Définit la quantité de primes disponibles simultanément sur le panneau (2, 3 ou 4).</li>
+      <li style="margin-bottom: 6px;"><strong>Nombre de tours / Score cible :</strong> Fixent la fin du match. Le but est d'atteindre le score cible en premier ou d'avoir le meilleur score à la fin des manches. Par sécurité, le jeu bloque le départ si ces deux paramètres sont configurés en illimité.</li>
+      <li style="margin-bottom: 6px;"><strong>Chiffres renouvelés après :</strong> Nombre de tours maximum avant qu'une prime non touchée n'expire et ne change automatiquement de valeur pour éviter les situations de blocage.</li>
+      <li><strong>Activer un chiffre Malus 💀 :</strong> Si coché, un chiffre maudit apparaît en rouge à l'écran. Le premier joueur maladroit qui le touche subit une pénalité financière et perd les points correspondants (multipliés si Double/Triple). Le malus se déplace aussitôt après l'impact.</li>
     </ul>
   `,
   world: `
@@ -253,19 +266,19 @@ const RULES_DATA = {
       <li><strong>Sauter les numéros (Doubles/Triples) :</strong> Si l'option est cochée, réussir un tir de précision accélère votre voyage ! Toucher le Triple de votre numéro cible actuel vous fait bondir de 3 étapes (+3), et un Double vous fait avancer de 2 étapes (+2). Si l'option est décochée, les doubles et triples n'ont aucun effet bonus et agissent comme des touches simples (+1).</li>
     </ul>
   `,
-  bounty: `
+  shanghai: `
     <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
-    <p style="margin-bottom: 8px; padding: 0;">Le Chasseur de primes est un mode dynamique où les zones cibles changent à chaque impact. L'écran affiche plusieurs chiffres aléatoires qui représentent des <strong>Primes</strong>. Lorsqu'un joueur touche une prime active, la valeur du chiffre (multipliée par 2 ou 3 si c'est un Double/Triple) est ajoutée à son score.</p>
-    <p style="margin-bottom: 12px; padding: 0;"><strong>Renouvellement instantané :</strong> Dès qu'un chiffre prime est touché, il disparaît et est remplacé sur-le-champ par un nouveau numéro choisi au hasard, garantissant qu'il soit unique et distinct des autres primes ou malus à l'écran.</p>
+    <p style="margin-bottom: 12px; padding: 0;">Le jeu se déroule sur un nombre de tours défini. À chaque tour, <strong>une seule cible est active</strong> (le 1 au tour 1, le 2 au tour 2, etc.). Vous marquez des points uniquement en touchant cette cible.</p>
     
-    <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
+    <h4 style="color: var(--primary); margin-bottom: 8px;">🏆 Condition de victoire</h4>
+    <p style="margin-bottom: 12px; padding: 0;">À la fin du dernier tour, le joueur ayant accumulé le <strong>plus de points</strong> remporte le match. Cependant, il existe un moyen de <strong>gagner instantannément la partie</strong> : si lors d'une même volée (3 fléchettes), vous parvenez à loger un <strong>Simple, un Double ET un Triple</strong> dans le numéro actif, vous gagnez immédiatement la partie, quel que soit votre score !</p>
+    
+    <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Paramètres</h4>
     <ul style="padding-left: 18px; margin-bottom: 0;">
-      <li style="margin-bottom: 6px;"><strong>Nombre de primes :</strong> Définit la quantité de primes disponibles simultanément sur le panneau (2, 3 ou 4).</li>
-      <li style="margin-bottom: 6px;"><strong>Nombre de tours / Score cible :</strong> Fixent la fin du match. Le but est d'atteindre le score cible en premier ou d'avoir le meilleur score à la fin des manches. Par sécurité, le jeu bloque le départ si ces deux paramètres sont configurés en illimité.</li>
-      <li style="margin-bottom: 6px;"><strong>Chiffres renouvelés après :</strong> Nombre de tours maximum avant qu'une prime non touchée n'expire et ne change automatiquement de valeur pour éviter les situations de blocage.</li>
-      <li><strong>Activer un chiffre Malus 💀 :</strong> Si coché, un chiffre maudit apparaît en rouge à l'écran. Le premier joueur maladroit qui le touche subit une pénalité financière et perd les points correspondants (multipliés si Double/Triple). Le malus se déplace aussitôt après l'impact.</li>
+      <li style="margin-bottom: 6px;"><strong>Nombre de tours :</strong> De 7 à 20.</li>
+      <li><strong>Nombres aléatoires inconnus :</strong> L'ordre chronologique est remplacé par des cibles secrètes tirées au sort, découvertes à chaque nouveau tour.</li>
     </ul>
-  `
+  `,
 };
 
 // Gestion de l'ouverture et fermeture
@@ -399,7 +412,6 @@ function renderSelectedPlayers() {
     
     div.innerHTML = `<span>${p.name}</span>`;
     
-    // Ajout de la croix pour supprimer un joueur
     const btnRemove = document.createElement("button");
     btnRemove.className = "icon-btn";
     btnRemove.style.width = "28px"; btnRemove.style.height = "28px"; btnRemove.style.fontSize = "12px";
@@ -436,6 +448,7 @@ document.getElementById("gameModeSelect").addEventListener("change", (e) => {
   document.getElementById("x01ParamsGroup").classList.add("hidden");
   document.getElementById("worldParamsGroup").classList.add("hidden");
   document.getElementById("bountyParamsGroup").classList.add("hidden");
+  document.getElementById("shanghaiParamsGroup").classList.add("hidden");
  
   document.getElementById("startGameBtn").disabled = false;
 
@@ -446,6 +459,8 @@ document.getElementById("gameModeSelect").addEventListener("change", (e) => {
   } else if (e.target.value === "bounty") {
     document.getElementById("bountyParamsGroup").classList.remove("hidden");
     checkBountyLimits();
+  } else if (e.target.value === "shanghai") {
+  document.getElementById("shanghaiParamsGroup").classList.remove("hidden");
   } else {
     document.getElementById("cricketParamsGroup").classList.remove("hidden");
   }
@@ -509,7 +524,6 @@ function renderTeamsConfig() {
   });
 }
 
-// Ajoute cette nouvelle fonction juste en dessous
 window.deplacerJoueurEquipe = function(currentTeamId, playerId) {
   const currentTeam = listeEquipesFormees.find(e => e.id === currentTeamId);
   const playerIndex = currentTeam.members.findIndex(m => m.id === playerId);
@@ -1575,6 +1589,8 @@ document.getElementById("startGameBtn").addEventListener("click", () => {
     demarrerMatchWorld(ordonnancementTireurs);
   } else if (mode === "bounty") { 
     demarrerMatchBounty(ordonnancementTireurs);
+  } else if (mode === "shanghai") {
+    demarrerMatchShanghai(ordonnancementTireurs);
   } else {
     demarrerMatchCricket(ordonnancementTireurs);
   }
@@ -1753,8 +1769,120 @@ function demarrerMatchBounty(listeJoueurs) {
   mettreAJourCiblesBountyUI();
 }
 
-// --- LANCEMENT ENTRAINEMENT CRICKET ---
-// --- LANCEMENT ENTRAINEMENT CRICKET ---
+// --- INITIALISATION SHANGHAI ---
+function demarrerMatchShanghai(listeJoueurs) {
+  cricketState.gameMode = "shanghai";
+  initVariablesMatchGenerales(listeJoueurs);
+
+  const selectTours = document.getElementById("shanghaiTurnsSelect");
+  cricketState.maxTurns = selectTours ? parseInt(selectTours.value, 10) : 7;
+  cricketState.isBlindShanghai = document.getElementById("shanghaiRandomCheckbox").checked;
+
+  // Création du parcours
+  let cibles = [];
+  if (cricketState.isBlindShanghai) {
+    let pool = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]; // Pas de 25 car impossible d'y faire un Triple pour le Shanghai
+    for (let i = 0; i < cricketState.maxTurns; i++) {
+      let idx = Math.floor(Math.random() * pool.length);
+      cibles.push(pool.splice(idx, 1)[0]);
+    }
+  } else {
+    for (let i = 1; i <= cricketState.maxTurns; i++) cibles.push(i);
+  }
+  cricketState.shanghaiTargets = cibles;
+  cricketState.shanghaiWinner = null;
+
+  cricketState.players.forEach(p => {
+    const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
+    cricketState.scores[keyStockage] = 0;
+    cricketState.statsDetails[p.id] = {
+      dartsThrown: 0, touchesUtiles: 0,
+      currentTurnHits: { s: false, d: false, t: false },
+      historyPerTarget: {}
+    };
+  });
+
+  lancerInterfaceJeu("shanghai");
+}
+
+// --- RENDU GRILLE SHANGHAI ---
+function renderGridShanghai() {
+  const table = document.getElementById("cricketGridTable");
+  if(!table) return;
+  table.innerHTML = "";
+  
+  const cibleActuelle = cricketState.shanghaiTargets[cricketState.currentTurn - 1];
+
+  const headerRow = document.createElement("tr");
+  headerRow.style.background = "rgba(255,255,255,0.02)";
+  headerRow.innerHTML = `
+    <th style="text-align:left; padding: 12px 6px; border-bottom: 2px solid var(--divider); width: 40%;">Joueurs</th>
+    <th style="padding: 12px 4px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--text-soft); width: 30%;">Cible</th>
+    <th style="padding: 12px 6px; border-bottom: 2px solid var(--divider); border-left: 1px solid var(--divider); color: var(--accent); width: 30%;">Score</th>
+  `;
+  table.appendChild(headerRow);
+
+  let entitesAAfficher = cricketState.isTeamMode ? listeEquipesFormees : cricketState.players;
+  const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
+
+  entitesAAfficher.forEach(entite => {
+    const row = document.createElement("tr");
+    row.style.borderBottom = "1px solid var(--divider)";
+    
+    let estActif = cricketState.isTeamMode ? (joueurActuel.teamId === entite.id) : (joueurActuel.id === entite.id);
+    if(estActif) row.style.backgroundColor = "rgba(192,101,42,0.15)";
+    
+    // Affichage des "lettres magiques" S-D-T pour voir si on est proche du Shanghai
+    let trackerHtml = "";
+    if (estActif) {
+       let stats = cricketState.statsDetails[joueurActuel.id].currentTurnHits;
+       trackerHtml = `<div style="font-size: 11px; margin-top: 4px; font-weight:800; letter-spacing:2px;">
+         <span style="color: ${stats.s ? 'var(--primary)' : 'var(--divider)'}">S</span>
+         <span style="color: ${stats.d ? 'var(--primary)' : 'var(--divider)'}">D</span>
+         <span style="color: ${stats.t ? 'var(--primary)' : 'var(--divider)'}">T</span>
+       </div>`;
+    }
+
+    row.innerHTML = `
+      <td style="text-align:left; padding: 14px 6px; font-weight:700;">${entite.name} ${trackerHtml}</td>
+      <td style="padding: 14px 4px; border-left: 1px solid var(--divider); font-weight:900; color: var(--primary-strong); font-size: 20px; text-align:center;">${cibleActuelle}</td>
+      <td style="font-weight:800; padding: 14px 6px; border-left: 1px solid var(--divider); color: var(--accent); font-size: 16px; text-align:center;">${cricketState.scores[entite.id]}</td>
+    `;
+    table.appendChild(row);
+  });
+}
+
+// --- LOGIQUE DE TIR SHANGHAI ---
+function traiterCalculShanghai(keyStockage, joueurActuel, valeurBouton) {
+  const stats = cricketState.statsDetails[joueurActuel.id];
+  const cibleAttendue = cricketState.shanghaiTargets[cricketState.currentTurn - 1];
+
+  if (!stats.historyPerTarget[cibleAttendue]) {
+    stats.historyPerTarget[cibleAttendue] = [];
+  }
+
+  if (valeurBouton === 0) {
+    stats.historyPerTarget[cibleAttendue].push("X");
+    return;
+  }
+
+  if (valeurBouton === cibleAttendue) {
+    cricketState.scores[keyStockage] += (valeurBouton * modificateurEnCours);
+    stats.touchesUtiles += modificateurEnCours;
+    
+    if (modificateurEnCours === 1) { stats.currentTurnHits.s = true; stats.historyPerTarget[cibleAttendue].push("S"); }
+    if (modificateurEnCours === 2) { stats.currentTurnHits.d = true; stats.historyPerTarget[cibleAttendue].push("D"); }
+    if (modificateurEnCours === 3) { stats.currentTurnHits.t = true; stats.historyPerTarget[cibleAttendue].push("T"); }
+    
+    if (stats.currentTurnHits.s && stats.currentTurnHits.d && stats.currentTurnHits.t) {
+      cricketState.shanghaiWinner = keyStockage;
+      showPopup("🐉 SHANGHAI !!!", false);
+    }
+  } else {
+    stats.historyPerTarget[cibleAttendue].push("X");
+  }
+}
+
 window.lancerTrainingCricket = function() {
   const user = auth.currentUser;
   if (!user) return showPopup("Tu dois être connecté à un compte.", true);
@@ -1769,16 +1897,14 @@ window.lancerTrainingCricket = function() {
   cricketState.targets = [15, 16, 17, 18, 19, 20, 25];
   cricketState.revealedTargets = [...cricketState.targets]; // Révélation complète des cibles
   cricketState.scores[p.id] = 0;
-  
-  // Correction ici : Ajout des variables manquantes pour éviter le crash
   cricketState.statsDetails[p.id] = { 
     dartsThrown: 0, 
     touchesUtiles: 0, 
-    touchesNum: {},              // <-- AJOUT
-    pointsGiv: {},               // <-- AJOUT
-    totalPointsGiven: 0,         // <-- AJOUT
-    maxPointsGivenInOneVolley: 0,// <-- AJOUT
-    currentVolleyPointsGiven: 0, // <-- AJOUT
+    touchesNum: {},
+    pointsGiv: {},
+    totalPointsGiven: 0,
+    maxPointsGivenInOneVolley: 0,
+    currentVolleyPointsGiven: 0,
     simplesCount: {}, 
     doublesCount: {}, 
     triplesCount: {} 
@@ -1786,8 +1912,8 @@ window.lancerTrainingCricket = function() {
   
   cricketState.targets.forEach(t => {
     cricketState.marks[p.id][t] = 0;
-    cricketState.statsDetails[p.id].touchesNum[t] = 0; // <-- AJOUT
-    cricketState.statsDetails[p.id].pointsGiv[t] = 0;  // <-- AJOUT
+    cricketState.statsDetails[p.id].touchesNum[t] = 0;
+    cricketState.statsDetails[p.id].pointsGiv[t] = 0;
     cricketState.statsDetails[p.id].simplesCount[t] = 0;
     cricketState.statsDetails[p.id].doublesCount[t] = 0;
     cricketState.statsDetails[p.id].triplesCount[t] = 0;
@@ -2056,7 +2182,13 @@ function traiterCalculWorld(keyStockage, joueurActuel, valeurBouton) {
   let cibleAttendue = cricketState.scores[keyStockage];
   const finParcours = cricketState.worldEndNum;
   let bond = cricketState.worldJump ? modificateurEnCours : 1;
-    
+  
+  if (valeurBouton === 0) {
+    if (stats && stats.dartsPerTarget[cibleAttendue] !== undefined) {
+      stats.dartsPerTarget[cibleAttendue] += 1;
+    }
+    return;
+  }
   if (modificateurEnCours === 1) stats.simplesHitCount += 1;
   if (modificateurEnCours === 2) stats.doublesHitCount += 1;
   if (modificateurEnCours === 3 && valeurBouton !== 25) stats.triplesHitCount += 1;
@@ -2101,26 +2233,29 @@ function lancerInterfaceJeu(mode, isResume = false) {
 
   // 3. Affichage du clavier et de la grille selon le mode
   resetModifierUI(); 
+  const modZone = document.getElementById("cricketKeyboardZone").querySelector("div:nth-child(2)");
+  if (modZone) modZone.style.display = "grid";
   if (mode === "x01") {
     document.getElementById("bountyTargetsZone").classList.add("hidden");
     renderKeyboardX01(); 
     renderGridX01();
   } else if (mode === "world") {
-    document.getElementById("bountyTargetsZone").classList.add("hidden");
-    renderKeyboardX01(); 
+    renderSmartKeyboard(); 
     renderGridWorld();
   } else if (mode === "bounty") {
     document.getElementById("bountyTargetsZone").classList.remove("hidden");
     renderKeyboardX01(); 
     renderGridBounty();
+  } else if (mode === "shanghai") {
+    renderSmartKeyboard();
+    renderGridShanghai();
   } else if (mode === "train_target") {
-    document.getElementById("bountyTargetsZone").classList.add("hidden");
-    renderKeyboardX01(); // Affiche tous les chiffres 1 à 20
+    renderSmartKeyboard();
     renderGridTrainTarget();
   } else if (mode === "train_checkout") {
   document.getElementById("bountyTargetsZone").classList.add("hidden");
-  renderKeyboardX01();
-  renderGridTrainCheckout();
+    renderKeyboardX01();
+    renderGridTrainCheckout();
   } else if (mode === "train_cricket") {
     document.getElementById("bountyTargetsZone").classList.add("hidden");
     renderKeyboard(); 
@@ -2366,7 +2501,6 @@ function renderGridBounty() {
       row.style.backgroundColor = "rgba(192,101,42,0.15)";
     }
     
-    // Ajout de border-left pour la séparation verticale
     row.innerHTML = `
       <td style="text-align:left; padding:14px 6px; font-weight:700;">${entite.name}</td>
       <td style="font-weight:800; padding:14px 6px; border-left:1px solid var(--divider); color:var(--primary-strong); font-size:16px;">${cricketState.scores[entite.id]}</td>
@@ -2437,6 +2571,82 @@ function renderKeyboardX01() {
   }
 }
 
+// --- CLAVIER INTELLIGENT (Pour les jeux à cible unique) ---
+function renderSmartKeyboard() {
+  const container = document.getElementById("cricketDynamicRows");
+  if (!container) return; 
+  container.innerHTML = "";
+
+  // On cache la barre des modificateurs classique (Double, Triple, Retour)
+  const modZone = document.getElementById("cricketKeyboardZone").querySelector("div:nth-child(2)");
+  if (modZone) modZone.style.display = "none";
+
+  const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
+  const keyStockage = cricketState.isTeamMode ? joueurActuel.teamId : joueurActuel.id;
+  
+  // Déduction de la cible actuelle selon le mode
+  let cibleActuelle = null;
+  if (cricketState.gameMode === "world") {
+     cibleActuelle = cricketState.scores[keyStockage];
+     if (cibleActuelle >= 26) return; // Fini
+  } else if (cricketState.gameMode === "train_target") {
+     if (cricketState.trainCurrentPoolIndex >= cricketState.trainTurnsPool.length) return;
+     cibleActuelle = cricketState.trainTurnsPool[cricketState.trainCurrentPoolIndex].target;
+  } else if (cricketState.gameMode === "shanghai") {
+     cibleActuelle = cricketState.shanghaiTargets[cricketState.currentTurn - 1];
+  }
+
+  if (!cibleActuelle) return;
+  const libelleCible = cibleActuelle === 25 ? "Bull" : cibleActuelle;
+
+  // Création de la grille des 4 boutons
+  const grid = document.createElement("div");
+  grid.style.display = "grid";
+  grid.style.gridTemplateColumns = "1fr 1fr";
+  grid.style.gap = "8px";
+
+  // Fonction utilitaire pour créer les boutons
+  const createBtn = (mod, label, color) => {
+     const btn = document.createElement("button");
+     btn.className = "ghost";
+     btn.style.padding = "24px 10px";
+     btn.style.fontSize = "16px";
+     btn.style.borderColor = color;
+     btn.style.color = color;
+     btn.innerHTML = label;
+     btn.onclick = () => {
+         modificateurEnCours = mod === 0 ? 1 : mod;
+         taperChiffre(mod === 0 ? 0 : cibleActuelle); // On simule la frappe
+     };
+     return btn;
+  };
+
+  grid.appendChild(createBtn(0, "❌<br>Raté", "var(--danger)"));
+  grid.appendChild(createBtn(1, `<br>Simple ${libelleCible}`, "var(--primary)"));
+  grid.appendChild(createBtn(2, `<br>Double ${libelleCible}`, "var(--primary)"));
+  
+  const btnTriple = createBtn(3, `<br>Triple ${libelleCible}`, "var(--primary)");
+  if (cibleActuelle === 25) {
+      btnTriple.disabled = true;
+      btnTriple.style.opacity = "0.2";
+  }
+  grid.appendChild(btnTriple);
+
+  container.appendChild(grid);
+
+  // Ajout du bouton Retour en dessous
+  const rowUndo = document.createElement("div");
+  rowUndo.style.marginTop = "10px";
+  const btnUndo = document.createElement("button");
+  btnUndo.className = "danger-btn btn-block";
+  btnUndo.style.padding = "14px";
+  btnUndo.innerText = "Retour";
+  btnUndo.onclick = () => annulerDernierCoup();
+  rowUndo.appendChild(btnUndo);
+  
+  container.appendChild(rowUndo);
+}
+
 function creerBoutonClavier(libelle, valeur) {
   const btn = document.createElement("button"); btn.className = "ghost"; btn.style.fontSize = "14px"; 
   btn.style.fontWeight = "bold"; btn.innerText = libelle; btn.onclick = () => taperChiffre(valeur);
@@ -2494,7 +2704,7 @@ function taperChiffre(valeurBouton) {
       teamTurnState: cricketState.teamTurnState ? JSON.parse(JSON.stringify(cricketState.teamTurnState)) : null,
       bountyBonusTargets: cricketState.bountyBonusTargets ? [...cricketState.bountyBonusTargets] : null,
       bountyMalusTarget: cricketState.bountyMalusTarget,
-      bountyBonusAges: cricketState.bountyBonusAges ? [...cricketState.bountyBonusAges] : null, // Ajout de l'âge
+      bountyBonusAges: cricketState.bountyBonusAges ? [...cricketState.bountyBonusAges] : null,
       bountyMalusAge: cricketState.bountyMalusAge, 
       trainCurrentPoolIndex: cricketState.trainCurrentPoolIndex,
       trainRoundInCurrentTarget: cricketState.trainRoundInCurrentTarget,
@@ -2524,6 +2734,7 @@ function taperChiffre(valeurBouton) {
   }
   else if (cricketState.gameMode === "world") traiterCalculWorld(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "bounty") traiterCalculBounty(keyStockage, joueurActuel, valeurBouton);
+  else if (cricketState.gameMode === "shanghai") traiterCalculShanghai(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "train_target") traiterCalculTrainTarget(keyStockage, joueurActuel, valeurBouton);
   else traiterCalculCricket(keyStockage, joueurActuel, valeurBouton);
 
@@ -2541,10 +2752,11 @@ function taperChiffre(valeurBouton) {
 
   resetModifierUI();
   if (cricketState.gameMode === "x01") { renderKeyboardX01(); renderGridX01(); }
-  else if (cricketState.gameMode === "world") { renderKeyboardX01(); renderGridWorld(); }
   else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); }
-  else if (cricketState.gameMode === "train_target") { renderKeyboardX01(); renderGridTrainTarget(); }
-  else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); } // <-- Ligne ajoutée !
+  else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); }
+  else if (cricketState.gameMode === "world") { renderSmartKeyboard(); renderGridWorld(); } // <-- CORRIGÉ
+  else if (cricketState.gameMode === "shanghai") { renderSmartKeyboard(); renderGridShanghai(); } // <-- CORRIGÉ
+  else if (cricketState.gameMode === "train_target") { renderSmartKeyboard(); renderGridTrainTarget(); } // <-- CORRIGÉ
   else { renderKeyboard(); renderGrid(); }
   
   gererEtatBoutonBull(); updateTurnHeader(); verifierConditionsFinMatch(); sauvegarderPartie();
@@ -2587,19 +2799,22 @@ function cloreVoleeActuelle(joueur) {
     if (stats.currentVolleyPointsGiven > stats.maxPointsGivenInOneVolley) stats.maxPointsGivenInOneVolley = stats.currentVolleyPointsGiven;
     stats.currentVolleyPointsGiven = 0;
   }
-if (cricketState.gameMode === "train_target") {
-        const cibleAttendue = cricketState.trainTurnsPool[cricketState.trainCurrentPoolIndex].target;
-        const statsCible = cricketState.statsDetails[joueur.id].targets[cibleAttendue];
-        if (statsCible.currentTurnMarks > statsCible.bestTurn) {
-            statsCible.bestTurn = statsCible.currentTurnMarks;
-        }
-        statsCible.currentTurnMarks = 0;
-
-        // On passe simplement à la case suivante du panier
-        cricketState.trainCurrentPoolIndex++;
+  if (cricketState.gameMode === "shanghai" && !cricketState.shanghaiWinner) {
+      cricketState.statsDetails[joueur.id].currentTurnHits = { s: false, d: false, t: false };
     }
+  if (cricketState.gameMode === "train_target") {
+          const cibleAttendue = cricketState.trainTurnsPool[cricketState.trainCurrentPoolIndex].target;
+          const statsCible = cricketState.statsDetails[joueur.id].targets[cibleAttendue];
+          if (statsCible.currentTurnMarks > statsCible.bestTurn) {
+              statsCible.bestTurn = statsCible.currentTurnMarks;
+          }
+          statsCible.currentTurnMarks = 0;
+
+          // On passe simplement à la case suivante du panier
+          cricketState.trainCurrentPoolIndex++;
+      }
   if (cricketState.gameMode === "train_checkout") {
-    const p = cricketState.players[0]; // Correction ici, on l'appelle "p" pour ne pas écraser "joueur"
+    const p = cricketState.players[0];
     const keyStockage = p.id;
     
     // Si le score n'est toujours pas tombé à zéro à la fin des 3 flèches de la volée
@@ -2736,8 +2951,6 @@ function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
       stats.totalScoreScored = cricketState.x01TurnStartTotalScored;
       stats.first9DartsScore = cricketState.x01TurnStartFirst9;
       stats.currentVolleyScore = 0; 
-      // On n'ajoute plus artificiellement de fléchettes ici : 
-      // seules les fléchettes VRAIMENT lancées sont comptabilisées !
     }
     cricketState.currentDart = 3; 
   } else {
@@ -2790,7 +3003,6 @@ function traiterCalculBounty(keyStockage, joueurActuel, valeurBouton) {
     stats.touchesMalus += Math.abs(pointsMarques); // Cumul des points perdus
     
     if (cricketState.bountyHasMalus) {
-      // CORRECTIF : Exclusion explicite du malus actuel pour forcer un nouveau chiffre
       cricketState.bountyMalusTarget = generateNewBountyTarget(
         cricketState.bountyBonusTargets, 
         null, 
@@ -2838,6 +3050,7 @@ function annulerDernierCoup() {
   if (cricketState.history.length === 0) return showPopup("Aucun coup à effacer.", true);
   const precedentState = cricketState.history.pop();
   
+  if (cricketState.gameMode === "shanghai") {cricketState.shanghaiWinner = null;}
   // Restauration standard
   cricketState.scores = precedentState.scores; 
   cricketState.marks = precedentState.marks || cricketState.marks;
@@ -2860,13 +3073,14 @@ function annulerDernierCoup() {
   cricketState.currentTurn = precedentState.currentTurn; 
   cricketState.lastTurnText = precedentState.lastTurnText;
   
-// Rafraîchissement visuel
-  resetModifierUI(); 
+  // Rafraîchissement visuel
+  resetModifierUI();
   if (cricketState.gameMode === "x01") { renderKeyboardX01(); renderGridX01(); }
-  else if (cricketState.gameMode === "world") { renderKeyboardX01(); renderGridWorld(); }
-  else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); mettreAJourCiblesBountyUI(); }
-  else if (cricketState.gameMode === "train_target") { renderKeyboardX01(); renderGridTrainTarget(); }
-  else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); } // <-- Ligne ajoutée !
+  else if (cricketState.gameMode === "bounty") { renderKeyboardX01(); renderGridBounty(); }
+  else if (cricketState.gameMode === "train_checkout") { renderKeyboardX01(); renderGridTrainCheckout(); }
+  else if (cricketState.gameMode === "world") { renderSmartKeyboard(); renderGridWorld(); } // <-- CORRIGÉ
+  else if (cricketState.gameMode === "shanghai") { renderSmartKeyboard(); renderGridShanghai(); } // <-- CORRIGÉ
+  else if (cricketState.gameMode === "train_target") { renderSmartKeyboard(); renderGridTrainTarget(); } // <-- CORRIGÉ
   else { renderKeyboard(); renderGrid(); }
   
   updateTurnHeader(); 
@@ -2899,6 +3113,18 @@ function verifierConditionsFinMatch() {
           meilleurScore = cricketState.scores[k]; 
           gagnantId = k; 
         } 
+      });
+    }
+  } else if (cricketState.gameMode === "shanghai") {
+    if (cricketState.shanghaiWinner) {
+      gagnantId = cricketState.shanghaiWinner; // Victoire par KO
+    } else if (cricketState.currentTurn > cricketState.maxTurns) {
+      let meilleurScore = -Infinity;
+      clesEntites.forEach(k => {
+        if (cricketState.scores[k] > meilleurScore) {
+          meilleurScore = cricketState.scores[k];
+          gagnantId = k;
+        }
       });
     }
   } else if (cricketState.gameMode === "train_checkout") {
@@ -2961,7 +3187,7 @@ function formatScoreDisplay(gameMode, score) {
     return `${etapeActuelle}/${totalEtapes}`;
   }
   if (gameMode === "x01") return `${score} pts restants`;
-  if (gameMode === "bounty" || gameMode === "cricket") return `${score} points`;
+  if (gameMode === "bounty" || gameMode === "cricket" || gameMode === "shanghai") return `${score} points`;
   if (gameMode === "train_cricket") return "Entraînement Terminé";
   if (gameMode === "train_target") return score + " touches au total";
   if (gameMode === "train_checkout") {
@@ -2986,7 +3212,9 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
 
   classementTrie.forEach((entite, idx) => {
     let scoreFormate = formatScoreDisplay(cricketState.gameMode, cricketState.scores[entite.id]);
-    
+    if (cricketState.gameMode === "shanghai" && cricketState.shanghaiWinner === entite.id) {
+      scoreFormate += " (Shanghai 🐉)";
+    }
     const row = document.createElement("div"); row.className = "stat-row"; row.style.padding = "10px";
     row.style.background = entite.id === gagnantId ? "rgba(192,101,42,0.15)" : "rgba(255,255,255,0.02)"; row.style.borderRadius = "12px";
     
@@ -3075,10 +3303,32 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
 document.getElementById("btnGoHomeAfterMatch").onclick = () => showScreen(screens.home);
 document.getElementById("btnGoHomeAfterStats").onclick = () => showScreen(screens.home);
 document.getElementById("btnRematch").onclick = () => {
-  if (cricketState.gameMode === "x01") demarrerMatchX01(cricketState.players);
-  else if (cricketState.gameMode === "world") demarrerMatchWorld(cricketState.players); 
-  else if (cricketState.gameMode === "bounty") demarrerMatchBounty(cricketState.players);
-  else demarrerMatchCricket(cricketState.players);
+  let nouvelOrdre = [];
+  
+  if (cricketState.isTeamMode) {
+    // 1. On mélange l'ordre de passage des équipes
+    listeEquipesFormees = melangerJoueurs(listeEquipesFormees);
+    
+    // 2. On mélange l'ordre des joueurs au sein de chaque équipe
+    listeEquipesFormees.forEach(eq => {
+      eq.members = melangerJoueurs(eq.members);
+      
+      // On reconstruit la file d'attente globale pour le moteur de jeu
+      eq.members.forEach(m => {
+        nouvelOrdre.push({ id: m.id, name: m.name, teamId: eq.id, teamName: eq.name });
+      });
+    });
+  } else {
+    // 3. Mode chacun pour soi : on mélange simplement tous les joueurs
+    nouvelOrdre = melangerJoueurs(cricketState.players);
+  }
+
+  // On lance le bon jeu avec la nouvelle organisation aléatoire
+  if (cricketState.gameMode === "x01") demarrerMatchX01(nouvelOrdre);
+  else if (cricketState.gameMode === "world") demarrerMatchWorld(nouvelOrdre); 
+  else if (cricketState.gameMode === "bounty") demarrerMatchBounty(nouvelOrdre);
+  else if (cricketState.gameMode === "shanghai") demarrerMatchShanghai(nouvelOrdre);
+  else demarrerMatchCricket(nouvelOrdre);
 };
 
 // Clic sur "Voir les statistiques" depuis le podium multijoueur
@@ -3156,7 +3406,6 @@ function genererTableauStatistiques() {
     mainWrapper.appendChild(headerDiv);
   }
 
-  // On ajoute le mainWrapper au parent
   parentContainer.appendChild(mainWrapper);
 
   const backupTable = document.createElement("table");
@@ -3217,7 +3466,6 @@ function genererTableauStatistiques() {
     tableTarget.appendChild(row);
   }
 
-  // ================= CRICKET =================
   // ================= CRICKET TRAINING (SOLO) =================
   if (cricketState.gameMode === "train_cricket") {
     const blocGen = creerBlocStats("Statistiques d'Entraînement");
@@ -3450,6 +3698,7 @@ function genererTableauStatistiques() {
     mainWrapper.appendChild(blocGen.blockDiv);
     mainWrapper.appendChild(blocDetail.blockDiv);
   }
+
   // ================= TRAIN TARGET =================
   else if (cricketState.gameMode === "train_target") {
     const blocGen = creerBlocStats("Générales");
@@ -3482,5 +3731,33 @@ function genererTableauStatistiques() {
         ajouterLigne(blocZone.table, label, [htmlStat]);
     });
     mainWrapper.appendChild(blocZone.blockDiv);
+  }
+
+  // ================= SHANGHAI =================
+  else if (cricketState.gameMode === "shanghai") {
+    const blocGen = creerBlocStats("Générales");
+    genererEnteteJoueurs(blocGen.table);
+    
+    ajouterLigne(blocGen.table, "Points finaux", cricketState.players.map(p => cricketState.scores[p.id]));
+    ajouterLigne(blocGen.table, "Fléchettes utiles", cricketState.players.map(p => cricketState.statsDetails[p.id].touchesUtiles || 0));
+    
+    ajouterLigne(blocGen.table, "Victoire Instantanée", cricketState.players.map(p => {
+      const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
+      return cricketState.shanghaiWinner === keyStockage ? "🐉 Oui" : "❌ Non";
+    }));
+    mainWrapper.appendChild(blocGen.blockDiv);
+
+    const blocDetail = creerBlocStats("Historique des tirs");
+    genererEnteteJoueurs(blocDetail.table);
+    
+    cricketState.shanghaiTargets.forEach((cible, index) => {
+       if (index < cricketState.currentTurn || (index === cricketState.currentTurn - 1 && cricketState.shanghaiWinner)) {
+           ajouterLigne(blocDetail.table, `Tour ${index + 1} (Cible ${cible})`, cricketState.players.map(p => {
+               const hist = cricketState.statsDetails[p.id].historyPerTarget[cible] || [];
+               return hist.length > 0 ? `<span style="letter-spacing: 2px; font-weight: 800;">${hist.join("-")}</span>` : "Aucun tir";
+           }));
+       }
+    });
+    mainWrapper.appendChild(blocDetail.blockDiv);
   }
 }
