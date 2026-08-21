@@ -268,7 +268,7 @@ const RULES_DATA = {
   `,
   shanghai: `
     <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
-    <p style="margin-bottom: 12px; padding: 0;">Le jeu se déroule sur un nombre de tours défini. À chaque tour, <strong>une seule cible est active</strong> (le 1 au tour 1, le 2 au tour 2, etc.). Vous marquez des points uniquement en touchant cette cible.</p>
+    <p style="margin-bottom: 12px; padding: 0;">Le jeu se déroule sur un nombre de tours défini. À chaque tour, <strong>une seule cible est active</strong> (le 1 au tour 1, le 2 au tour 2, etc.). Vous marquez des points uniquement en touchant cette cible. <strong>Un Simple vaut la valeur du chiffre, un Double vaut 2 fois la valeur, et un Triple vaut 3 fois la valeur.</strong></p>
     
     <h4 style="color: var(--primary); margin-bottom: 8px;">🏆 Condition de victoire</h4>
     <p style="margin-bottom: 12px; padding: 0;">À la fin du dernier tour, le joueur ayant accumulé le <strong>plus de points</strong> remporte le match. Cependant, il existe un moyen de <strong>gagner instantannément la partie</strong> : si lors d'une même volée (3 fléchettes), vous parvenez à loger un <strong>Simple, un Double ET un Triple</strong> dans le numéro actif, vous gagnez immédiatement la partie, quel que soit votre score !</p>
@@ -2597,23 +2597,41 @@ function renderSmartKeyboard() {
   }
 
   if (!cibleActuelle) return;
-  const libelleCible = cibleActuelle === 25 ? "Bull" : cibleActuelle;
 
   // Création de la grille des 4 boutons
   const grid = document.createElement("div");
   grid.style.display = "grid";
   grid.style.gridTemplateColumns = "1fr 1fr";
-  grid.style.gap = "8px";
+  grid.style.gap = "10px";
 
-  // Fonction utilitaire pour créer les boutons
-  const createBtn = (mod, label, color) => {
+  // Fonction utilitaire pour créer de belles cartes interactives
+  const createBtn = (mod, title, ptsText, bgColor, textColor, borderColor) => {
      const btn = document.createElement("button");
-     btn.className = "ghost";
-     btn.style.padding = "24px 10px";
-     btn.style.fontSize = "16px";
-     btn.style.borderColor = color;
-     btn.style.color = color;
-     btn.innerHTML = label;
+     btn.style.display = "flex";
+     btn.style.flexDirection = "column";
+     btn.style.alignItems = "center";
+     btn.style.justifyContent = "center";
+     btn.style.padding = "18px 10px";
+     btn.style.borderRadius = "16px"; // Arrondi plus doux
+     btn.style.border = `2px solid ${borderColor}`;
+     btn.style.backgroundColor = bgColor;
+     btn.style.color = textColor;
+     btn.style.boxShadow = "0 4px 10px rgba(0,0,0,0.05)";
+     btn.style.transition = "transform 0.1s ease";
+     btn.style.cursor = "pointer";
+     btn.style.touchAction = "manipulation"; // Évite le double-tap zoom sur mobile
+
+     // Petit effet visuel d'enfoncement au toucher
+     btn.ontouchstart = () => btn.style.transform = "scale(0.96)";
+     btn.ontouchend = () => btn.style.transform = "scale(1)";
+     btn.onmousedown = () => btn.style.transform = "scale(0.96)";
+     btn.onmouseup = () => btn.style.transform = "scale(1)";
+
+     btn.innerHTML = `
+        <span style="font-size: 20px; font-weight: 800; line-height: 1.2;">${title}</span>
+        <span style="font-size: 14px; font-weight: 700; opacity: 0.9; margin-top: 4px;">${ptsText}</span>
+     `;
+
      btn.onclick = () => {
          modificateurEnCours = mod === 0 ? 1 : mod;
          taperChiffre(mod === 0 ? 0 : cibleActuelle); // On simule la frappe
@@ -2621,26 +2639,33 @@ function renderSmartKeyboard() {
      return btn;
   };
 
-  grid.appendChild(createBtn(0, "❌<br>Raté", "var(--danger)"));
-  grid.appendChild(createBtn(1, `<br>Simple ${libelleCible}`, "var(--primary)"));
-  grid.appendChild(createBtn(2, `<br>Double ${libelleCible}`, "var(--primary)"));
+  // Ajout des 4 boutons avec le design spécifique[cite: 3]
+  grid.appendChild(createBtn(0, "Raté", "0 pt", "transparent", "var(--danger)", "var(--danger)"));
+  grid.appendChild(createBtn(1, "Simple", `+${cibleActuelle} pts`, "transparent", "var(--primary)", "var(--primary)"));
   
-  const btnTriple = createBtn(3, `<br>Triple ${libelleCible}`, "var(--primary)");
+  // Les touches puissantes (Double/Triple) ont un fond plein pour inciter au clic
+  grid.appendChild(createBtn(2, "Double", `+${cibleActuelle * 2} pts`, "var(--primary)", "#FFF", "var(--primary)"));
+  
+  const btnTriple = createBtn(3, "Triple", `+${cibleActuelle * 3} pts`, "var(--accent)", "#FFF", "var(--accent)");
   if (cibleActuelle === 25) {
       btnTriple.disabled = true;
-      btnTriple.style.opacity = "0.2";
+      btnTriple.style.opacity = "0.3";
+      btnTriple.style.filter = "grayscale(100%)";
   }
   grid.appendChild(btnTriple);
 
   container.appendChild(grid);
 
-  // Ajout du bouton Retour en dessous
+  // Un bouton Retour repensé, plus discret pour laisser la vedette aux cibles
   const rowUndo = document.createElement("div");
-  rowUndo.style.marginTop = "10px";
+  rowUndo.style.marginTop = "12px";
   const btnUndo = document.createElement("button");
-  btnUndo.className = "danger-btn btn-block";
-  btnUndo.style.padding = "14px";
-  btnUndo.innerText = "Retour";
+  btnUndo.className = "ghost btn-block";
+  btnUndo.style.padding = "12px";
+  btnUndo.style.fontSize = "14px";
+  btnUndo.style.border = "1px solid var(--divider)";
+  btnUndo.style.color = "var(--text-soft)";
+  btnUndo.innerHTML = "↩️ Annuler le dernier coup";
   btnUndo.onclick = () => annulerDernierCoup();
   rowUndo.appendChild(btnUndo);
   
