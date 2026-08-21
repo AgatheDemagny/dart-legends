@@ -110,12 +110,12 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 2.04 - 21/08/2026</p>
+        <p>Version 2.05 - 21/08/2026</p>
       </div>
     </section>
 
     <!-- ================== ÉCRAN JOUEURS (LISTE) ================== -->
-    <section id="playersScreen" class="hidden" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background-color: var(--bg-main);">
+    <section id="playersScreen" class="hidden stack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background-color: var(--bg-main);">
       <header class="topbar" style="padding: 10px 14px; flex-shrink: 0;">
         <button id="backHomeFromPlayersBtn" class="icon-btn">⬅️</button>
         <h2>🎮 Joueurs</h2>
@@ -124,71 +124,103 @@
 
       <div style="flex: 1; overflow-y: auto; padding: 0 12px 30px 12px; display: flex; flex-direction: column; gap: 14px; -webkit-overflow-scrolling: touch;">
         
-        <!-- Ma Carte de Joueur (Mise en avant) -->
-        <div id="myPlayerCard" class="card" style="margin: 0; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%); color: #FFFFFF; border: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
-          <div style="flex: 1;">
-            <div style="font-size: 12px; opacity: 0.8; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Mon Profil</div>
-            <div id="myPlayerCardName" style="font-size: 22px; font-weight: 800; margin: 4px 0;">Chargement...</div>
-            <div style="display: flex; gap: 12px; margin-top: 8px; font-size: 13px;">
-              <div>🏆 <span id="myPlayerCardWins">0</span> Victoires</div>
-              <div>🎯 <span id="myPlayerCardWinrate">0</span>% Winrate</div>
+        <!-- Ma Carte de Joueur (Design VIP) -->
+        <div id="myPlayerCard" class="card" style="margin: 0; background: var(--primary); border: 2px solid var(--accent); cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(15, 76, 129, 0.3);">
+          <!-- Effet de reflet en fond -->
+          <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(154, 123, 28, 0.15) 0%, transparent 60%); pointer-events: none;"></div>
+          
+          <div style="position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1;">
+              <div style="font-size: 11px; color: var(--bg-secondary); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Mon Profil</div>
+              <div id="myPlayerCardName" style="font-size: 24px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: #FFFFFF; margin: 2px 0 10px 0;">Chargement...</div>
+              
+              <div style="display: flex; gap: 16px;">
+                <div>
+                  <div style="font-size: 11px; color: var(--divider);">Victoires</div>
+                  <div style="font-size: 16px; font-weight: 800; color: var(--bg-secondary);">🏆 <span id="myPlayerCardWins">...</span></div>
+                </div>
+                <div>
+                  <div style="font-size: 11px; color: var(--divider);">Winrate</div>
+                  <div style="font-size: 16px; font-weight: 800; color: var(--bg-secondary);">🎯 <span id="myPlayerCardWinrate">...</span>%</div>
+                </div>
+              </div>
             </div>
+            <div style="font-size: 24px; color: var(--accent); background: rgba(255,255,255,0.1); padding: 12px; border-radius: 50%;">👤</div>
           </div>
-          <div style="font-size: 24px; opacity: 0.8;">➡️</div>
         </div>
 
         <!-- Filtre des communautés -->
-        <div style="display: flex; align-items: center; gap: 8px; background: var(--card-bg); padding: 8px 12px; border-radius: var(--r-1); border: 1px solid var(--card-border);">
-          <label for="selectFiltreCommuPlayers" style="font-size: 13px; font-weight: 700; color: var(--text-main); white-space: nowrap;">👥 Filtrer :</label>
-          <select id="selectFiltreCommuPlayers" style="margin-top: 0; padding: 6px 10px; font-size: 13px; font-weight: 600; border-radius: 8px; border: 1px solid var(--divider); color: var(--primary); flex: 1;"></select>
+        <div style="display: flex; align-items: center; gap: 10px; background: #FFFFFF; padding: 8px 12px; border-radius: var(--r-2); border: 1px solid var(--card-border); box-shadow: 0 4px 12px rgba(227, 212, 174, 0.1);">
+          <label for="selectFiltreCommuPlayers" style="font-size: 13px; font-weight: 700; color: var(--primary);">👥 Communauté :</label>
+          <select id="selectFiltreCommuPlayers" style="flex: 1; margin-top: 0; padding: 8px; border: none; background: transparent; font-size: 14px; font-weight: 700; color: var(--text-main); outline: none;"></select>
         </div>
 
         <!-- Liste alphabétique des joueurs -->
-        <h3 style="text-align: left !important; font-size: 15px; margin: 0; color: var(--text-soft);">Membres</h3>
+        <h3 style="text-align: left !important; font-size: 16px; margin: 4px 0 0 0; color: var(--primary);">Membres</h3>
         <div id="playersListContainer" class="stack" style="gap: 8px;"></div>
       </div>
     </section>
 
     <!-- ================== ÉCRAN DÉTAIL D'UN JOUEUR ================== -->
-    <section id="playerDetailScreen" class="hidden" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background-color: var(--bg-main);">
+    <section id="playerDetailScreen" class="hidden stack" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background-color: var(--bg-main);">
       <header class="topbar" style="padding: 10px 14px; flex-shrink: 0;">
         <button id="backToPlayersListBtn" class="icon-btn">⬅️</button>
-        <h2 id="detailPlayerName">Statistiques</h2>
+        <h2 id="detailPlayerName" style="color: var(--primary-strong);">Statistiques</h2>
         <div style="width:40px;"></div>
       </header>
 
-      <div style="flex: 1; overflow-y: auto; padding: 0 12px 30px 12px; display: flex; flex-direction: column; gap: 14px; -webkit-overflow-scrolling: touch;">
+      <div style="flex: 1; overflow-y: auto; padding: 0 12px 30px 12px; display: flex; flex-direction: column; gap: 16px; -webkit-overflow-scrolling: touch;">
         
-        <!-- Filtre par jeu pour les stats -->
-        <select id="selectFiltreJeuStats" style="margin-top: 0; padding: 10px; font-size: 14px; font-weight: 600; border-radius: 10px; border: 1px solid var(--divider); color: var(--primary); background: var(--card-bg);">
-          <option value="TOUT" selected>Global (Tous les jeux)</option>
-          <option value="cricket">🏏 Cricket</option>
-          <option value="x01">💯 X01</option>
-          <option value="bounty">💰 Chasseur de primes</option>
-          <option value="world">🌍 Tour du Monde</option>
-          <option value="shanghai">🐉 Shanghai</option>
-          <option value="golf">⛳ Golf</option>
-        </select>
+        <!-- Double Filtre (Jeu & Communauté) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <select id="selectFiltreJeuStats" style="margin-top: 0; padding: 10px; font-size: 13px; font-weight: 700; border-radius: var(--r-1); border: 1px solid var(--primary); color: var(--primary); background: #FFFFFF; box-shadow: 0 2px 8px rgba(15, 76, 129, 0.1);">
+            <option value="TOUT" selected>Tous les jeux</option>
+            <option value="cricket">🏏 Cricket</option>
+            <option value="x01">💯 X01</option>
+            <option value="bounty">💰 Bounty</option>
+            <option value="world">🌍 Tour du Monde</option>
+            <option value="shanghai">🐉 Shanghai</option>
+            <option value="golf">⛳ Golf</option>
+          </select>
 
-        <!-- Stats Générales -->
-        <div class="card form-card">
-          <p style="border: none; padding: 4px 0;"><span>Joueur depuis le :</span> <strong id="statPlayerSince">...</strong></p>
-          <p style="border: none; padding: 4px 0;"><span>Parties jouées :</span> <strong id="statGamesPlayed">0</strong></p>
-          <p style="border: none; padding: 4px 0;"><span>Victoires :</span> <strong id="statGamesWon" style="color: var(--primary);">0</strong></p>
-          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 14px; color: var(--text-soft);">Taux de victoire</span>
-            <span id="statWinrate" style="font-size: 24px; font-weight: 900; color: var(--primary-strong);">0%</span>
-          </div>
+          <select id="selectFiltreCommuStats" style="margin-top: 0; padding: 10px; font-size: 13px; font-weight: 700; border-radius: var(--r-1); border: 1px solid var(--card-border); color: var(--text-main); background: #FFFFFF; box-shadow: 0 2px 8px rgba(227, 212, 174, 0.2);">
+            <!-- Rempli dynamiquement -->
+          </select>
         </div>
 
+        <!-- Dashboard des Stats -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          
+          <div class="card subtle" style="padding: 16px; text-align: center; margin: 0;">
+            <div style="font-size: 12px; font-weight: 700; color: var(--text-soft); text-transform: uppercase;">Parties Jouées</div>
+            <div id="statGamesPlayed" style="font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; color: var(--text-main); margin-top: 4px;">0</div>
+          </div>
+          
+          <div class="card subtle" style="padding: 16px; text-align: center; margin: 0; border-color: var(--accent);">
+            <div style="font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase;">Victoires</div>
+            <div id="statGamesWon" style="font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; color: var(--accent); margin-top: 4px;">0</div>
+          </div>
+
+          <div class="card subtle" style="grid-column: 1 / -1; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin: 0; background: #FFFFFF; border-left: 4px solid var(--primary);">
+            <div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">Taux de réussite</div>
+              <div style="font-size: 12px; color: var(--text-soft); margin-top: 2px;">Ratio victoires/défaites</div>
+            </div>
+            <div id="statWinrate" style="font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; color: var(--primary);">0%</div>
+          </div>
+          
+        </div>
+        
+        <p class="hint" style="text-align: center; margin: 0;">Joueur depuis le : <strong id="statPlayerSince">...</strong></p>
+
         <!-- Badges / Succès -->
-        <h3 style="text-align: left !important; font-size: 16px; margin: 10px 0 0 0; color: var(--primary);">🎖️ Badges & Succès</h3>
+        <h3 style="text-align: left !important; font-size: 16px; margin: 8px 0 0 0; color: var(--primary);">🎖️ Badges & Succès</h3>
         <div id="playerBadgesContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <!-- Injecté en JS -->
         </div>
       </div>
     </section>
-    
+
     <section id="accountScreen" class="hidden stack">
       <img src="icons/banner-1080-420.png" alt="Dart Legends" class="app-banner">
       <header class="topbar">
