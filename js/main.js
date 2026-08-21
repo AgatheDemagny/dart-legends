@@ -2691,7 +2691,7 @@ function renderSmartKeyboard() {
 
   if (!cibleActuelle) return;
 
-  // Création de la grille des 4 boutons
+  // Création de la grille des 4 boutons avec 10px d'écart
   const grid = document.createElement("div");
   grid.style.display = "grid";
   grid.style.gridTemplateColumns = "1fr 1fr";
@@ -2705,9 +2705,9 @@ function renderSmartKeyboard() {
      btn.style.alignItems = "center";
      btn.style.justifyContent = "center";
      btn.style.padding = "18px 10px";
-     btn.style.borderRadius = "16px";
-     btn.style.border = `2px solid ${borderColor}`;
-     btn.style.background = bgColor; // "background" au lieu de "backgroundColor" pour supporter les dégradés
+     btn.style.borderRadius = "16px"; 
+     btn.style.border = `2px solid ${borderColor}`; // Le bord prend la même couleur que le fond pour devenir invisible
+     btn.style.background = bgColor;
      btn.style.color = textColor;
      btn.style.boxShadow = "0 4px 10px rgba(0,0,0,0.05)";
      btn.style.transition = "transform 0.1s ease";
@@ -2727,21 +2727,21 @@ function renderSmartKeyboard() {
 
      btn.onclick = () => {
          modificateurEnCours = mod === 0 ? 1 : mod;
-         taperChiffre(mod === 0 ? 0 : cibleActuelle);
+         taperChiffre(mod === 0 ? 0 : cibleActuelle); 
      };
      return btn;
   };
 
-  // 1. Bouton Raté : Rouge Bordeaux et bord blanc du malus Bounty
-  grid.appendChild(createBtn(0, "Raté", "0 pt", "#a62b2b", "#ffffff", "#ffffff"));
+  // 1. Raté : Fond Bordeaux, bordure bordeaux (invisible), texte blanc
+  grid.appendChild(createBtn(0, "Raté", "0 pt", "#a62b2b", "#ffffff", "#a62b2b"));
   
-  // 2. Bouton Simple : Gris-Bleu neutre (Slate Gray)
-  grid.appendChild(createBtn(1, "Simple", `+${cibleActuelle} pts`, "transparent", "#78909C", "#78909C"));
+  // 2. Simple : Fond Gris-Bleu (Slate Gray), bordure identique, texte blanc
+  grid.appendChild(createBtn(1, "Simple", `+${cibleActuelle} pts`, "#78909C", "#ffffff", "#78909C"));
   
-  // 3. Bouton Double : Reste identique (Bleu primaire)
+  // 3. Double : Fond Bleu primaire
   grid.appendChild(createBtn(2, "Double", `+${cibleActuelle * 2} pts`, "var(--primary)", "#FFF", "var(--primary)"));
   
-  // 4. Bouton Triple : Le beau dégradé Or et texte marron foncé des primes Bounty
+  // 4. Triple : Fond Dégradé Or
   const btnTriple = createBtn(3, "Triple", `+${cibleActuelle * 3} pts`, "radial-gradient(circle, #FFD54F 0%, #FFB300 100%)", "#3E2723", "#FFB300");
   if (cibleActuelle === 25) {
       btnTriple.disabled = true;
@@ -2752,9 +2752,9 @@ function renderSmartKeyboard() {
 
   container.appendChild(grid);
 
-  // Bouton Retour avec texte simplifié
+  // Bouton Retour
   const rowUndo = document.createElement("div");
-  rowUndo.style.marginTop = "12px";
+  rowUndo.style.marginTop = "10px"; // <-- CORRECTION : 10px au lieu de 12px pour un espacement parfait avec la grille
   const btnUndo = document.createElement("button");
   btnUndo.className = "ghost btn-block";
   btnUndo.style.padding = "12px";
