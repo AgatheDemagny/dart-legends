@@ -588,10 +588,20 @@ document.getElementById("btnReshuffleTeams").addEventListener("click", () => {
 });
 
 // Autres menus indisponibles
-["menuPlayers"].forEach(id => {
-  document.getElementById(id).addEventListener("click", () => { showPopup("Arrive dans la prochaine mise à jour !"); });
+//["menuPlayers"].forEach(id => {
+//  document.getElementById(id).addEventListener("click", () => { showPopup("Arrive dans la prochaine mise à jour !"); });
+//});
+
+screens.players = document.getElementById("playersScreen");
+screens.playerDetail = document.getElementById("playerDetailScreen");
+
+document.getElementById("menuPlayers").addEventListener("click", () => {
+  showScreen(screens.players);
+  initialiserEcranJoueurs();
 });
 
+document.getElementById("backHomeFromPlayersBtn").addEventListener("click", () => showScreen(screens.home));
+document.getElementById("backToPlayersListBtn").addEventListener("click", () => showScreen(screens.players));
 document.getElementById("menuTraining").addEventListener("click", () => {
   showScreen(screens.training);
   retourListeTraining();
@@ -4118,5 +4128,264 @@ function genererTableauStatistiques() {
        }
     });
     mainWrapper.appendChild(blocDetail.blockDiv);
+  }
+}
+
+// ================== LOGIQUE ONGLET JOUEURS ==================
+let currentDetailPlayerId = null;
+let currentDetailPlayerName = "";
+let currentDetailPlayerCreatedAt = null;
+
+async function initialiserEcranJoueurs() {
+  const container = document.getElementById("playersListContainer");
+  const selectCommu = document.getElementById("selectFiltreCommuPlayers");
+  if (!container || !selectCommu) return;
+
+  container.innerHTML = "<p class='hint' style='text-align:center;'>Chargement des joueurs...</p>";
+
+  // 1. Remplir le filtre des communautés (identique à l'historique)
+  const valeurFiltreSelectionnee = selectCommu.value;
+  selectCommu.innerHTML = "";
+  
+  const optTous = document.createElement("option");
+  optTous.value = "TOUT"; optTous.innerText = "✨ Toutes mes communautés";
+  if (valeurFiltreSelectionnee === "TOUT" || !valeurFiltreSelectionnee) optTous.selected = true;
+  selectCommu.appendChild(optTous);
+
+  listeMesCommunautes.forEach(commu => {
+    const opt = document.createElement("option");
+    opt.value = commu.id; opt.innerText = commu.name;
+    if (valeurFiltreSelectionnee === commu.id) opt.selected = true;
+    selectCommu.appendChild(opt);
+  });
+
+  selectCommu.onchange = () => chargerListeJoueurs();
+
+  // 2. Charger les infos de la carte perso en haut
+  const user = auth.currentUser;
+  if (user) {
+    document.getElementById("myPlayerCardName").innerText = window.displayName || getPseudoJoueur();
+    const myStats = await calculerStatsGlobales(user.uid);
+    document.getElementById("myPlayerCardWins").innerText = myStats.won;
+    document.getElementById("myPlayerCardWinrate").innerText = myStats.winrate;
+    
+    // Rendre ma carte cliquable pour voir mes propres détails
+    document.getElementById("myPlayerCard").onclick = () => {
+      // On a besoin de récupérer la date de création du joueur
+      db.collection("players").doc(user.uid).get().then(doc => {
+        ouvrirDetailJoueur(user.uid, getPseudoJoueur(), doc.exists ? doc.data().createdAt : Date.now());
+      });
+    };
+  }
+
+  // 3. Charger la liste
+  chargerListeJoueurs();
+}
+
+async function chargerListeJoueurs() {
+  const container = document.getElementById("playersListContainer");
+  const filtreCommu = document.getElementById("selectFiltreCommuPlayers").value;
+  const user = auth.currentUser;
+  if (!user) return;
+
+  let joueursAffiches = [];
+  container.innerHTML = "<p class='hint' style='text-align:center;'>Récupération des profils...</p>";
+
+  try {
+    if (filtreCommu === "TOUT") {
+      // Récupérer tous les membres de toutes les communautés de l'utilisateur
+      for (const commu of listeMesCommunautes) {
+        const docCommu = await db.collection("communities").doc(commu.id).get();
+        if (docCommu.exists) {
+          const uids = docCommu.data().memberIds || [];
+          for (const uid of uids) {
+            if (!joueursAffiches.some(j => j.id === uid)) {
+              const uDoc = await db.collection("players").doc(uid).get();
+              if (uDoc.exists) joueursAffiches.push({ id: uid, ...uDoc.data() });
+            }
+          }
+        }
+        // Gérer les invités
+        const snapGuests = await db.collection("players").where("communityIds", "array-contains", commu.id).get();
+        snapGuests.forEach(gDoc => {
+          if (!joueursAffiches.some(j => j.id === gDoc.id)) joueursAffiches.push({ id: gDoc.id, ...gDoc.data() });
+        });
+      }
+    } else {
+      // Récupérer uniquement les membres de la communauté sélectionnée
+      const docCommu = await db.collection("communities").doc(filtreCommu).get();
+      if (docCommu.exists) {
+        for (const uid of docCommu.data().memberIds || []) {
+          const uDoc = await db.collection("players").doc(uid).get();
+          if (uDoc.exists) joueursAffiches.push({ id: uid, ...uDoc.data() });
+        }
+      }
+      const snapGuests = await db.collection("players").where("communityIds", "array-contains", filtreCommu).get();
+      snapGuests.forEach(gDoc => {
+        if (!joueursAffiches.some(j => j.id === gDoc.id)) joueursAffiches.push({ id: gDoc.id, ...gDoc.data() });
+      });
+    }
+
+    // Retirer l'utilisateur actuel (déjà en haut) et trier alphabétiquement
+    joueursAffiches = joueursAffiches
+      .filter(j => j.id !== user.uid)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    container.innerHTML = "";
+    if (joueursAffiches.length === 0) {
+      container.innerHTML = "<p class='hint' style='text-align:center;'>Aucun autre joueur trouvé.</p>";
+      return;
+    }
+
+    joueursAffiches.forEach(joueur => {
+      const card = document.createElement("div");
+      card.className = "card subtle";
+      card.style.padding = "14px 12px";
+      card.style.display = "flex";
+      card.style.justifyContent = "space-between";
+      card.style.alignItems = "center";
+      card.style.cursor = "pointer";
+      
+      const isGuest = !joueur.isRealAccount;
+      const guestBadge = isGuest ? `<span style="font-size:10px; background:#E3D4AE; color:var(--text-main); padding:2px 6px; border-radius:4px; margin-left:6px;">Invité</span>` : "";
+
+      card.innerHTML = `
+        <div style="font-weight: 700; color: var(--text-main); font-size: 15px;">
+          👤 ${joueur.name} ${guestBadge}
+        </div>
+        <div style="color: var(--primary); font-size: 18px;">➡️</div>
+      `;
+      
+      card.onclick = () => ouvrirDetailJoueur(joueur.id, joueur.name, joueur.createdAt);
+      container.appendChild(card);
+    });
+
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = "<p class='hint' style='text-align:center; color:var(--danger);'>Erreur de chargement.</p>";
+  }
+}
+
+// Fonction utilitaire pour calculer les stats d'un joueur
+async function calculerStatsGlobales(userId, gameModeFilter = "TOUT") {
+  try {
+    const snap = await db.collection("games_history")
+      .where("participantIds", "array-contains", userId)
+      .get();
+    
+    let played = 0;
+    let won = 0;
+    let historyDocs = [];
+
+    snap.forEach(doc => {
+      const data = doc.data();
+      // On ignore les entraînements solos
+      if (data.type.startsWith("train_")) return;
+      if (gameModeFilter !== "TOUT" && data.type !== gameModeFilter) return;
+      
+      historyDocs.push(data);
+      played++;
+      
+      // On vérifie s'il est le gagnant. 
+      // Le winner sauvegardé est le "nom" (soit de l'équipe, soit du joueur).
+      // On cherche dans le tableau ranking si le joueur est 1er
+      if (data.ranking && data.ranking.length > 0) {
+         // Dans le ranking, on regarde le 1er. S'il s'agit d'une équipe, son nom sera dans teamMembers
+         const premier = data.ranking[0];
+         if (premier.name === window.currentDetailPlayerName || (premier.teamMembers && premier.teamMembers.includes(window.currentDetailPlayerName))) {
+           won++;
+         } else if (data.winner === window.currentDetailPlayerName) {
+           // Fallback pour compatibilité ancienne
+           won++;
+         }
+      } else if (data.winner === window.currentDetailPlayerName) {
+        won++;
+      }
+    });
+
+    const winrate = played > 0 ? Math.round((won / played) * 100) : 0;
+    return { played, won, winrate, history: historyDocs };
+  } catch (e) {
+    console.error("Erreur calcul stats:", e);
+    return { played: 0, won: 0, winrate: 0, history: [] };
+  }
+}
+
+async function ouvrirDetailJoueur(playerId, playerName, createdAt) {
+  currentDetailPlayerId = playerId;
+  currentDetailPlayerName = playerName; // Gardé en variable globale pour le filtre
+  window.currentDetailPlayerName = playerName; 
+  currentDetailPlayerCreatedAt = createdAt;
+
+  document.getElementById("detailPlayerName").innerText = playerName;
+  document.getElementById("selectFiltreJeuStats").value = "TOUT";
+  
+  showScreen(screens.playerDetail);
+  await rafraichirStatsDetail(playerId);
+}
+
+document.getElementById("selectFiltreJeuStats").addEventListener("change", async (e) => {
+  if (currentDetailPlayerId) {
+    await rafraichirStatsDetail(currentDetailPlayerId, e.target.value);
+  }
+});
+
+async function rafraichirStatsDetail(playerId, gameMode = "TOUT") {
+  // Date d'inscription
+  if (currentDetailPlayerCreatedAt) {
+    const d = new Date(currentDetailPlayerCreatedAt);
+    document.getElementById("statPlayerSince").innerText = d.toLocaleDateString("fr-FR");
+  } else {
+    document.getElementById("statPlayerSince").innerText = "Inconnue";
+  }
+
+  // Calcul des victoires
+  const stats = await calculerStatsGlobales(playerId, gameMode);
+  
+  document.getElementById("statGamesPlayed").innerText = stats.played;
+  document.getElementById("statGamesWon").innerText = stats.won;
+  document.getElementById("statWinrate").innerText = `${stats.winrate}%`;
+
+  // Moteur de badges
+  genererBadges(stats.history);
+}
+
+function genererBadges(history) {
+  const container = document.getElementById("playerBadgesContainer");
+  container.innerHTML = "";
+
+  // Définition de badges potentiels
+  const badgesDef = [
+    { id: "first_blood", icon: "🩸", title: "Premier Sang", desc: "A joué sa première partie.", condition: (h) => h.length > 0 },
+    { id: "cricket_master", icon: "🏏", title: "Maître Cricket", desc: "A remporté une partie de Cricket.", condition: (h) => h.some(g => g.type === "cricket" && (g.winner === currentDetailPlayerName || (g.ranking && g.ranking[0]?.name === currentDetailPlayerName))) },
+    { id: "shanghai_dragon", icon: "🐉", title: "Dragon de Shanghai", desc: "A gagné un Shanghai.", condition: (h) => h.some(g => g.type === "shanghai" && (g.winner === currentDetailPlayerName || (g.ranking && g.ranking[0]?.name === currentDetailPlayerName))) },
+    { id: "veteran", icon: "🎖️", title: "Vétéran", desc: "A joué plus de 50 parties.", condition: (h) => h.length >= 50 }
+  ];
+
+  let aAuMoinsUnBadge = false;
+
+  badgesDef.forEach(badge => {
+    const estDebloque = badge.condition(history);
+    if (estDebloque) {
+      aAuMoinsUnBadge = true;
+      const bDiv = document.createElement("div");
+      bDiv.className = "card subtle";
+      bDiv.style.padding = "10px";
+      bDiv.style.textAlign = "center";
+      bDiv.style.display = "flex";
+      bDiv.style.flexDirection = "column";
+      bDiv.style.alignItems = "center";
+      
+      bDiv.innerHTML = `
+        <div style="font-size: 32px; margin-bottom: 6px; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.1));">${badge.icon}</div>
+        <div style="font-size: 13px; font-weight: 800; color: var(--primary); line-height: 1.1; margin-bottom: 4px;">${badge.title}</div>
+        <div style="font-size: 10px; color: var(--text-soft); line-height: 1.2;">${badge.desc}</div>
+      `;
+      container.appendChild(bDiv);
+    }
+  });
+
+  if (!aAuMoinsUnBadge) {
+    container.innerHTML = "<p class='hint' style='grid-column: 1 / -1; text-align:center;'>Aucun badge débloqué pour le moment.</p>";
   }
 }
