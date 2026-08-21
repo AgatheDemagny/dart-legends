@@ -2665,7 +2665,7 @@ function renderSmartKeyboard() {
   container.innerHTML = "";
 
   // On cache la barre des modificateurs classique (Double, Triple, Retour)
-  const modZone = document.getElementById("cricketKeyboardZone").children[1]; // <-- CORRECTION ICI
+  const modZone = document.getElementById("cricketKeyboardZone").children[1];
   if (modZone) modZone.style.display = "none";
 
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
@@ -2699,14 +2699,14 @@ function renderSmartKeyboard() {
      btn.style.alignItems = "center";
      btn.style.justifyContent = "center";
      btn.style.padding = "18px 10px";
-     btn.style.borderRadius = "16px"; // Arrondi plus doux
+     btn.style.borderRadius = "16px";
      btn.style.border = `2px solid ${borderColor}`;
-     btn.style.backgroundColor = bgColor;
+     btn.style.background = bgColor; // "background" au lieu de "backgroundColor" pour supporter les dégradés
      btn.style.color = textColor;
      btn.style.boxShadow = "0 4px 10px rgba(0,0,0,0.05)";
      btn.style.transition = "transform 0.1s ease";
      btn.style.cursor = "pointer";
-     btn.style.touchAction = "manipulation"; // Évite le double-tap zoom sur mobile
+     btn.style.touchAction = "manipulation"; 
 
      // Petit effet visuel d'enfoncement au toucher
      btn.ontouchstart = () => btn.style.transform = "scale(0.96)";
@@ -2721,19 +2721,22 @@ function renderSmartKeyboard() {
 
      btn.onclick = () => {
          modificateurEnCours = mod === 0 ? 1 : mod;
-         taperChiffre(mod === 0 ? 0 : cibleActuelle); // On simule la frappe
+         taperChiffre(mod === 0 ? 0 : cibleActuelle);
      };
      return btn;
   };
 
-  // Ajout des 4 boutons avec le design spécifique[cite: 3]
-  grid.appendChild(createBtn(0, "Raté", "0 pt", "transparent", "var(--danger)", "var(--danger)"));
-  grid.appendChild(createBtn(1, "Simple", `+${cibleActuelle} pts`, "transparent", "var(--primary)", "var(--primary)"));
+  // 1. Bouton Raté : Rouge Bordeaux et bord blanc du malus Bounty
+  grid.appendChild(createBtn(0, "Raté", "0 pt", "#a62b2b", "#ffffff", "#ffffff"));
   
-  // Les touches puissantes (Double/Triple) ont un fond plein pour inciter au clic
+  // 2. Bouton Simple : Gris-Bleu neutre (Slate Gray)
+  grid.appendChild(createBtn(1, "Simple", `+${cibleActuelle} pts`, "transparent", "#78909C", "#78909C"));
+  
+  // 3. Bouton Double : Reste identique (Bleu primaire)
   grid.appendChild(createBtn(2, "Double", `+${cibleActuelle * 2} pts`, "var(--primary)", "#FFF", "var(--primary)"));
   
-  const btnTriple = createBtn(3, "Triple", `+${cibleActuelle * 3} pts`, "var(--accent)", "#FFF", "var(--accent)");
+  // 4. Bouton Triple : Le beau dégradé Or et texte marron foncé des primes Bounty
+  const btnTriple = createBtn(3, "Triple", `+${cibleActuelle * 3} pts`, "radial-gradient(circle, #FFD54F 0%, #FFB300 100%)", "#3E2723", "#FFB300");
   if (cibleActuelle === 25) {
       btnTriple.disabled = true;
       btnTriple.style.opacity = "0.3";
@@ -2743,7 +2746,7 @@ function renderSmartKeyboard() {
 
   container.appendChild(grid);
 
-  // Un bouton Retour repensé, plus discret pour laisser la vedette aux cibles
+  // Bouton Retour avec texte simplifié
   const rowUndo = document.createElement("div");
   rowUndo.style.marginTop = "12px";
   const btnUndo = document.createElement("button");
