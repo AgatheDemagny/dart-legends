@@ -110,7 +110,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 2.06 - 21/08/2026</p>
+        <p>Version 2.07 - 24/08/2026</p>
       </div>
     </section>
 
@@ -508,9 +508,16 @@
           <div style="margin-top: 12px;">
             <label><strong>Checkout</strong></label>
             <select id="x01CheckoutSelect">
-              <option value="double" selected>Double-out</option>
-              <option value="single">Sans contrainte</option>
+              <option value="single" selected>Sans contrainte</option>
+              <option value="double">Double-out</option>
             </select>
+          </div>
+          <div style="margin-top: 12px;">
+            <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
+              <span class="stat-label"><strong>Continuer après le 1er gagnant</strong></span>
+              <input type="checkbox" id="x01ContinueCheckbox" style="width: auto; margin-top: 0;">
+            </div>
+            <p class="hint" style="margin-top: 2px;">Permet aux autres joueurs de terminer pour être classés.</p>
           </div>
         </div>
 
@@ -674,6 +681,8 @@
         <div class="topbar-center">
           <span id="gameTimerDisplay" style="font-family: 'Space Grotesk', sans-serif; font-weight: bold; font-size: 20px; color: var(--accent);">00:00</span>
           <button id="btnPauseGame" class="icon-btn" style="background: transparent; border: none; font-size: 16px; margin-left: 5px;">⏸️</button>
+          <button id="btnTeamInfo" class="icon-btn hidden" style="background: transparent; border: none; font-size: 18px; margin-left: 5px;">🫂</button>
+          <button id="btnInGameRules" class="icon-btn" style="background: transparent; border: none; font-size: 16px; margin-left: 5px;">ℹ️</button>
         </div>
         <div id="gameTurnIndicator" class="badge">Tour 1/20</div>
       </header>
@@ -760,7 +769,7 @@
           <button id="btnCloseRules" class="icon-btn" style="width: 32px; height: 32px; border: none; font-size: 14px;">❌</button>
         </div>
         
-        <div style="margin-bottom: 15px; flex-shrink: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+        <div id="rulesTabsContainer" style="margin-bottom: 15px; flex-shrink: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
           <button class="tab-btn active" data-rule-tab="cricket" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">🏏 Cricket</button>
           <button class="tab-btn" data-rule-tab="x01" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">💯 X01</button>
           <button class="tab-btn" data-rule-tab="world" style="font-size: 13px; padding: 8px; white-space: normal; line-height: 1.3; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">🌍 Tour du Monde</button>
@@ -771,6 +780,17 @@
 
         <div id="rulesContent" style="display: flex; flex-direction: column; column-count: 1; overflow-y: auto; text-align: left; font-size: 13px; line-height: 1.5; color: var(--text-main); padding-right: 4px;">
           </div>
+      </div>
+    </div>
+    <div id="teamInfoModalOverlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); z-index: 2500; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+      <div class="card" style="width: min(380px, calc(100% - 24px)); margin: 0; padding: 20px; max-height: 85vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--divider); padding-bottom: 10px; margin-bottom: 10px;">
+          <h3 style="margin: 0; color: var(--primary-strong); text-align: center !important;">🫂 Équipes en jeu</h3>
+          <button id="btnCloseTeamInfo" class="icon-btn" style="width: 32px; height: 32px; border: none; font-size: 14px;">❌</button>
+        </div>
+        <div id="teamInfoContent" style="display: flex; flex-direction: column; overflow-y: auto; font-size: 14px; gap: 12px;">
+          <!-- Injecté en JS -->
+        </div>
       </div>
     </div>
     <div id="popup"></div>

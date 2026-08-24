@@ -292,6 +292,50 @@ const RULES_DATA = {
       <li><strong>Raté = </strong> 5 coups</li>
     </ul>
     <p style="margin-bottom: 12px; padding: 0;"><strong>Exception pour le Bull :</strong> Double Bull = 1 coup, Simple Bull = 2 coups, Raté = 4 coups.</p>
+    <div style="display: flex; justify-content: center; margin: 15px 0;">
+      <svg viewBox="0 0 320 320" style="width: 100%; max-width: 300px; overflow: visible;">
+        <!-- Légendes des zones de la cible -->
+        <g style="font-family: 'Space Grotesk', sans-serif; font-size: 11.5px; font-weight: 700; fill: var(--text-main);">
+          
+          <line x1="150" y1="30" x2="240" y2="30" stroke="var(--primary)" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="245" y="34" fill="var(--primary)">Double (2 coups)</text>
+          
+          <line x1="150" y1="80" x2="70" y2="80" stroke="#90A4AE" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="65" y="84" text-anchor="end" fill="#546E7A">Simple Ext. (4 coups)</text>
+          
+          <line x1="150" y1="140" x2="240" y2="140" stroke="#FFB300" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="245" y="144" fill="#A67C00">Triple (1 coup)</text>
+          
+          <line x1="150" y1="210" x2="70" y2="210" stroke="#78909C" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="65" y="214" text-anchor="end" fill="#546E7A">Simple Int. (3 coups)</text>
+
+          <line x1="150" y1="270" x2="240" y2="270" stroke="#546E7A" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="245" y="274" fill="#546E7A">Simple Bull (2 coups)</text>
+
+          <line x1="150" y1="300" x2="70" y2="300" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="65" y="304" text-anchor="end" fill="var(--danger)">Double Bull (1 coup)</text>
+        </g>
+
+        <!-- Tracé de la portion (Wedge) centré et empilé -->
+        <g transform="translate(150, 300)" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round">
+          <!-- Simple Intérieur (Gris moyen) -->
+          <polygon points="-24,-150 24,-150 0,0" fill="#78909C" />
+          
+          <!-- Triple (Or) -->
+          <polygon points="-27,-170 27,-170 24,-150 -24,-150" fill="#FFB300" />
+
+          <!-- Simple Extérieur (Gris Clair) -->
+          <polygon points="-42,-260 42,-260 27,-170 -27,-170" fill="#90A4AE" />
+
+          <!-- Double (Bleu Primaire) -->
+          <polygon points="-45,-280 45,-280 42,-260 -42,-260" fill="var(--primary)" />
+          
+          <!-- Bullseyes (par dessus la pointe) -->
+          <circle cx="0" cy="0" r="30" fill="#546E7A" /> 
+          <circle cx="0" cy="0" r="12" fill="var(--danger)" />
+        </g>
+      </svg>
+    </div>
     <h4 style="color: var(--primary); margin-bottom: 8px;">🏆 Condition de victoire</h4>
     <p style="margin-bottom: 12px; padding: 0;">Contrairement aux autres modes, le vainqueur est le joueur qui termine le parcours avec le score le plus <strong>bas</strong> possible !</p>
   `,
@@ -303,14 +347,32 @@ const btnCloseRules = document.getElementById("btnCloseRules");
 const rulesModalOverlay = document.getElementById("rulesModalOverlay");
 const rulesContent = document.getElementById("rulesContent");
 const ruleTabs = document.querySelectorAll("#rulesModalOverlay .tab-btn");
+const rulesTabsContainer = document.getElementById("rulesTabsContainer");
+const btnInGameRules = document.getElementById("btnInGameRules");
 
 if (btnOpenRules && rulesModalOverlay) {
+  // 1. Bouton "Info" sur l'écran de création de partie (affiche tous les onglets)
   btnOpenRules.addEventListener("click", () => {
-    // On sélectionne l'onglet correspondant au jeu actuellement choisi
+    if (rulesTabsContainer) rulesTabsContainer.style.display = "grid"; // Affiche les onglets
     const currentGameMode = document.getElementById("gameModeSelect").value || "cricket";
     updateRulesModalContent(currentGameMode);
     rulesModalOverlay.classList.remove("hidden");
   });
+
+  // 2. Bouton "Info" EN PLEINE PARTIE (cache les onglets, n'affiche que le jeu actuel)
+  if (btnInGameRules) {
+    btnInGameRules.addEventListener("click", () => {
+      if (rulesTabsContainer) rulesTabsContainer.style.display = "none"; // Cache les onglets
+      
+      // Sécurité : si on est en entraînement checkout/cricket/target, on force la bonne règle parente
+      let modeAAfficher = cricketState.gameMode;
+      if (modeAAfficher === "train_cricket" || modeAAfficher === "train_target") modeAAfficher = "cricket";
+      if (modeAAfficher === "train_checkout") modeAAfficher = "x01";
+      
+      updateRulesModalContent(modeAAfficher);
+      rulesModalOverlay.classList.remove("hidden");
+    });
+  }
 
   btnCloseRules.addEventListener("click", () => {
     rulesModalOverlay.classList.add("hidden");
@@ -1827,7 +1889,9 @@ function demarrerMatchX01(listeJoueurs) {
   const selectPoints = document.getElementById("x01StartPointsSelect");
   const selectCheckout = document.getElementById("x01CheckoutSelect");
   cricketState.x01StartPoints = selectPoints ? parseInt(selectPoints.value, 10) : 301;
-  cricketState.x01Checkout = selectCheckout ? selectCheckout.value : "double";
+  cricketState.x01Checkout = selectCheckout ? selectCheckout.value : "single";
+  // Ajout du paramètre checkbox
+  cricketState.x01Continue = document.getElementById("x01ContinueCheckbox") ? document.getElementById("x01ContinueCheckbox").checked : false;
   cricketState.maxTurns = 999; 
 
   cricketState.players.forEach(p => {
@@ -1846,6 +1910,7 @@ function demarrerMatchX01(listeJoueurs) {
       scoreFamily140: 0, 
       scoreFamily180: 0,
       checkoutHits: 0, 
+      turnFinished: null, // <-- Ajout pour mémoriser le tour de victoire
       touchesNum: {},
       touchesSimpleNum: {},  
       touchesDoubleNum: {}, 
@@ -2516,6 +2581,15 @@ function lancerInterfaceJeu(mode, isResume = false) {
   clearInterval(cricketState.timerInterval);
   cricketState.timerInterval = setInterval(updateTimer, 1000);
 
+  // Gestion de l'affichage du bouton Équipe
+  const btnTeam = document.getElementById("btnTeamInfo");
+  if (btnTeam) {
+    if (cricketState.isTeamMode) {
+      btnTeam.classList.remove("hidden");
+    } else {
+      btnTeam.classList.add("hidden");
+    }
+  }
   // 2. Initialisation du clavier
   resetModifierUI(); 
   const modZone = document.getElementById("cricketKeyboardZone").children[1];
@@ -3062,8 +3136,14 @@ function taperChiffre(valeurBouton) {
   else traiterCalculCricket(keyStockage, joueurActuel, valeurBouton);
 
   cricketState.currentDart += 1;
-  if (cricketState.currentDart > 3) {
-    // Vérification de la condition SHOT (3 fléchettes, et toutes sont un 1, un D1 ou un T1)
+  
+  // Arrêt prématuré du tour si le joueur tombe à 0 au X01
+  let endTurnEarly = false;
+  if (cricketState.gameMode === "x01" && cricketState.scores[keyStockage] === 0) {
+    endTurnEarly = true;
+  }
+
+  if (cricketState.currentDart > 3 || endTurnEarly) {
     if (cricketState.gameMode === "x01" && cricketState.currentTurnDartsText.length === 3) {
         const aFaitTroisUn = cricketState.currentTurnDartsText.every(t => t === "1" || t === "D1" || t === "T1");
         if (aFaitTroisUn) {
@@ -3184,33 +3264,36 @@ function cloreVoleeActuelle(joueur) {
 
   // NOUVELLE LOGIQUE D'ALTERNANCE DYNAMIQUE
   if (cricketState.isTeamMode) {
-    // 1. On avance le curseur du joueur de l'équipe actuelle
-    const activeTeam = listeEquipesFormees[cricketState.teamTurnState.activeTeamIndex];
-    cricketState.teamTurnState.playerCursors[activeTeam.id] = (cricketState.teamTurnState.playerCursors[activeTeam.id] + 1) % activeTeam.members.length;
-    
-    // 2. On passe à l'équipe suivante
-    cricketState.teamTurnState.activeTeamIndex = (cricketState.teamTurnState.activeTeamIndex + 1) % listeEquipesFormees.length;
-    
-    // 3. Si on revient à la première équipe, c'est un nouveau tour de jeu global
-    if (cricketState.teamTurnState.activeTeamIndex === 0) {
-      cricketState.currentTurn += 1;
-    }
-    
-    // 4. On trouve le prochain joueur à envoyer au pas de tir
-    const nextTeam = listeEquipesFormees[cricketState.teamTurnState.activeTeamIndex];
-    const pCursor = cricketState.teamTurnState.playerCursors[nextTeam.id];
-    const nextPlayer = nextTeam.members[pCursor];
-    
-    // On met à jour l'index global pour que le reste de l'application suive
-    cricketState.currentPlayerIdx = cricketState.players.findIndex(p => p.id === nextPlayer.id);
+    let loopCount = 0;
+    do {
+      const activeTeam = listeEquipesFormees[cricketState.teamTurnState.activeTeamIndex];
+      cricketState.teamTurnState.playerCursors[activeTeam.id] = (cricketState.teamTurnState.playerCursors[activeTeam.id] + 1) % activeTeam.members.length;
+      
+      cricketState.teamTurnState.activeTeamIndex = (cricketState.teamTurnState.activeTeamIndex + 1) % listeEquipesFormees.length;
+      
+      if (cricketState.teamTurnState.activeTeamIndex === 0) {
+        cricketState.currentTurn += 1;
+      }
+      
+      const nextTeam = listeEquipesFormees[cricketState.teamTurnState.activeTeamIndex];
+      const pCursor = cricketState.teamTurnState.playerCursors[nextTeam.id];
+      const nextPlayer = nextTeam.members[pCursor];
+      
+      cricketState.currentPlayerIdx = cricketState.players.findIndex(p => p.id === nextPlayer.id);
+      loopCount++;
+    } while (cricketState.gameMode === "x01" && cricketState.scores[listeEquipesFormees[cricketState.teamTurnState.activeTeamIndex].id] === 0 && loopCount < listeEquipesFormees.length);
 
   } else {
-    // Logique individuelle classique
-    cricketState.currentPlayerIdx += 1;
-    if (cricketState.currentPlayerIdx >= cricketState.players.length) {
-      cricketState.currentPlayerIdx = 0; 
-      cricketState.currentTurn += 1;
-    }
+    // Logique individuelle classique avec Skip
+    let loopCount = 0;
+    do {
+      cricketState.currentPlayerIdx += 1;
+      if (cricketState.currentPlayerIdx >= cricketState.players.length) {
+        cricketState.currentPlayerIdx = 0; 
+        cricketState.currentTurn += 1;
+      }
+      loopCount++;
+    } while (cricketState.gameMode === "x01" && cricketState.scores[cricketState.players[cricketState.currentPlayerIdx].id] === 0 && loopCount < cricketState.players.length);
   }
 }
 
@@ -3283,6 +3366,10 @@ function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
       stats.totalScoreScored += pointsMarques; 
       stats.currentVolleyScore += pointsMarques;
       if (stats.dartsThrown <= 9) stats.first9DartsScore += pointsMarques;
+    }
+    // Mémoriser le tour de victoire
+    if (scoreResultat === 0 && stats && !stats.turnFinished) {
+      stats.turnFinished = cricketState.currentTurn;
     }
   }
 
@@ -3417,8 +3504,29 @@ function verifierConditionsFinMatch() {
   let clesEntites = Object.keys(cricketState.scores);
   
   if (cricketState.gameMode === "x01") {
-    for (let k of clesEntites) { 
-      if (cricketState.scores[k] === 0) { gagnantId = k; break; } 
+    const finishedPlayers = clesEntites.filter(k => cricketState.scores[k] === 0);
+    if (finishedPlayers.length > 0) {
+      // Si l'index est 0, c'est que le round (tour) de tout le monde est terminé
+      const isRoundOver = (cricketState.currentPlayerIdx === 0);
+      const remainingPlayers = clesEntites.length - finishedPlayers.length;
+      
+      let shouldEnd = false;
+      if (cricketState.x01Continue) {
+        // On arrête s'il n'y a plus personne en jeu, ou 1 seul joueur (qui devient perdant d'office à la fin du tour)
+        if (remainingPlayers === 0 || (remainingPlayers === 1 && isRoundOver)) {
+          shouldEnd = true;
+        }
+      } else {
+        // Fin classique : le 1er qui gagne provoque la fin, mais seulement à la fin du round pour permettre les égalités
+        if (isRoundOver) {
+          shouldEnd = true;
+        }
+      }
+      
+      if (shouldEnd) {
+        // Le gagnant officiel est celui qui a fini dans le tour le plus bas (en cas d'égalités multiples)
+        gagnantId = finishedPlayers.sort((a, b) => (cricketState.statsDetails[a].turnFinished || 999) - (cricketState.statsDetails[b].turnFinished || 999))[0];
+      }
     }
   } else if (cricketState.gameMode === "world") {
     for (let k of clesEntites) { 
@@ -3509,7 +3617,7 @@ function verifierConditionsFinMatch() {
   }
 }
 
-function formatScoreDisplay(gameMode, score) {
+function formatScoreDisplay(gameMode, score, playerId = null) {
   if (gameMode === "world") {
     const start = cricketState.worldStartNum;
     const end = cricketState.worldEndNum;
@@ -3521,49 +3629,84 @@ function formatScoreDisplay(gameMode, score) {
     let restants = totalEtapes - etapeActuelle;
     return `${etapeActuelle}/${totalEtapes}`;
   }
-  if (gameMode === "x01") return `${score} pts restants`;
+  if (gameMode === "x01") {
+    if (score === 0 && playerId && cricketState.statsDetails[playerId] && cricketState.statsDetails[playerId].turnFinished) {
+      return `${cricketState.statsDetails[playerId].turnFinished} tours`;
+    }
+    return `${score} pts restants`;
+  }
   if (gameMode === "bounty" || gameMode === "cricket" || gameMode === "shanghai") return `${score} points`;
   if (gameMode === "golf") return `${score} coups`;
   if (gameMode === "train_cricket") return "Entraînement Terminé";
   if (gameMode === "train_target") return score + " touches au total";
   if (gameMode === "train_checkout") {
-  const stats = cricketState.statsDetails[cricketState.players[0]?.id];
-  return `${stats?.checkoutsSucceeded || 0}/${stats?.checkoutsAttempted || 0} fermés`;
-}
+    const stats = cricketState.statsDetails[cricketState.players[0]?.id];
+    return `${stats?.checkoutsSucceeded || 0}/${stats?.checkoutsAttempted || 0} fermés`;
+  }
   return score;
 }
 
 function lancerPageVictoire(gagnantId, nomVainqueur) {
-  effacerSauvegarde();
+ effacerSauvegarde();
   document.getElementById("victoryTitle").innerText = `${nomVainqueur} gagne la partie !`;
   document.getElementById("victorySubtitle").innerText = `Match bouclé en ${document.getElementById("gameTimerDisplay").innerText}`;
   
   let classementTrie = cricketState.isTeamMode ? listeEquipesFormees.map(e => ({ id: e.id, name: e.name })) : cricketState.players.map(p => ({ id: p.id, name: p.name }));
+  
+  // Tri Spécial X01
   classementTrie.sort((a, b) => {
-      if (cricketState.gameMode === "x01" || cricketState.gameMode === "golf") {
+      if (cricketState.gameMode === "x01") {
+          const scoreA = cricketState.scores[a.id];
+          const scoreB = cricketState.scores[b.id];
+          if (scoreA === 0 && scoreB === 0) {
+              const turnA = cricketState.statsDetails[a.id]?.turnFinished || 999;
+              const turnB = cricketState.statsDetails[b.id]?.turnFinished || 999;
+              return turnA - turnB;
+          }
+          if (scoreA === 0) return -1;
+          if (scoreB === 0) return 1;
+          return scoreA - scoreB; // Les 2 au dessus de 0: le plus petit est devant
+      } else if (cricketState.gameMode === "golf") {
           return cricketState.scores[a.id] - cricketState.scores[b.id]; // Le plus bas gagne !
       } else {
           return cricketState.scores[b.id] - cricketState.scores[a.id];
       }
   });
-  const containerRanking = document.getElementById("finalRankingList"); containerRanking.innerHTML = "";
+
+  const containerRanking = document.getElementById("finalRankingList"); 
+  containerRanking.innerHTML = "";
   
-  // Création du classement pour l'historique
   let historyRanking = [];
+  let trueRank = 1;
 
   classementTrie.forEach((entite, idx) => {
-    let scoreFormate = formatScoreDisplay(cricketState.gameMode, cricketState.scores[entite.id]);
+    // Calcul des vraies égalités
+    if (idx > 0) {
+        const prev = classementTrie[idx - 1];
+        let isTied = false;
+        if (cricketState.gameMode === "x01" && cricketState.scores[entite.id] === 0 && cricketState.scores[prev.id] === 0) {
+            isTied = (cricketState.statsDetails[entite.id]?.turnFinished === cricketState.statsDetails[prev.id]?.turnFinished);
+        } else if (cricketState.scores[entite.id] === cricketState.scores[prev.id]) {
+            isTied = true;
+        }
+        if (!isTied) trueRank = idx + 1;
+    }
+
+    let scoreFormate = formatScoreDisplay(cricketState.gameMode, cricketState.scores[entite.id], entite.id);
     if (cricketState.gameMode === "shanghai" && cricketState.shanghaiWinner === entite.id) {
       scoreFormate += " (Shanghai 🐉)";
     }
-    const row = document.createElement("div"); row.className = "stat-row"; row.style.padding = "10px";
-    row.style.background = entite.id === gagnantId ? "rgba(192,101,42,0.15)" : "rgba(255,255,255,0.02)"; row.style.borderRadius = "12px";
     
-    if (idx === 0) {
-        // Mise en avant du vainqueur
+    const row = document.createElement("div"); 
+    row.className = "stat-row"; row.style.padding = "10px";
+    row.style.background = entite.id === gagnantId ? "rgba(192,101,42,0.15)" : "rgba(255,255,255,0.02)"; 
+    row.style.borderRadius = "12px";
+    
+    if (trueRank === 1) {
+        // Mise en avant du / des vainqueur(s)
         row.innerHTML = `<span style="font-size: 18px;"><strong>🥇</strong> — <span style="font-weight: 800; color: var(--primary);">${entite.name}</span></span><span style="color:var(--primary-strong); font-weight:900; font-size:16px;"> ${scoreFormate}</span>`;
     } else {
-        row.innerHTML = `<span><strong>${idx + 1}</strong> — 👤 ${entite.name}</span><span style="color:var(--primary-strong); font-weight:800; font-size:13px;"> ${scoreFormate}</span>`;
+        row.innerHTML = `<span><strong>${trueRank}</strong> — 👤 ${entite.name}</span><span style="color:var(--primary-strong); font-weight:800; font-size:13px;"> ${scoreFormate}</span>`;
     }
     
     containerRanking.appendChild(row);
@@ -4392,4 +4535,40 @@ function genererBadges(history) {
   if (!aAuMoinsUnBadge) {
     container.innerHTML = "<p class='hint' style='grid-column: 1 / -1; text-align:center; padding: 20px;'>Aucun badge débloqué avec ces filtres.</p>";
   }
+}
+
+const btnTeamInfo = document.getElementById("btnTeamInfo");
+const btnCloseTeamInfo = document.getElementById("btnCloseTeamInfo");
+const teamInfoModalOverlay = document.getElementById("teamInfoModalOverlay");
+const teamInfoContent = document.getElementById("teamInfoContent");
+
+if (btnTeamInfo && teamInfoModalOverlay) {
+  btnTeamInfo.addEventListener("click", () => {
+    renderTeamInfoContent();
+    teamInfoModalOverlay.classList.remove("hidden");
+  });
+
+  btnCloseTeamInfo.addEventListener("click", () => {
+    teamInfoModalOverlay.classList.add("hidden");
+  });
+}
+
+function renderTeamInfoContent() {
+  if (!teamInfoContent) return;
+  teamInfoContent.innerHTML = "";
+  
+  listeEquipesFormees.forEach(eq => {
+    const teamDiv = document.createElement("div");
+    teamDiv.style.background = "#FDFDFB";
+    teamDiv.style.border = "1px solid var(--divider)";
+    teamDiv.style.borderRadius = "8px";
+    teamDiv.style.padding = "10px";
+    
+    let html = `<div style="font-weight: 800; color: var(--primary); font-size: 16px; margin-bottom: 6px; text-align: center;">${eq.name}</div>`;
+    eq.members.forEach(m => {
+      html += `<div style="padding: 6px 0; border-top: 1px solid rgba(0,0,0,0.05); text-align: center; color: var(--text-main); font-weight: 600;">👤 ${m.name}</div>`;
+    });
+    teamDiv.innerHTML = html;
+    teamInfoContent.appendChild(teamDiv);
+  });
 }
