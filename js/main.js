@@ -1149,7 +1149,7 @@ document.getElementById("btnValiderActionCommu").addEventListener("click", async
         return showPopup("Vous faites déjà partie de cette communauté.", true);
       }
 
-      // ===== VÉRIFICATION DU CONFLIT DE NOM INTÉGRÉE ICI =====
+      // ===== VÉRIFICATION DU CONFLIT DE NOM INTÉGRÉE =====
       const playerDocCourant = await db.collection("players").doc(user.uid).get();
       const monPseudoActuel = playerDocCourant.exists ? playerDocCourant.data().name : "";
 
@@ -1981,15 +1981,15 @@ function demarrerMatchBounty(listeJoueurs) {
   const nbPrimes = primeCountSelect ? parseInt(primeCountSelect.value, 10) : 3;
   
   cricketState.bountyBonusTargets = [];
-  cricketState.bountyBonusAges = []; // NOUVEAU
+  cricketState.bountyBonusAges = [];
   while(cricketState.bountyBonusTargets.length < nbPrimes) {
     let t = generateNewBountyTarget(cricketState.bountyBonusTargets, null);
     cricketState.bountyBonusTargets.push(t);
-    cricketState.bountyBonusAges.push(0); // NOUVEAU
+    cricketState.bountyBonusAges.push(0);
   }
   
   cricketState.bountyMalusTarget = cricketState.bountyHasMalus ? generateNewBountyTarget(cricketState.bountyBonusTargets, null) : null;
-  cricketState.bountyMalusAge = 0; // NOUVEAU
+  cricketState.bountyMalusAge = 0;
 
   cricketState.players.forEach(p => {
     const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
@@ -2404,8 +2404,8 @@ window.lancerTrainingTarget = function() {
   cricketState.gameMode = "train_target";
   initVariablesMatchGenerales([p]);
   
-  cricketState.trainTargets = selectedTargets; // Gardé intact pour générer les stats à la fin
-  cricketState.trainTurnsPool = turnsPool; // Le nouveau système de progression
+  cricketState.trainTargets = selectedTargets;
+  cricketState.trainTurnsPool = turnsPool;
   cricketState.trainCurrentPoolIndex = 0;
   cricketState.trainTurnsPerTarget = turnsPerTarget;
   cricketState.maxTurns = turnsPool.length;
@@ -3125,6 +3125,9 @@ function taperChiffre(valeurBouton) {
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
   const keyStockage = cricketState.isTeamMode ? joueurActuel.teamId : joueurActuel.id;
   
+  if (cricketState.gameMode === "bounty" && cricketState.currentDart === 1) {
+      cricketState.currentTurnBountiesHit = 0; 
+  }
   // 1. SAUVEGARDE SÉCURISÉE (Avec filets de sécurité pour éviter les crashs de vieilles sauvegardes)
   cricketState.history.push({
       scores: JSON.parse(JSON.stringify(cricketState.scores)),
@@ -3138,9 +3141,9 @@ function taperChiffre(valeurBouton) {
       bountyBonusAges: cricketState.bountyBonusAges ? [...cricketState.bountyBonusAges] : null,
       bountyMalusAge: cricketState.bountyMalusAge || 0, 
       trainCurrentPoolIndex: cricketState.trainCurrentPoolIndex || 0,
-      trainCurrentAttempt: cricketState.trainCurrentAttempt || 1,             // Sécurité Checkout
-      trainCurrentTargetScore: cricketState.trainCurrentTargetScore || 0,     // Sécurité Checkout
-      trainCheckoutIndex: cricketState.trainCheckoutIndex || 0,               // Sécurité Checkout
+      trainCurrentAttempt: cricketState.trainCurrentAttempt || 1,
+      trainCurrentTargetScore: cricketState.trainCurrentTargetScore || 0,
+      trainCheckoutIndex: cricketState.trainCheckoutIndex || 0,
       statsDetails: JSON.parse(JSON.stringify(cricketState.statsDetails)),
       currentPlayerIdx: cricketState.currentPlayerIdx, 
       currentDart: cricketState.currentDart, 
@@ -3155,10 +3158,6 @@ function taperChiffre(valeurBouton) {
   } else {
       let prefixeText = modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "";
       cricketState.currentTurnDartsText.push(valeurBouton === 0 ? "0" : valeurBouton === 25 ? prefixeText + "Bull" : prefixeText + valeurBouton);
-  }
-  
-  if (cricketState.gameMode === "bounty" && cricketState.currentDart === 1) {
-      cricketState.currentTurnBountiesHit = 0; // Reset du tracker bounty au 1er tir
   }
 
   cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
@@ -4464,7 +4463,7 @@ async function chargerListeJoueurs() {
   }
 }
 
-// Fonction utilitaire CORRIGÉE (demande le playerName explicitement et prend en compte le filtre commu)
+// Fonction utilitaire (demande le playerName explicitement et prend en compte le filtre commu)
 async function calculerStatsGlobales(userId, playerName, gameModeFilter = "TOUT", communityFilter = "TOUT") {
   try {
     const snap = await db.collection("games_history")
@@ -4549,7 +4548,7 @@ async function rafraichirStatsDetail(playerId) {
   document.getElementById("statGamesWon").innerText = stats.won;
   document.getElementById("statWinrate").innerText = `${stats.winrate}%`;
 
-  genererBadges(stats.history);
+  window.genererBadges(stats.history);
 }
 
 const btnTeamInfo = document.getElementById("btnTeamInfo");
