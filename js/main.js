@@ -4458,9 +4458,8 @@ async function chargerListeJoueurs() {
 
       card.innerHTML = `
         <div style="font-weight: 700; color: var(--text-main); font-size: 16px;">
-          👤 ${joueur.name} ${guestBadge}
+          ${joueur.name} ${guestBadge}
         </div>
-        <div style="color: var(--divider); font-size: 16px;">➡️</div>
       `;
       
       card.onclick = () => ouvrirDetailJoueur(joueur.id, joueur.name, joueur.createdAt);
