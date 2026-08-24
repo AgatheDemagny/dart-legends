@@ -110,7 +110,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 2.13 - 24/08/2026</p>
+        <p>Version 2.14 - 24/08/2026</p>
       </div>
     </section>
 
@@ -149,10 +149,15 @@
           </div>
         </div>
 
-        <!-- Filtre des communautés -->
+        <!-- Filtre des communautés et invités -->
         <div class="card subtle" style="padding: 12px; margin: 0;">
           <label for="selectFiltreCommuPlayers" style="font-size: 12px; font-weight: 700; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.5px;">👥 Explorer une communauté</label>
           <select id="selectFiltreCommuPlayers" style="margin-top: 6px; padding: 10px; border: 1px solid var(--divider); border-radius: 8px; background: #FFFFFF; font-size: 14px; font-weight: 700; color: var(--primary); outline: none; width: 100%;"></select>
+          
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center;">
+            <label for="checkboxShowGuests" style="font-size: 13px; font-weight: 600; color: var(--text-main);">Afficher les profils invités</label>
+            <input type="checkbox" id="checkboxShowGuests" style="width: auto; margin: 0; accent-color: var(--primary);">
+          </div>
         </div>
 
         <!-- Liste alphabétique des joueurs -->

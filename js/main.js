@@ -3125,9 +3125,6 @@ function taperChiffre(valeurBouton) {
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
   const keyStockage = cricketState.isTeamMode ? joueurActuel.teamId : joueurActuel.id;
   
-  if (cricketState.gameMode === "bounty" && cricketState.currentDart === 1) {
-      cricketState.currentTurnBountiesHit = 0; 
-  }
   // 1. SAUVEGARDE SÉCURISÉE (Avec filets de sécurité pour éviter les crashs de vieilles sauvegardes)
   cricketState.history.push({
       scores: JSON.parse(JSON.stringify(cricketState.scores)),
@@ -3152,6 +3149,9 @@ function taperChiffre(valeurBouton) {
       currentTurnBountiesHit: cricketState.currentTurnBountiesHit || 0
     });
 
+  if (cricketState.gameMode === "bounty" && cricketState.currentDart === 1) {
+      cricketState.currentTurnBountiesHit = 0; 
+  }
   if (cricketState.gameMode === "golf") {
       const labels = {1: "Eagle (1)", 2: "Birdie (2)", 3: "Par (3)", 4: "4 coups", 5: "Raté (5)"}; 
       cricketState.currentTurnDartsText.push(labels[valeurBouton] || `${valeurBouton} coups`);
@@ -4360,6 +4360,12 @@ async function initialiserEcranJoueurs() {
 
   selectCommu.onchange = () => chargerListeJoueurs();
 
+  const cbGuests = document.getElementById("checkboxShowGuests");
+  if (cbGuests) {
+    cbGuests.checked = false; // S'assure que c'est décoché par défaut à l'ouverture
+    cbGuests.onchange = () => chargerListeJoueurs();
+  }
+
   // 2. Charger les infos de la MA CARTE PERSO
   const user = auth.currentUser;
   if (user) {
@@ -4385,6 +4391,9 @@ async function initialiserEcranJoueurs() {
 async function chargerListeJoueurs() {
   const container = document.getElementById("playersListContainer");
   const filtreCommu = document.getElementById("selectFiltreCommuPlayers").value;
+  const cbGuests = document.getElementById("checkboxShowGuests");
+  const afficherInvites = cbGuests ? cbGuests.checked : false;
+
   const user = auth.currentUser;
   if (!user) return;
 
@@ -4425,6 +4434,7 @@ async function chargerListeJoueurs() {
 
     joueursAffiches = joueursAffiches
       .filter(j => j.id !== user.uid)
+      .filter(j => afficherInvites ? true : j.isRealAccount !== false)
       .sort((a, b) => a.name.localeCompare(b.name));
 
     container.innerHTML = "";
