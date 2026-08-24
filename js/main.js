@@ -209,11 +209,10 @@ const POOL_NOMS_EQUIPES = [
 const SEQUENCE_TOUR_DU_MONDE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25];
 
 // ================== MODALE DES RÈGLES DU JEU ==================
-
 const RULES_DATA = {
   cricket: `
     <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
-    <p style="margin-bottom: 8px; padding: 0;">Le Cricket classique se joue uniquement sur une partie de la cible : les numéros <strong>15, 16, 17, 18, 19, 20 et le Bull (B)</strong>. Le but est de "fermer" toutes ces zones avant ses adversaires tout en obtenant le score le plus élevé.</p>
+    <p style="margin-bottom: 8px; padding: 0;">Le Cricket classique se joue uniquement sur une partie de la cible : les numéros <strong>15, 16, 17, 18, 19, 20 et le Bull (B)</strong>.</p>
     <p style="margin-bottom: 8px; padding: 0;"><strong>Comment fermer un chiffre :</strong> Un joueur doit toucher le numéro 3 fois. Un secteur Simple compte pour 1 touche, un secteur Double compte pour 2 touches, et un secteur Triple compte pour 3 touches (fermeture directe).</p>
     <p style="margin-bottom: 12px; padding: 0;"><strong>Marquer des points :</strong> Une fois qu'un joueur a fermé un numéro, chaque fléchette supplémentaire qu'il place dans ce même numéro met des points à ses adversaires <em>qui n'ont pas encore fermé ce numéro</em>. Si tout le monde a fermé le numéro, il est définitivement éteint pour la partie.</p>
     
@@ -223,32 +222,39 @@ const RULES_DATA = {
     <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
     <ul style="padding-left: 18px; margin-bottom: 0;">
       <li style="margin-bottom: 6px;"><strong>Nombre de tours :</strong> Définit une limite de tours. Si personne n'a tout fermé à la fin, le score départage les joueurs.</li>
-      <li><strong>Mode n'a qu'un œil :</strong> Variante masquée. Les numéros à cibler ne sont plus les chiffres classiques (15 à 20 + Bull) , mais 7 chiffres secrets tirés au hasard qu'il faut découvrir en explorant la cible avec ses fléchettes.</li>
+      <li><strong>Mode n'a qu'un œil :</strong> Variante masquée. Les numéros à cibler ne sont plus les chiffres classiques (15 à 20 + Bull), mais 7 chiffres secrets tirés au hasard qu'il faut découvrir en explorant la cible avec ses fléchettes.</li>
     </ul>
   `,
   x01: `
     <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
-    <p style="margin-bottom: 8px; padding: 0;">Chaque joueur démarre la partie avec un capital de points fixe (301, 501, ...). À chaque tour, les points cumulés par les 3 fléchettes sont soustraits du total. Le but étant de descendre pour atteindre <strong>exactement zéro point</strong>.</p>
+    <p style="margin-bottom: 8px; padding: 0;">Chaque joueur démarre la partie avec un capital de points fixe (301, 501, ...). À chaque tour, les points cumulés par les 3 fléchettes sont soustraits du total.</p>
     <p style="margin-bottom: 12px; padding: 0;"><strong>Valeur des lancers :</strong> Les zones Simples rapportent la valeur du chiffre. L'anneau extérieur (Double) multiplie les points de la fléchette par 2. L'anneau intermédiaire (Triple) multiplie les points par 3. Le Bull extérieur vaut 25 points et le centre du Bull vaut 50 points.</p>
     
-    <h4 style="color: var(--primary); margin-bottom: 8px;">💥 La règle du "Bust" (Casse)</h4>
-    <p style="margin-bottom: 12px; padding: 0;">Si vous marquez plus de points qu'il ne vous en reste, s'il vous reste exactement 1 point alors que vous jouez avec l'obligation de finir sur un double, ou si vous tombez à zéro sans que votre fléchette soit un double en mode Double-out, votre tour s'arrête immédiatement. Le lancer est considéré comme nul ("Bust") et votre score est réinitialisé à ce qu'il était au début de votre tour.</p>
+    <h4 style="color: var(--primary); margin-bottom: 8px;">💥 La règle du "Bust"</h4>
+    <p style="margin-bottom: 0; padding: 0;">Si vous marquez plus de points qu'il ne vous en reste, s'il vous reste exactement 1 point alors que vous jouez avec l'obligation de finir sur un double, ou si vous tombez à zéro sans que votre fléchette soit un double en mode Double-out, votre tour s'arrête immédiatement. Le lancer est considéré comme nul ("Bust") et votre score est réinitialisé à ce qu'il était au début de votre tour.</p>
+  
+    <h4 style="color: var(--primary); margin-bottom: 8px;">🏆 Condition de victoire</h4>
+    <p style="margin-bottom: 12px; padding: 0;">Le but est de descendre pour atteindre <strong>exactement zéro point</strong>. Le premier à y parvenir gagne !</p>
     
     <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
-    <ul style="padding-left: 18px; margin-bottom: 0;">
+    <ul style="padding-left: 18px; margin-bottom: 12px;">
       <li style="margin-bottom: 6px;"><strong>Points de départ :</strong> Le score initial attribué au début du match (ex: 301 pour une partie rapide, 501 pour le format officiel, ...).</li>
-      <li><strong>Checkout :</strong> En mode "Double-out", vous devez impérativement loger votre toute dernière fléchette de victoire dans un secteur <strong>Double</strong> pour tomber à zéro. Sans contrainte, n'importe quelle zone de la cible suffit.</li>
+      <li style="margin-bottom: 6px;"><strong>Checkout :</strong> En mode "Double-out", vous devez impérativement loger votre toute dernière fléchette de victoire dans un secteur <strong>Double</strong> pour tomber à zéro. Sans contrainte, n'importe quelle zone de la cible suffit.</li>
+      <li><strong>Continuer après le 1er gagnant :</strong> Permet au match de se poursuivre après la victoire du premier joueur afin d'établir un classement complet basé sur le nombre de tours joués.</li>
     </ul>
-  `,
+    `,
   bounty: `
     <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
     <p style="margin-bottom: 8px; padding: 0;">Le Chasseur de primes est un mode dynamique où les zones cibles changent à chaque impact. L'écran affiche plusieurs chiffres aléatoires qui représentent des <strong>Primes</strong>. Lorsqu'un joueur touche une prime active, la valeur du chiffre (multipliée par 2 ou 3 si c'est un Double/Triple) est ajoutée à son score.</p>
     <p style="margin-bottom: 12px; padding: 0;"><strong>Renouvellement instantané :</strong> Dès qu'un chiffre prime est touché, il disparaît et est remplacé sur-le-champ par un nouveau numéro choisi au hasard, garantissant qu'il soit unique et distinct des autres primes ou malus à l'écran.</p>
     
+    <h4 style="color: var(--primary); margin-bottom: 8px;">🏆 Condition de victoire</h4>
+    <p style="margin-bottom: 12px; padding: 0;">Le joueur qui atteint ou dépasse le <strong>Score cible</strong> en premier remporte la partie. Si la limite de tours est atteinte avant, c'est le joueur avec le score le plus élevé qui l'emporte.</p>
+
     <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
     <ul style="padding-left: 18px; margin-bottom: 0;">
       <li style="margin-bottom: 6px;"><strong>Nombre de primes :</strong> Définit la quantité de primes disponibles simultanément sur le panneau (2, 3 ou 4).</li>
-      <li style="margin-bottom: 6px;"><strong>Nombre de tours / Score cible :</strong> Fixent la fin du match. Le but est d'atteindre le score cible en premier ou d'avoir le meilleur score à la fin des manches. Par sécurité, le jeu bloque le départ si ces deux paramètres sont configurés en illimité.</li>
+      <li style="margin-bottom: 6px;"><strong>Nombre de tours / Score cible :</strong> Fixent la fin du match. Par sécurité, le jeu bloque le départ si ces deux paramètres sont configurés en illimité.</li>
       <li style="margin-bottom: 6px;"><strong>Chiffres renouvelés après :</strong> Nombre de tours maximum avant qu'une prime non touchée n'expire et ne change automatiquement de valeur pour éviter les situations de blocage.</li>
       <li><strong>Activer un chiffre Malus 💀 :</strong> Si coché, un chiffre maudit apparaît en rouge à l'écran. Le premier joueur maladroit qui le touche subit une pénalité financière et perd les points correspondants (multipliés si Double/Triple). Le malus se déplace aussitôt après l'impact.</li>
     </ul>
@@ -263,7 +269,8 @@ const RULES_DATA = {
     <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
     <ul style="padding-left: 18px; margin-bottom: 0;">
       <li style="margin-bottom: 6px;"><strong>Départ & Arrivée :</strong> Déterminent les bornes du parcours pour moduler la longueur du jeu (ex: débuter au 1 et terminer au Bull).</li>
-      <li><strong>Sauter les numéros (Doubles/Triples) :</strong> Si l'option est cochée, réussir un tir de précision accélère votre voyage ! Toucher le Triple de votre numéro cible actuel vous fait bondir de 3 étapes (+3), et un Double vous fait avancer de 2 étapes (+2). <strong>Attention : la cible d'arrivée doit obligatoirement être touchée pour gagner. Si l'effet d'un bond vous fait dépasser la fin du parcours, votre progression est stoppée sur cet ultime chiffre, qu'il faudra viser avec une nouvelle fléchette.</strong> Si l'option est décochée, les doubles et triples n'ont aucun effet bonus et agissent comme des touches simples (+1).</li>    </ul>
+      <li><strong>Sauter les numéros (Doubles/Triples) :</strong> Si l'option est cochée, réussir un tir de précision accélère votre voyage ! Toucher le Triple de votre numéro cible actuel vous fait bondir de 3 étapes (+3), et un Double vous fait avancer de 2 étapes (+2). <strong>Attention : la cible d'arrivée doit obligatoirement être touchée pour gagner. Si l'effet d'un bond vous fait dépasser la fin du parcours, votre progression est stoppée sur cet ultime chiffre, qu'il faudra viser avec une nouvelle fléchette.</strong> Si l'option est décochée, les doubles et triples n'ont aucun effet bonus et agissent comme des touches simples (+1).</li>
+    </ul>
   `,
   shanghai: `
     <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
@@ -276,7 +283,7 @@ const RULES_DATA = {
     <ul style="padding-left: 18px; margin-bottom: 0;">
       <li style="margin-bottom: 6px;"><strong>Nombre de tours :</strong> Définit la durée de la partie (de 7 à 20 tours).</li>
       <li style="margin-bottom: 6px;"><strong>Départ :</strong> Permet de choisir le chiffre par lequel la partie commence. Par exemple, avec 10 tours et un départ fixé à 11, vous jouerez l'itinéraire des chiffres 11 à 20.</li>
-      <li><strong>Nombres aléatoires inconnus :</strong> Si cette option est cochée, l'ordre chronologique et le choix du départ sont ignorés. Les cibles deviennent des numéros secrets tirés au hasard (de 1 à 20) qui ne se dévoilent qu'à chaque nouveau tour.</li>
+      <li><strong>Mode n'a qu'un œil :</strong> Si cette option est cochée, l'ordre chronologique et le choix du départ sont ignorés. Les cibles deviennent des numéros secrets tirés au hasard (de 1 à 20) qui ne se dévoilent qu'à chaque nouveau tour.</li>
     </ul>
   `,
   golf: `
@@ -291,65 +298,49 @@ const RULES_DATA = {
       <li><strong>Simple extérieur = </strong> 4 coups (Bogey)</li>
       <li><strong>Raté = </strong> 5 coups</li>
     </ul>
-    <p style="margin-bottom: 12px; padding: 0;"><strong>Exception pour le Bull :
+    <p style="margin-bottom: 12px; padding: 0;"><strong>Exception pour le Bull :</strong></p>
     <ul style="padding-left: 18px; margin-bottom: 12px;">
       <li><strong>Double Bull = </strong> 1 coup (Eagle)</li>
       <li><strong>Simple Bull = </strong> 2 coups (Birdie)</li>
       <li><strong>Raté = </strong> 4 coups</li>
     </ul>
+    
     <div style="display: flex; justify-content: center; margin: 15px 0;">
       <svg viewBox="-10 0 340 320" style="width: 100%; max-width: 300px; overflow: visible;">
-        <!-- Légendes des zones de la cible -->
         <g style="font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700; fill: var(--text-main);">
-          
-          <!-- Double (Droite) -->
           <line x1="185" y1="30" x2="215" y2="30" stroke="var(--primary)" stroke-width="1.5" stroke-dasharray="3,3"/>
           <text x="220" y="34" fill="var(--primary)">Double</text>
-          
-          <!-- Simple Ext. (Gauche) -->
           <line x1="135" y1="80" x2="105" y2="80" stroke="#90A4AE" stroke-width="1.5" stroke-dasharray="3,3"/>
           <text x="100" y="84" text-anchor="end" fill="#78909C">Simple Extérieur</text>
-          
-          <!-- Triple (Droite) -->
           <line x1="175" y1="140" x2="215" y2="140" stroke="#FFB300" stroke-width="1.5" stroke-dasharray="3,3"/>
           <text x="220" y="144" fill="#D99B00">Triple</text>
-          
-          <!-- Simple Int. (Gauche) -->
           <line x1="145" y1="210" x2="105" y2="210" stroke="#78909C" stroke-width="1.5" stroke-dasharray="3,3"/>
           <text x="100" y="214" text-anchor="end" fill="#546E7A">Simple Intérieur</text>
-
-          <!-- Simple Bull (Droite) -->
           <line x1="180" y1="270" x2="215" y2="270" stroke="#1C1E21" stroke-width="1.5" stroke-dasharray="3,3"/>
           <text x="220" y="274" fill="#1C1E21">Simple Bull</text>
-
-          <!-- Double Bull (Gauche) -->
           <line x1="155" y1="300" x2="105" y2="300" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3,3"/>
           <text x="100" y="304" text-anchor="end" fill="var(--danger)">Double Bull</text>
         </g>
-
-        <!-- Tracé de la portion (Wedge) centré sur x=160 -->
         <g transform="translate(160, 300)" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round">
-          <!-- Simple Intérieur -->
           <polygon points="-24,-150 24,-150 0,0" fill="#78909C" />
-          
-          <!-- Triple -->
           <polygon points="-27,-170 27,-170 24,-150 -24,-150" fill="#FFB300" />
-
-          <!-- Simple Extérieur -->
           <polygon points="-42,-260 42,-260 27,-170 -27,-170" fill="#90A4AE" />
-
-          <!-- Double -->
           <polygon points="-45,-280 45,-280 42,-260 -42,-260" fill="var(--primary)" />
-          
-          <!-- Bullseyes (par dessus la pointe) -->
           <circle cx="0" cy="0" r="30" fill="#1C1E21" /> 
           <circle cx="0" cy="0" r="12" fill="var(--danger)" />
         </g>
       </svg>
     </div>
-
+    
     <h4 style="color: var(--primary); margin-bottom: 8px;">🏆 Condition de victoire</h4>
     <p style="margin-bottom: 12px; padding: 0;">Contrairement aux autres modes, le vainqueur est le joueur qui termine le parcours avec le score le plus <strong>bas</strong> possible !</p>
+
+    <h4 style="color: var(--primary); margin-bottom: 8px;">⚙️ Explication des paramètres</h4>
+    <ul style="padding-left: 18px; margin-bottom: 12px;">
+      <li style="margin-bottom: 6px;"><strong>Nombre de trous :</strong> Définit la longueur du parcours (9 ou 18 trous).</li>
+      <li style="margin-bottom: 6px;"><strong>Départ :</strong> Permet de choisir le trou (chiffre) par lequel le parcours commence.</li>
+      <li><strong>Mode n'a qu'un œil :</strong> Si cette option est cochée, les chiffres du parcours sont tirés au sort et découverts à chaque tour au lieu de se suivre logiquement.</li>
+    </ul>
   `,
 };
 
@@ -1658,18 +1649,19 @@ async function chargerHistoriqueParties() {
           data.ranking.forEach((r, idx) => {
               let teamText = r.teamMembers ? `<br><span style="font-size: 10px; color: var(--text-soft); font-weight: normal;">👤 ${r.teamMembers}</span>` : "";
               
-              if (idx === 0) {
-                  // Style pour le 1er
+              // On lit le rang enregistré, sinon on garde la compatibilité avec les vieilles parties
+              let rankToDisplay = r.rank || (idx + 1); 
+              
+              if (rankToDisplay === 1) {
                   rankingHtml += `
                   <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
                       <div style="flex:1; font-size: 16px;"><strong>🥇</strong> <span style="font-weight: 800; color: var(--primary);">${r.name}</span> ${teamText}</div>
                       <div style="font-weight: 900; color: var(--primary-strong); font-size: 14px; text-align: right;">${r.score}</div>
                   </div>`;
               } else {
-                  // Style classique pour les autres
                   rankingHtml += `
                   <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
-                      <div style="flex:1;"><strong>${idx + 1}</strong> ${r.name} ${teamText}</div>
+                      <div style="flex:1;"><strong>${rankToDisplay}</strong> ${r.name} ${teamText}</div>
                       <div style="font-weight: 800; color: var(--primary-strong); font-size: 12px; text-align: right;">${r.score}</div>
                   </div>`;
               }
@@ -3551,114 +3543,85 @@ function annulerDernierCoup() {
 }
 
 function verifierConditionsFinMatch() {
-  let gagnantId = null; 
+  let gagnantsIds = []; 
   let clesEntites = Object.keys(cricketState.scores);
   
   if (cricketState.gameMode === "x01") {
     const finishedPlayers = clesEntites.filter(k => cricketState.scores[k] === 0);
     if (finishedPlayers.length > 0) {
-      // isRoundOver est maintenant fiable, peu importe les joueurs qui sont passés (skips)
       const isRoundOver = cricketState.roundJustFinished;
       const remainingPlayers = clesEntites.length - finishedPlayers.length;
       
       let shouldEnd = false;
       if (cricketState.x01Continue) {
-        // Mode Continu : On stoppe quand il reste 1 ou 0 joueur, à la FIN du round (pour les ex aequo)
-        if (remainingPlayers <= 1 && isRoundOver) {
-          shouldEnd = true;
-        }
+        if (remainingPlayers <= 1 && isRoundOver) shouldEnd = true;
       } else {
-        // Mode Classique : On stoppe dès qu'il y a un gagnant, mais on attend toujours la FIN du round
-        if (finishedPlayers.length >= 1 && isRoundOver) {
-          shouldEnd = true;
-        }
+        if (finishedPlayers.length >= 1 && isRoundOver) shouldEnd = true;
       }
       
       if (shouldEnd) {
-        gagnantId = finishedPlayers.sort((a, b) => (cricketState.statsDetails[a].turnFinished || 999) - (cricketState.statsDetails[b].turnFinished || 999))[0];
+        const minTurn = Math.min(...finishedPlayers.map(k => cricketState.statsDetails[k].turnFinished || 999));
+        gagnantsIds = finishedPlayers.filter(k => (cricketState.statsDetails[k].turnFinished || 999) === minTurn);
       }
     }
   } else if (cricketState.gameMode === "world") {
-    for (let k of clesEntites) { 
-      if (cricketState.scores[k] > cricketState.worldEndNum) { gagnantId = k; break; } 
+    const finished = clesEntites.filter(k => cricketState.scores[k] > cricketState.worldEndNum);
+    if (finished.length > 0 && cricketState.roundJustFinished) {
+       gagnantsIds = finished; 
     }
   } else if (cricketState.gameMode === "bounty") {
     const scoreCible = document.getElementById("bountyTargetScoreSelect") ? parseInt(document.getElementById("bountyTargetScoreSelect").value, 10) : 300;
     if (scoreCible !== 9999) {
-      for (let k of clesEntites) { 
-        if (cricketState.scores[k] >= scoreCible) { gagnantId = k; break; } 
+      const reached = clesEntites.filter(k => cricketState.scores[k] >= scoreCible);
+      if (reached.length > 0 && cricketState.roundJustFinished) {
+        const maxScore = Math.max(...reached.map(k => cricketState.scores[k]));
+        gagnantsIds = reached.filter(k => cricketState.scores[k] === maxScore);
       }
     }
-    if (!gagnantId && cricketState.maxTurns !== 999 && cricketState.currentTurn > cricketState.maxTurns) {
-      let meilleurScore = -Infinity; 
-      clesEntites.forEach(k => { 
-        if (cricketState.scores[k] > meilleurScore) { 
-          meilleurScore = cricketState.scores[k]; 
-          gagnantId = k; 
-        } 
-      });
+    if (gagnantsIds.length === 0 && cricketState.maxTurns !== 999 && cricketState.currentTurn > cricketState.maxTurns) {
+      const maxScore = Math.max(...clesEntites.map(k => cricketState.scores[k]));
+      gagnantsIds = clesEntites.filter(k => cricketState.scores[k] === maxScore);
     }
   } else if (cricketState.gameMode === "shanghai") {
     if (cricketState.shanghaiWinner) {
-      gagnantId = cricketState.shanghaiWinner; // Victoire par KO
+      gagnantsIds = [cricketState.shanghaiWinner];
     } else if (cricketState.currentTurn > cricketState.maxTurns) {
-      let meilleurScore = -Infinity;
-      clesEntites.forEach(k => {
-        if (cricketState.scores[k] > meilleurScore) {
-          meilleurScore = cricketState.scores[k];
-          gagnantId = k;
-        }
-      });
+      const maxScore = Math.max(...clesEntites.map(k => cricketState.scores[k]));
+      gagnantsIds = clesEntites.filter(k => cricketState.scores[k] === maxScore);
     }
   } else if (cricketState.gameMode === "golf") {
     if (cricketState.currentTurn > cricketState.maxTurns) {
-      let meilleurScore = Infinity;
-      clesEntites.forEach(k => {
-        if (cricketState.scores[k] < meilleurScore) {
-          meilleurScore = cricketState.scores[k];
-          gagnantId = k;
-        }
-      });
+      const minScore = Math.min(...clesEntites.map(k => cricketState.scores[k]));
+      gagnantsIds = clesEntites.filter(k => cricketState.scores[k] === minScore);
     }
   } else if (cricketState.gameMode === "train_checkout") {
-    if (cricketState.trainCheckoutIndex >= cricketState.trainCheckoutList.length) {
-      gagnantId = clesEntites[0];
-    }
+    if (cricketState.trainCheckoutIndex >= cricketState.trainCheckoutList.length) gagnantsIds = [clesEntites[0]];
   } else if (cricketState.gameMode === "train_target") {
-    if (cricketState.trainCurrentPoolIndex >= cricketState.trainTurnsPool.length) {
-      gagnantId = clesEntites[0];
-    }
+    if (cricketState.trainCurrentPoolIndex >= cricketState.trainTurnsPool.length) gagnantsIds = [clesEntites[0]];
   } else {
-    for (let k of clesEntites) {
-      if (cricketState.targets.every(t => cricketState.marks[k][t] >= 3) && clesEntites.every(autreKey => cricketState.scores[k] >= cricketState.scores[autreKey])) { 
-        gagnantId = k; 
-        break; 
-      }
-    }
-    if (!gagnantId && cricketState.currentTurn > cricketState.maxTurns && cricketState.maxTurns !== 999) {
-      let meilleurScore = -Infinity; 
-      clesEntites.forEach(k => { 
-        if (cricketState.scores[k] > meilleurScore) { 
-          meilleurScore = cricketState.scores[k]; 
-          gagnantId = k; 
-        } 
-      });
+    // Cricket (Finit instantanément dès qu'une fléchette remplit les conditions)
+    const finished = clesEntites.filter(k => cricketState.targets.every(t => cricketState.marks[k][t] >= 3) && clesEntites.every(autreKey => cricketState.scores[k] >= cricketState.scores[autreKey]));
+    if (finished.length > 0) {
+      gagnantsIds = [finished[0]];
+    } else if (cricketState.currentTurn > cricketState.maxTurns && cricketState.maxTurns !== 999) {
+      const maxScore = Math.max(...clesEntites.map(k => cricketState.scores[k]));
+      gagnantsIds = clesEntites.filter(k => cricketState.scores[k] === maxScore);
     }
   }
 
-  if (gagnantId) {
+  if (gagnantsIds.length > 0) {
     clearInterval(cricketState.timerInterval);
-    let nomVainqueur = cricketState.isTeamMode 
-      ? (listeEquipesFormees.find(e => e.id === gagnantId)?.name || "Inconnu") 
-      : (cricketState.players.find(p => p.id === gagnantId)?.name || "Inconnu");
+    
+    // Concaténer tous les gagnants avec un "et"
+    let nomsVainqueurs = gagnantsIds.map(id => cricketState.isTeamMode ? (listeEquipesFormees.find(e => e.id === id)?.name || "Inconnu") : (cricketState.players.find(p => p.id === id)?.name || "Inconnu")).join(" et ");
 
     setTimeout(async () => {
       const titreModal = cricketState.gameMode.startsWith("train_") ? "🎯 Objectif atteint !" : "🏆 Partie Terminée !";
-      const texteModal = cricketState.gameMode.startsWith("train_") ? "As-tu bien réussi cette dernière touche ?" : `${nomVainqueur} remporte la partie ! Souhaitez-vous valider et enregistrer ce résultat ?`;
+      const texteModal = cricketState.gameMode.startsWith("train_") ? "As-tu bien réussi cette dernière touche ?" : `${nomsVainqueurs} remporte la partie ! Souhaitez-vous valider et enregistrer ce résultat ?`;
 
       const confirmation = await openCustomModal(titreModal, texteModal);
       if (confirmation) {
-        lancerPageVictoire(gagnantId, nomVainqueur); 
+        lancerPageVictoire(gagnantsIds, nomsVainqueurs); 
       } else { 
         annulerDernierCoup(); 
         cricketState.timerInterval = setInterval(updateTimer, 1000); 
@@ -3696,14 +3659,15 @@ function formatScoreDisplay(gameMode, score, playerId = null) {
   return score;
 }
 
-function lancerPageVictoire(gagnantId, nomVainqueur) {
- effacerSauvegarde();
-  document.getElementById("victoryTitle").innerText = `${nomVainqueur} gagne la partie !`;
+function lancerPageVictoire(gagnantsIds, nomsVainqueurs) {
+  effacerSauvegarde();
+  
+  // Titre dynamique s'il y a égalité
+  document.getElementById("victoryTitle").innerText = gagnantsIds.length > 1 ? `Égalité ! ${nomsVainqueurs} gagnent !` : `${nomsVainqueurs} gagne la partie !`;
   document.getElementById("victorySubtitle").innerText = `Match bouclé en ${document.getElementById("gameTimerDisplay").innerText}`;
   
   let classementTrie = cricketState.isTeamMode ? listeEquipesFormees.map(e => ({ id: e.id, name: e.name })) : cricketState.players.map(p => ({ id: p.id, name: p.name }));
   
-  // Tri Spécial X01
   classementTrie.sort((a, b) => {
       if (cricketState.gameMode === "x01") {
           const scoreA = cricketState.scores[a.id];
@@ -3715,9 +3679,9 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
           }
           if (scoreA === 0) return -1;
           if (scoreB === 0) return 1;
-          return scoreA - scoreB; // Les 2 au dessus de 0: le plus petit est devant
+          return scoreA - scoreB;
       } else if (cricketState.gameMode === "golf") {
-          return cricketState.scores[a.id] - cricketState.scores[b.id]; // Le plus bas gagne !
+          return cricketState.scores[a.id] - cricketState.scores[b.id]; 
       } else {
           return cricketState.scores[b.id] - cricketState.scores[a.id];
       }
@@ -3730,7 +3694,6 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
   let trueRank = 1;
 
   classementTrie.forEach((entite, idx) => {
-    // Calcul des vraies égalités
     if (idx > 0) {
         const prev = classementTrie[idx - 1];
         let isTied = false;
@@ -3739,7 +3702,7 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
         } else if (cricketState.scores[entite.id] === cricketState.scores[prev.id]) {
             isTied = true;
         }
-        if (!isTied) trueRank = idx + 1;
+        if (!isTied) trueRank = idx + 1; // Si pas d'égalité, on prend sa place normale (ex: J4 devient 4ème)
     }
 
     let scoreFormate = formatScoreDisplay(cricketState.gameMode, cricketState.scores[entite.id], entite.id);
@@ -3749,11 +3712,12 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
     
     const row = document.createElement("div"); 
     row.className = "stat-row"; row.style.padding = "10px";
-    row.style.background = entite.id === gagnantId ? "rgba(192,101,42,0.15)" : "rgba(255,255,255,0.02)"; 
+    
+    // Applique le fond doré à TOUS les gagnants
+    row.style.background = gagnantsIds.includes(entite.id) ? "rgba(192,101,42,0.15)" : "rgba(255,255,255,0.02)"; 
     row.style.borderRadius = "12px";
     
     if (trueRank === 1) {
-        // Mise en avant du / des vainqueur(s)
         row.innerHTML = `<span style="font-size: 18px;"><strong>🥇</strong> — <span style="font-weight: 800; color: var(--primary);">${entite.name}</span></span><span style="color:var(--primary-strong); font-weight:900; font-size:16px;"> ${scoreFormate}</span>`;
     } else {
         row.innerHTML = `<span><strong>${trueRank}</strong> — 👤 ${entite.name}</span><span style="color:var(--primary-strong); font-weight:800; font-size:13px;"> ${scoreFormate}</span>`;
@@ -3767,71 +3731,69 @@ function lancerPageVictoire(gagnantId, nomVainqueur) {
         if (equipe) joueursEquipe = equipe.members.map(m => m.name).join(", ");
     }
 
+    // SAUVEGARDE DU VRAI RANG POUR L'HISTORIQUE !
     historyRanking.push({
       name: entite.name,
       score: scoreFormate,
-      teamMembers: joueursEquipe
+      teamMembers: joueursEquipe,
+      rank: trueRank
     });
   });
 
-      const participants = (typeof joueursSelectionnesMatch !== "undefined" && joueursSelectionnesMatch && joueursSelectionnesMatch.length > 0)
-        ? joueursSelectionnesMatch.map(p => p.id)
-        : cricketState.players.map(p => p.id);
+  const participants = (typeof joueursSelectionnesMatch !== "undefined" && joueursSelectionnesMatch && joueursSelectionnesMatch.length > 0)
+    ? joueursSelectionnesMatch.map(p => p.id)
+    : cricketState.players.map(p => p.id);
 
-      db.collection("games_history").add({
-        type: cricketState.gameMode,
-        winner: nomVainqueur,
-        duration: cricketState.elapsedTime,
-        createdAt: Date.now(),
-        isTeamMode: cricketState.isTeamMode || false,
-        maxTurns: cricketState.maxTurns || 0,
-        communityId: cricketState.gameMode.startsWith("train_") ? null : (typeof communauteCibleMatchId !== "undefined" ? communauteCibleMatchId : null),
-        participantIds: participants,
-        ranking: (typeof historyRanking !== "undefined") ? historyRanking : [],
-        statsDetails: cricketState.statsDetails || {},
-        players: cricketState.players || [],
-        scores: cricketState.scores || {},
-        marks: cricketState.marks || null,
-        targets: cricketState.targets || null,
-        trainTargets: cricketState.trainTargets || null,
-        trainTurnsPerTarget: cricketState.trainTurnsPerTarget || null,
-        currentTurn: cricketState.currentTurn || 1
-      })
-      .then(() => console.log("Match enregistré !"))
-      .catch(e => console.error("Erreur Firebase :", e))
-      .finally(() => {
-        try {
-          if (cricketState.gameMode.startsWith("train_")) {
-            if (cricketState.gameMode === "train_cricket") {
-              renderGrid();
-            }
-            
-            // Génération automatique et transition directe
-            genererTableauStatistiques();
-            showScreen(screens.matchStats);
-            
-            const btnPodium = document.getElementById("btnBackToPodium");
-            if (btnPodium) btnPodium.style.display = "none";
-            
-            document.getElementById("btnGoHomeAfterStats").onclick = () => {
-              showScreen(screens.training);
-              if (typeof retourListeTraining === "function") retourListeTraining();
-            };
-          } else {
-            const winnerNameEl = document.getElementById("gameOverWinnerName");
-            if (winnerNameEl) winnerNameEl.innerText = nomVainqueur;
-            
-            const btnPodium = document.getElementById("btnBackToPodium");
-            if (btnPodium) btnPodium.style.display = "inline-block";
-            
-            document.getElementById("btnGoHomeAfterStats").onclick = () => showScreen(screens.home);
-            showScreen(screens.gameOver);
-          }
-        } catch (erreur) {
-          console.error("Erreur lors de l'affichage de fin de match :", erreur);
-          showScreen(screens.home); 
-        }
-      });
+  db.collection("games_history").add({
+    type: cricketState.gameMode,
+    winner: nomsVainqueurs,
+    duration: cricketState.elapsedTime,
+    createdAt: Date.now(),
+    isTeamMode: cricketState.isTeamMode || false,
+    maxTurns: cricketState.maxTurns || 0,
+    communityId: cricketState.gameMode.startsWith("train_") ? null : (typeof communauteCibleMatchId !== "undefined" ? communauteCibleMatchId : null),
+    participantIds: participants,
+    ranking: historyRanking,
+    statsDetails: cricketState.statsDetails || {},
+    players: cricketState.players || [],
+    scores: cricketState.scores || {},
+    marks: cricketState.marks || null,
+    targets: cricketState.targets || null,
+    trainTargets: cricketState.trainTargets || null,
+    trainTurnsPerTarget: cricketState.trainTurnsPerTarget || null,
+    currentTurn: cricketState.currentTurn || 1
+  })
+  .then(() => console.log("Match enregistré !"))
+  .catch(e => console.error("Erreur Firebase :", e))
+  .finally(() => {
+    try {
+      if (cricketState.gameMode.startsWith("train_")) {
+        if (cricketState.gameMode === "train_cricket") renderGrid();
+        genererTableauStatistiques();
+        showScreen(screens.matchStats);
+        
+        const btnPodium = document.getElementById("btnBackToPodium");
+        if (btnPodium) btnPodium.style.display = "none";
+        
+        document.getElementById("btnGoHomeAfterStats").onclick = () => {
+          showScreen(screens.training);
+          if (typeof retourListeTraining === "function") retourListeTraining();
+        };
+      } else {
+        const winnerNameEl = document.getElementById("gameOverWinnerName");
+        if (winnerNameEl) winnerNameEl.innerText = nomsVainqueurs;
+        
+        const btnPodium = document.getElementById("btnBackToPodium");
+        if (btnPodium) btnPodium.style.display = "inline-block";
+        
+        document.getElementById("btnGoHomeAfterStats").onclick = () => showScreen(screens.home);
+        showScreen(screens.gameOver);
+      }
+    } catch (erreur) {
+      console.error("Erreur lors de l'affichage de fin de match :", erreur);
+      showScreen(screens.home); 
+    }
+  });
 }
 
 document.getElementById("btnGoHomeAfterMatch").onclick = () => showScreen(screens.home);
