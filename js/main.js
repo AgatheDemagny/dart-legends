@@ -1017,6 +1017,15 @@ document.getElementById("btnValidateCreatePlayer").addEventListener("click", asy
   const nom = document.getElementById("createPlayerName").value.trim();
   if (!nom) return showPopup("Le nom est obligatoire", true);
   
+  // Empêcher les doublons
+  const nomMinuscule = nom.toLowerCase();
+  const joueurExistant = tousLesJoueursBase.find(j => j.name && j.name.toLowerCase() === nomMinuscule);
+  
+  if (joueurExistant) {
+    return showPopup("Nom d'utilisateur déjà présent dans la communauté.", true);
+  }
+  // -----------------------------------------------------
+  
   try {
     const docId = "guest-" + Date.now();
     await db.collection("players").doc(docId).set({
