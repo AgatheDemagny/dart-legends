@@ -2231,6 +2231,7 @@ function traiterCalculShanghai(keyStockage, joueurActuel, valeurBouton) {
     
     if (stats.currentTurnHits.s && stats.currentTurnHits.d && stats.currentTurnHits.t) {
       cricketState.shanghaiWinner = keyStockage;
+      stats.shanghaiInstantWin = true;
       showPopup("🐉 SHANGHAI !!!", false);
     }
   } else {
@@ -3124,21 +3125,28 @@ function taperChiffre(valeurBouton) {
   const joueurActuel = cricketState.players[cricketState.currentPlayerIdx];
   const keyStockage = cricketState.isTeamMode ? joueurActuel.teamId : joueurActuel.id;
   
+  // 1. SAUVEGARDE SÉCURISÉE (Avec filets de sécurité pour éviter les crashs de vieilles sauvegardes)
   cricketState.history.push({
       scores: JSON.parse(JSON.stringify(cricketState.scores)),
       marks: cricketState.marks ? JSON.parse(JSON.stringify(cricketState.marks)) : null,
-      revealedTargets: [...cricketState.revealedTargets], 
-      roundJustFinished: cricketState.roundJustFinished,
-      currentTurnDartsText: [...cricketState.currentTurnDartsText],
+      revealedTargets: [...(cricketState.revealedTargets || [])], 
+      roundJustFinished: cricketState.roundJustFinished || false,
+      currentTurnDartsText: [...(cricketState.currentTurnDartsText || [])],
       teamTurnState: cricketState.teamTurnState ? JSON.parse(JSON.stringify(cricketState.teamTurnState)) : null,
       bountyBonusTargets: cricketState.bountyBonusTargets ? [...cricketState.bountyBonusTargets] : null,
-      bountyMalusTarget: cricketState.bountyMalusTarget,
+      bountyMalusTarget: cricketState.bountyMalusTarget || null,
       bountyBonusAges: cricketState.bountyBonusAges ? [...cricketState.bountyBonusAges] : null,
-      bountyMalusAge: cricketState.bountyMalusAge, 
-      trainCurrentPoolIndex: cricketState.trainCurrentPoolIndex,
-      trainRoundInCurrentTarget: cricketState.trainRoundInCurrentTarget,
+      bountyMalusAge: cricketState.bountyMalusAge || 0, 
+      trainCurrentPoolIndex: cricketState.trainCurrentPoolIndex || 0,
+      trainCurrentAttempt: cricketState.trainCurrentAttempt || 1,             // Sécurité Checkout
+      trainCurrentTargetScore: cricketState.trainCurrentTargetScore || 0,     // Sécurité Checkout
+      trainCheckoutIndex: cricketState.trainCheckoutIndex || 0,               // Sécurité Checkout
       statsDetails: JSON.parse(JSON.stringify(cricketState.statsDetails)),
-      currentPlayerIdx: cricketState.currentPlayerIdx, currentDart: cricketState.currentDart, currentTurn: cricketState.currentTurn, lastTurnText: cricketState.lastTurnText
+      currentPlayerIdx: cricketState.currentPlayerIdx, 
+      currentDart: cricketState.currentDart, 
+      currentTurn: cricketState.currentTurn, 
+      lastTurnText: cricketState.lastTurnText || "Aucun",
+      currentTurnBountiesHit: cricketState.currentTurnBountiesHit || 0
     });
 
   if (cricketState.gameMode === "golf") {
@@ -3148,11 +3156,11 @@ function taperChiffre(valeurBouton) {
       let prefixeText = modificateurEnCours === 2 ? "D" : modificateurEnCours === 3 ? "T" : "";
       cricketState.currentTurnDartsText.push(valeurBouton === 0 ? "0" : valeurBouton === 25 ? prefixeText + "Bull" : prefixeText + valeurBouton);
   }
-  let estChiffreFermePourTous = false;
-  if (cricketState.gameMode === "cricket" && valeurBouton !== 0 && cricketState.targets.includes(valeurBouton)) {
-      const clesEntites = Object.keys(cricketState.scores);
-      estChiffreFermePourTous = clesEntites.every(k => cricketState.marks[k] && cricketState.marks[k][valeurBouton] >= 3);
+  
+  if (cricketState.gameMode === "bounty" && cricketState.currentDart === 1) {
+      cricketState.currentTurnBountiesHit = 0; // Reset du tracker bounty au 1er tir
   }
+
   cricketState.statsDetails[joueurActuel.id].dartsThrown += 1;
 
   if (cricketState.gameMode === "x01" && cricketState.currentDart === 1) {
@@ -3160,11 +3168,10 @@ function taperChiffre(valeurBouton) {
     cricketState.x01TurnStartTotalScored = cricketState.statsDetails[joueurActuel.id].totalScoreScored;
     cricketState.x01TurnStartFirst9 = cricketState.statsDetails[joueurActuel.id].first9DartsScore;
   }
+  
   if (cricketState.gameMode === "x01") traiterCalculX01(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "train_checkout") {traiterCalculX01(keyStockage, joueurActuel, valeurBouton);
-    if (cricketState.scores[keyStockage] === 0) {
-      enregistrerResultatCheckout(joueurActuel, true);
-    }
+    if (cricketState.scores[keyStockage] === 0) enregistrerResultatCheckout(joueurActuel, true);
   }
   else if (cricketState.gameMode === "world") traiterCalculWorld(keyStockage, joueurActuel, valeurBouton);
   else if (cricketState.gameMode === "bounty") traiterCalculBounty(keyStockage, joueurActuel, valeurBouton);
@@ -3175,16 +3182,15 @@ function taperChiffre(valeurBouton) {
 
   cricketState.currentDart += 1;
   
-  // Arrêt prématuré du tour si le joueur tombe à 0 au X01
   let endTurnEarly = false;
-  if (cricketState.gameMode === "x01" && cricketState.scores[keyStockage] === 0) {
-    endTurnEarly = true;
-  }
+  if (cricketState.gameMode === "x01" && cricketState.scores[keyStockage] === 0) endTurnEarly = true;
 
   if (cricketState.currentDart > 3 || endTurnEarly) {
+    // TRACKING X01 SHOT
     if (cricketState.gameMode === "x01" && cricketState.currentTurnDartsText.length === 3) {
         const aFaitTroisUn = cricketState.currentTurnDartsText.every(t => t === "1" || t === "D1" || t === "T1");
         if (aFaitTroisUn) {
+            cricketState.statsDetails[joueurActuel.id].shotRounds = (cricketState.statsDetails[joueurActuel.id].shotRounds || 0) + 1;
             declencherAnimationShot();
         }
     }
@@ -3203,6 +3209,7 @@ function taperChiffre(valeurBouton) {
   
   gererEtatBoutonBull(); updateTurnHeader(); verifierConditionsFinMatch(); sauvegarderPartie();
 }
+
 
 function enregistrerResultatCheckout(joueur, estReussi) {
   const stats = cricketState.statsDetails[joueur.id];
@@ -3236,6 +3243,22 @@ function enregistrerResultatCheckout(joueur, estReussi) {
   }
 }
 function cloreVoleeActuelle(joueur) {
+  // TRACKING WHITE HORSE
+  if (cricketState.gameMode === "cricket" && cricketState.currentTurnDartsText.length === 3) {
+     const darts = cricketState.currentTurnDartsText;
+     const triples = darts.filter(d => d.startsWith('T') && d !== 'T25');
+     const uniqueTriples = new Set(triples);
+     if (triples.length === 3 && uniqueTriples.size === 3) {
+         cricketState.statsDetails[joueur.id].whiteHorses = (cricketState.statsDetails[joueur.id].whiteHorses || 0) + 1;
+         showPopup("🐎 WHITE HORSE !");
+     }
+  }
+
+  // TRACKING 3 BOUNTIES
+  if (cricketState.gameMode === "bounty" && cricketState.currentTurnBountiesHit >= 3) {
+      cricketState.statsDetails[joueur.id].threeBountiesInTurn = (cricketState.statsDetails[joueur.id].threeBountiesInTurn || 0) + 1;
+  }
+  
   if (cricketState.gameMode === "cricket" && cricketState.statsDetails[joueur.id]) {
     const stats = cricketState.statsDetails[joueur.id];
     if (stats.currentVolleyPointsGiven > stats.maxPointsGivenInOneVolley) stats.maxPointsGivenInOneVolley = stats.currentVolleyPointsGiven;
@@ -3413,6 +3436,9 @@ function traiterCalculX01(keyStockage, joueurActuel, valeurBouton) {
     if (scoreResultat === 0 && stats && !stats.turnFinished) {
       stats.turnFinished = cricketState.currentTurn;
     }
+    if (scoreResultat === 0 && stats) {
+      stats.highestCheckout = Math.max(stats.highestCheckout || 0, cricketState.x01TurnStartScore);
+    }
   }
 
   if (cricketState.currentDart === 3 && stats) {
@@ -3436,6 +3462,7 @@ function traiterCalculBounty(keyStockage, joueurActuel, valeurBouton) {
 
   if (cricketState.bountyBonusTargets.includes(valeurBouton)) {
     pointsMarques = valeurBouton * modificateurEnCours; 
+    cricketState.currentTurnBountiesHit = (cricketState.currentTurnBountiesHit || 0) + 1;
     stats.touchesPositives += pointsMarques; // Cumul des points gagnés
     
     if (modificateurEnCours === 1) stats.simples += 1;
@@ -3500,10 +3527,11 @@ function mettreAJourCiblesBountyUI() {
 document.getElementById("btnKeyUndo").onclick = () => { annulerDernierCoup(); };
 
 function annulerDernierCoup() {
-  if (cricketState.history.length === 0) return showPopup("Aucun coup à effacer.", true);
+  if (!cricketState.history || cricketState.history.length === 0) return showPopup("Aucun coup à effacer.", true);
   const precedentState = cricketState.history.pop();
   
   if (cricketState.gameMode === "shanghai") {cricketState.shanghaiWinner = null;}
+  
   // Restauration standard
   cricketState.scores = precedentState.scores; 
   cricketState.marks = precedentState.marks || cricketState.marks;
@@ -3517,11 +3545,21 @@ function annulerDernierCoup() {
   if (precedentState.bountyMalusTarget !== undefined) cricketState.bountyMalusTarget = precedentState.bountyMalusTarget;
   if (precedentState.bountyBonusAges) cricketState.bountyBonusAges = precedentState.bountyBonusAges;
   if (precedentState.bountyMalusAge !== undefined) cricketState.bountyMalusAge = precedentState.bountyMalusAge;
-  if (precedentState.trainCurrentPoolIndex !== undefined) cricketState.trainCurrentPoolIndex = precedentState.trainCurrentPoolIndex;
-  if (precedentState.trainRoundInCurrentTarget !== undefined) cricketState.trainRoundInCurrentTarget = precedentState.trainRoundInCurrentTarget;
   
-  // Suite de la restauration
+  // Restauration pour l'entrainement Target & Checkout
+  if (precedentState.trainCurrentPoolIndex !== undefined) cricketState.trainCurrentPoolIndex = precedentState.trainCurrentPoolIndex;
+  if (precedentState.trainCurrentAttempt !== undefined) cricketState.trainCurrentAttempt = precedentState.trainCurrentAttempt;
+  if (precedentState.trainCurrentTargetScore !== undefined) cricketState.trainCurrentTargetScore = precedentState.trainCurrentTargetScore;
+  if (precedentState.trainCheckoutIndex !== undefined) cricketState.trainCheckoutIndex = precedentState.trainCheckoutIndex;
+  
+  // Restauration du compteur de primes du tour en cours
+  if (precedentState.currentTurnBountiesHit !== undefined) {
+      cricketState.currentTurnBountiesHit = precedentState.currentTurnBountiesHit;
+  }
+  
+  // C'est cette ligne qui annule TOUS les exploits/badges instantanément !
   cricketState.statsDetails = precedentState.statsDetails; 
+  
   cricketState.currentPlayerIdx = precedentState.currentPlayerIdx;
   cricketState.currentDart = precedentState.currentDart; 
   cricketState.currentTurn = precedentState.currentTurn; 
@@ -3576,6 +3614,9 @@ function verifierConditionsFinMatch() {
       if (reached.length > 0 && cricketState.roundJustFinished) {
         const maxScore = Math.max(...reached.map(k => cricketState.scores[k]));
         gagnantsIds = reached.filter(k => cricketState.scores[k] === maxScore);
+        gagnantsIds.forEach(id => {
+          if(cricketState.statsDetails[id]) cricketState.statsDetails[id].bountyWinByPoints = true;
+        });
       }
     }
     if (gagnantsIds.length === 0 && cricketState.maxTurns !== 999 && cricketState.currentTurn > cricketState.maxTurns) {
@@ -3747,6 +3788,7 @@ function lancerPageVictoire(gagnantsIds, nomsVainqueurs) {
   db.collection("games_history").add({
     type: cricketState.gameMode,
     winner: nomsVainqueurs,
+    x01Checkout: cricketState.x01Checkout || null,
     duration: cricketState.elapsedTime,
     createdAt: Date.now(),
     isTeamMode: cricketState.isTeamMode || false,
@@ -4508,45 +4550,159 @@ async function rafraichirStatsDetail(playerId) {
 }
 
 function genererBadges(history) {
-  const container = document.getElementById("playerBadgesContainer");
+  const container = document.getElementById("playerBadgesGrid");
+  const detailZone = document.getElementById("badgeDetailZone");
   container.innerHTML = "";
+  detailZone.classList.add("hidden");
 
-  const badgesDef = [
-    { id: "first_blood", icon: "🩸", title: "Premier Sang", desc: "A joué sa première partie", condition: (h) => h.length > 0 },
-    { id: "cricket_master", icon: "🏏", title: "Maître Cricket", desc: "A remporté un Cricket", condition: (h) => h.some(g => g.type === "cricket" && (g.winner === currentDetailPlayerName || (g.ranking && g.ranking[0]?.name === currentDetailPlayerName))) },
-    { id: "shanghai_dragon", icon: "🐉", title: "Shanghai", desc: "A remporté un Shanghai", condition: (h) => h.some(g => g.type === "shanghai" && (g.winner === currentDetailPlayerName || (g.ranking && g.ranking[0]?.name === currentDetailPlayerName))) },
-    { id: "veteran", icon: "🎖️", title: "Vétéran", desc: "A joué plus de 50 parties", condition: (h) => h.length >= 50 }
-  ];
+  // --- 1. COMPILATION DU CONTEXTE DU JOUEUR ---
+  let context = {
+    wins: { cricket: 0, x01: 0, world: 0, bounty: 0, shanghai: 0, golf: 0 },
+    playedAtNight: false, maxStreak: 0, winsPerDay: {},
+    doubleCheckouts: 0, first180: false, maxX01Avg: 0, maxCricketMPR: 0,
+    highestCheckout: 0, shanghaiInstantWins: 0, shotRounds: 0,
+    whiteHorses: 0, bountyThreeInTurn: 0, bountyWinByPoints: 0,
+    golfTriplesGame: false, golfSub30: false
+  };
 
-  let aAuMoinsUnBadge = false;
+  let currentStreak = 0;
+  const sortedHistory = [...history].sort((a,b) => a.createdAt - b.createdAt);
 
-  badgesDef.forEach(badge => {
-    const estDebloque = badge.condition(history);
-    if (estDebloque) {
-      aAuMoinsUnBadge = true;
-      const bDiv = document.createElement("div");
-      bDiv.className = "card";
-      bDiv.style.margin = "0";
-      bDiv.style.padding = "14px 10px";
-      bDiv.style.textAlign = "center";
-      bDiv.style.border = "1px solid var(--accent)";
-      bDiv.style.background = "#FFFFFF";
-      bDiv.style.display = "flex";
-      bDiv.style.flexDirection = "column";
-      bDiv.style.alignItems = "center";
+  sortedHistory.forEach(match => {
+    const d = new Date(match.createdAt);
+    if (d.getHours() >= 0 && d.getHours() < 6) context.playedAtNight = true;
+
+    // Détection de la victoire (solo ou équipe)
+    const isWinner = match.ranking && match.ranking.length > 0 &&
+      (match.ranking[0].name === currentDetailPlayerName || 
+      (match.ranking[0].teamMembers && match.ranking[0].teamMembers.includes(currentDetailPlayerName)));
+
+    if (isWinner) {
+      context.wins[match.type] = (context.wins[match.type] || 0) + 1;
+      currentStreak++;
+      context.maxStreak = Math.max(context.maxStreak, currentStreak);
+      const dayKey = d.toLocaleDateString("fr-FR");
+      context.winsPerDay[dayKey] = (context.winsPerDay[dayKey] || 0) + 1;
+    } else {
+      currentStreak = 0;
+    }
+
+    // Récupération des statistiques individuelles de CE joueur pour CE match
+    const pStats = match.statsDetails ? match.statsDetails[currentDetailPlayerId] : null;
+    
+    if (pStats) {
+      if (pStats.scoreFamily180 > 0) context.first180 = true;
+      if (pStats.shotRounds > 0) context.shotRounds += pStats.shotRounds;
+      if (pStats.highestCheckout) context.highestCheckout = Math.max(context.highestCheckout, pStats.highestCheckout);
+      if (pStats.whiteHorses > 0) context.whiteHorses += pStats.whiteHorses;
+      if (pStats.threeBountiesInTurn > 0) context.bountyThreeInTurn += pStats.threeBountiesInTurn;
+      if (pStats.shanghaiInstantWin) context.shanghaiInstantWins++;
+      if (pStats.bountyWinByPoints) context.bountyWinByPoints++;
+
+      if (match.type === "x01") {
+        if (isWinner && match.x01Checkout === "double") context.doubleCheckouts++;
+        if (pStats.dartsThrown >= 3) {
+          const avg = (pStats.totalScoreScored / pStats.dartsThrown) * 3;
+          context.maxX01Avg = Math.max(context.maxX01Avg, avg);
+        }
+      }
       
-      bDiv.innerHTML = `
-        <div style="font-size: 32px; margin-bottom: 8px; filter: drop-shadow(0px 4px 6px rgba(154, 123, 28, 0.2));">${badge.icon}</div>
-        <div style="font-size: 13px; font-weight: 800; color: var(--primary); line-height: 1.1; margin-bottom: 4px;">${badge.title}</div>
-        <div style="font-size: 11px; color: var(--text-soft); line-height: 1.2;">${badge.desc}</div>
-      `;
-      container.appendChild(bDiv);
+      if (match.type === "cricket" && pStats.dartsThrown >= 3) {
+        const mpr = (pStats.touchesUtiles / pStats.dartsThrown) * 3;
+        context.maxCricketMPR = Math.max(context.maxCricketMPR, mpr);
+      }
+
+      if (match.type === "golf") {
+        let eagles = 0;
+        if (pStats.historyPerHole) {
+          Object.values(pStats.historyPerHole).forEach(hole => { if (hole.score === 1) eagles++; });
+        }
+        if (eagles >= 3) context.golfTriplesGame = true;
+
+        const teamId = match.players?.find(p => p.id === currentDetailPlayerId)?.teamId;
+        const finalScore = match.scores ? match.scores[match.isTeamMode ? teamId : currentDetailPlayerId] : 999;
+        if (match.maxTurns === 9 && isWinner && finalScore <= 30) context.golfSub30 = true;
+      }
     }
   });
 
-  if (!aAuMoinsUnBadge) {
-    container.innerHTML = "<p class='hint' style='grid-column: 1 / -1; text-align:center; padding: 20px;'>Aucun badge débloqué avec ces filtres.</p>";
-  }
+  context.maxDayWins = Math.max(0, ...Object.values(context.winsPerDay));
+
+  // --- 2. DICTIONNAIRE ET ÉVALUATION DES BADGES ---
+  const BADGES_DICTIONARY = [
+    { id: "win_cricket", icon: "🏏", title: "Maître Cricket", desc: "Remporter une partie de Cricket", eval: c => c.wins.cricket >= 1, progress: c => c.wins.cricket > 0 ? "Débloqué !" : "0 / 1" },
+    { id: "win_x01", icon: "💯", title: "Finisseur", desc: "Remporter une partie de X01", eval: c => c.wins.x01 >= 1, progress: c => c.wins.x01 > 0 ? "Débloqué !" : "0 / 1" },
+    { id: "win_world", icon: "🌍", title: "Globetrotter", desc: "Remporter un Tour du Monde", eval: c => c.wins.world >= 1, progress: c => c.wins.world > 0 ? "Débloqué !" : "0 / 1" },
+    { id: "win_bounty", icon: "💰", title: "Chasseur de Primes", desc: "Remporter une partie de Bounty", eval: c => c.wins.bounty >= 1, progress: c => c.wins.bounty > 0 ? "Débloqué !" : "0 / 1" },
+    { id: "win_shanghai", icon: "🐉", title: "Dragon de Shanghai", desc: "Remporter une partie de Shanghai", eval: c => c.wins.shanghai >= 1, progress: c => c.wins.shanghai > 0 ? "Débloqué !" : "0 / 1" },
+    { id: "win_golf", icon: "⛳", title: "Tigre des Greens", desc: "Remporter une partie de Golf", eval: c => c.wins.golf >= 1, progress: c => c.wins.golf > 0 ? "Débloqué !" : "0 / 1" },
+    
+    { id: "night_owl", icon: "🦉", title: "Oiseau de Nuit", desc: "Jouer une partie entre minuit et 6h du matin", eval: c => c.playedAtNight, progress: c => c.playedAtNight ? "Débloqué !" : "Non accompli" },
+    { id: "streak_5", icon: "🔥", title: "On Fire", desc: "Remporter 5 parties consécutives", eval: c => c.maxStreak >= 5, progress: c => Math.min(c.maxStreak, 5) + " / 5" },
+    { id: "day_5_wins", icon: "🌞", title: "Acharné", desc: "Remporter 5 parties dans la même journée", eval: c => c.maxDayWins >= 5, progress: c => Math.min(c.maxDayWins, 5) + " / 5" },
+    
+    { id: "checkout_1", icon: "🎯", title: "Premier Checkout", desc: "Réussir 1 checkout en Double-Out (X01)", eval: c => c.doubleCheckouts >= 1, progress: c => Math.min(c.doubleCheckouts, 1) + " / 1" },
+    { id: "checkout_10", icon: "🥉", title: "Amateur de Doubles", desc: "Réussir 10 checkouts en Double-Out", eval: c => c.doubleCheckouts >= 10, progress: c => Math.min(c.doubleCheckouts, 10) + " / 10" },
+    { id: "checkout_50", icon: "🥈", title: "Sniper", desc: "Réussir 50 checkouts en Double-Out", eval: c => c.doubleCheckouts >= 50, progress: c => Math.min(c.doubleCheckouts, 50) + " / 50" },
+    
+    { id: "first_180", icon: "🚀", title: "180 !", desc: "Réaliser le score parfait de 180 (X01)", eval: c => c.first180, progress: c => c.first180 ? "Débloqué !" : "0 / 1" },
+    { id: "x01_avg_50", icon: "📈", title: "Régulier", desc: "Terminer un X01 avec plus de 50 de moyenne", eval: c => c.maxX01Avg >= 50, progress: c => `Meilleure moyenne : ${c.maxX01Avg.toFixed(1)}` },
+    { id: "x01_avg_80", icon: "🤯", title: "Pro Player", desc: "Terminer un X01 avec plus de 80 de moyenne", eval: c => c.maxX01Avg >= 80, progress: c => `Meilleure moyenne : ${c.maxX01Avg.toFixed(1)}` },
+    
+    { id: "cricket_mpr_2", icon: "⚔️", title: "Bon bras", desc: "Terminer un Cricket avec un MPR > 2.0", eval: c => c.maxCricketMPR >= 2.0, progress: c => `Meilleur MPR : ${c.maxCricketMPR.toFixed(1)}` },
+    { id: "cricket_mpr_3", icon: "👑", title: "Machine à fermer", desc: "Terminer un Cricket avec un MPR > 3.0", eval: c => c.maxCricketMPR >= 3.0, progress: c => `Meilleur MPR : ${c.maxCricketMPR.toFixed(1)}` },
+    { id: "white_horse", icon: "🐎", title: "White Horse", desc: "Toucher 3 Triples différents en un seul tour (Cricket)", eval: c => c.whiteHorses > 0, progress: c => `${c.whiteHorses} réalisés` },
+    
+    { id: "shanghai_instant", icon: "⚡", title: "Mort Subite", desc: "Gagner par Shanghai direct", eval: c => c.shanghaiInstantWins > 0, progress: c => `${c.shanghaiInstantWins} réalisés` },
+    { id: "x01_shot", icon: "🍸", title: "Tournée Générale", desc: "Faire un SHOT (3 fléchettes dans le 1) au X01", eval: c => c.shotRounds > 0, progress: c => `${c.shotRounds} réalisés` },
+    
+    { id: "bounty_3_turn", icon: "🔫", title: "Gâchette Rapide", desc: "Toucher 3 primes lors d'un même tour", eval: c => c.bountyThreeInTurn > 0, progress: c => `${c.bountyThreeInTurn} réalisés` },
+    { id: "bounty_points", icon: "💎", title: "Braquage", desc: "Gagner en atteignant le score cible (Bounty)", eval: c => c.bountyWinByPoints > 0, progress: c => `${c.bountyWinByPoints} réalisés` },
+    
+    { id: "golf_3_triples", icon: "🦅", title: "Pluie d'Eagles", desc: "Faire au moins 3 Eagles dans une partie de Golf", eval: c => c.golfTriplesGame, progress: c => c.golfTriplesGame ? "Débloqué !" : "Non accompli" },
+    { id: "golf_under_30", icon: "⛳", title: "Carte sous le Par", desc: "Terminer un Golf 9 trous en 30 coups ou moins", eval: c => c.golfSub30, progress: c => c.golfSub30 ? "Débloqué !" : "Non accompli" }
+  ];
+
+  // --- 3. AFFICHAGE DE LA GRILLE ---
+  BADGES_DICTIONARY.forEach(badge => {
+    const isUnlocked = badge.eval(context);
+    
+    const bBtn = document.createElement("div");
+    bBtn.style.width = "48px"; bBtn.style.height = "48px";
+    bBtn.style.borderRadius = "50%";
+    bBtn.style.display = "flex"; bBtn.style.alignItems = "center"; bBtn.style.justifyContent = "center";
+    bBtn.style.fontSize = "26px"; bBtn.style.cursor = "pointer";
+    bBtn.style.transition = "transform 0.1s ease";
+    
+    // Style grisé si bloqué
+    if (isUnlocked) {
+       bBtn.style.background = "radial-gradient(circle, rgba(227, 212, 174, 0.4) 0%, rgba(227, 212, 174, 0.1) 100%)";
+       bBtn.style.border = "2px solid var(--accent)";
+       bBtn.style.boxShadow = "0 2px 8px rgba(154, 123, 28, 0.2)";
+    } else {
+       bBtn.style.background = "#F5F5F5";
+       bBtn.style.border = "2px solid #E0E0E0";
+       bBtn.style.filter = "grayscale(100%)";
+       bBtn.style.opacity = "0.4";
+    }
+
+    bBtn.innerText = badge.icon;
+    
+    // Au clic, on affiche les détails en dessous
+    bBtn.onclick = () => {
+      document.getElementById("badgeDetailIcon").innerText = badge.icon;
+      document.getElementById("badgeDetailTitle").innerText = badge.title;
+      document.getElementById("badgeDetailDesc").innerText = badge.desc;
+      document.getElementById("badgeDetailProgress").innerText = badge.progress(context);
+      
+      document.getElementById("badgeDetailIcon").style.filter = isUnlocked ? "none" : "grayscale(100%)";
+      document.getElementById("badgeDetailIcon").style.opacity = isUnlocked ? "1" : "0.5";
+      
+      detailZone.classList.remove("hidden");
+    };
+    
+    container.appendChild(bBtn);
+  });
 }
 
 const btnTeamInfo = document.getElementById("btnTeamInfo");
