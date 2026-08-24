@@ -110,7 +110,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 2.11 - 24/08/2026</p>
+        <p>Version 2.12 - 24/08/2026</p>
       </div>
     </section>
 
@@ -125,7 +125,7 @@
       <div style="flex: 1; overflow-y: auto; padding: 0 12px 30px 12px; display: flex; flex-direction: column; gap: 14px; -webkit-overflow-scrolling: touch;">
         
         <!-- Ma Carte de Joueur (Design VIP) -->
-        <div id="myPlayerCard" class="card" style="margin: 0; background: var(--primary); border: 2px solid var(--accent); cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(15, 76, 129, 0.3);">
+        <div id="myPlayerCard" class="card" style="margin: 0; background: var(--primary); border: 2px solid var(--accent); cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(15, 76, 129, 0.3); flex-shrink: 0;">
           <!-- Effet de reflet en fond -->
           <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(154, 123, 28, 0.15) 0%, transparent 60%); pointer-events: none;"></div>
           
@@ -839,6 +839,7 @@
     };
     firebase.initializeApp(firebaseConfig);
   </script>
+  <script src="js/badges.js"></script>
   <script src="js/main.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

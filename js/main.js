@@ -1994,7 +1994,7 @@ function demarrerMatchBounty(listeJoueurs) {
   cricketState.players.forEach(p => {
     const keyStockage = cricketState.isTeamMode ? p.teamId : p.id;
     cricketState.scores[keyStockage] = 0;
-    cricketState.statsDetails[p.id] = { dartsThrown: 0, touchesPositives: 0, touchesMalus: 0, simples: 0, doubles: 0, triples: 0, chiffresVisites: {} };
+    cricketState.statsDetails[p.id] = { dartsThrown: 0, touchesPositives: 0, touchesMalus: 0, malusHits: 0, simples: 0, doubles: 0, triples: 0, chiffresVisites: {} };
   });
 
   lancerInterfaceJeu("bounty"); 
@@ -3481,7 +3481,8 @@ function traiterCalculBounty(keyStockage, joueurActuel, valeurBouton) {
   } else if (valeurBouton === cricketState.bountyMalusTarget) {
     pointsMarques = - (valeurBouton * modificateurEnCours); 
     stats.touchesMalus += Math.abs(pointsMarques); // Cumul des points perdus
-    
+    stats.malusHits = (stats.malusHits || 0) + 1;
+
     if (cricketState.bountyHasMalus) {
       cricketState.bountyMalusTarget = generateNewBountyTarget(
         cricketState.bountyBonusTargets, 
@@ -3789,6 +3790,8 @@ function lancerPageVictoire(gagnantsIds, nomsVainqueurs) {
     type: cricketState.gameMode,
     winner: nomsVainqueurs,
     x01Checkout: cricketState.x01Checkout || null,
+    worldStartNum: cricketState.worldStartNum || null,
+    worldEndNum: cricketState.worldEndNum || null,
     duration: cricketState.elapsedTime,
     createdAt: Date.now(),
     isTeamMode: cricketState.isTeamMode || false,
@@ -4547,162 +4550,6 @@ async function rafraichirStatsDetail(playerId) {
   document.getElementById("statWinrate").innerText = `${stats.winrate}%`;
 
   genererBadges(stats.history);
-}
-
-function genererBadges(history) {
-  const container = document.getElementById("playerBadgesGrid");
-  const detailZone = document.getElementById("badgeDetailZone");
-  container.innerHTML = "";
-  detailZone.classList.add("hidden");
-
-  // --- 1. COMPILATION DU CONTEXTE DU JOUEUR ---
-  let context = {
-    wins: { cricket: 0, x01: 0, world: 0, bounty: 0, shanghai: 0, golf: 0 },
-    playedAtNight: false, maxStreak: 0, winsPerDay: {},
-    doubleCheckouts: 0, first180: false, maxX01Avg: 0, maxCricketMPR: 0,
-    highestCheckout: 0, shanghaiInstantWins: 0, shotRounds: 0,
-    whiteHorses: 0, bountyThreeInTurn: 0, bountyWinByPoints: 0,
-    golfTriplesGame: false, golfSub30: false
-  };
-
-  let currentStreak = 0;
-  const sortedHistory = [...history].sort((a,b) => a.createdAt - b.createdAt);
-
-  sortedHistory.forEach(match => {
-    const d = new Date(match.createdAt);
-    if (d.getHours() >= 0 && d.getHours() < 6) context.playedAtNight = true;
-
-    // Détection de la victoire (solo ou équipe)
-    const isWinner = match.ranking && match.ranking.length > 0 &&
-      (match.ranking[0].name === currentDetailPlayerName || 
-      (match.ranking[0].teamMembers && match.ranking[0].teamMembers.includes(currentDetailPlayerName)));
-
-    if (isWinner) {
-      context.wins[match.type] = (context.wins[match.type] || 0) + 1;
-      currentStreak++;
-      context.maxStreak = Math.max(context.maxStreak, currentStreak);
-      const dayKey = d.toLocaleDateString("fr-FR");
-      context.winsPerDay[dayKey] = (context.winsPerDay[dayKey] || 0) + 1;
-    } else {
-      currentStreak = 0;
-    }
-
-    // Récupération des statistiques individuelles de CE joueur pour CE match
-    const pStats = match.statsDetails ? match.statsDetails[currentDetailPlayerId] : null;
-    
-    if (pStats) {
-      if (pStats.scoreFamily180 > 0) context.first180 = true;
-      if (pStats.shotRounds > 0) context.shotRounds += pStats.shotRounds;
-      if (pStats.highestCheckout) context.highestCheckout = Math.max(context.highestCheckout, pStats.highestCheckout);
-      if (pStats.whiteHorses > 0) context.whiteHorses += pStats.whiteHorses;
-      if (pStats.threeBountiesInTurn > 0) context.bountyThreeInTurn += pStats.threeBountiesInTurn;
-      if (pStats.shanghaiInstantWin) context.shanghaiInstantWins++;
-      if (pStats.bountyWinByPoints) context.bountyWinByPoints++;
-
-      if (match.type === "x01") {
-        if (isWinner && match.x01Checkout === "double") context.doubleCheckouts++;
-        if (pStats.dartsThrown >= 3) {
-          const avg = (pStats.totalScoreScored / pStats.dartsThrown) * 3;
-          context.maxX01Avg = Math.max(context.maxX01Avg, avg);
-        }
-      }
-      
-      if (match.type === "cricket" && pStats.dartsThrown >= 3) {
-        const mpr = (pStats.touchesUtiles / pStats.dartsThrown) * 3;
-        context.maxCricketMPR = Math.max(context.maxCricketMPR, mpr);
-      }
-
-      if (match.type === "golf") {
-        let eagles = 0;
-        if (pStats.historyPerHole) {
-          Object.values(pStats.historyPerHole).forEach(hole => { if (hole.score === 1) eagles++; });
-        }
-        if (eagles >= 3) context.golfTriplesGame = true;
-
-        const teamId = match.players?.find(p => p.id === currentDetailPlayerId)?.teamId;
-        const finalScore = match.scores ? match.scores[match.isTeamMode ? teamId : currentDetailPlayerId] : 999;
-        if (match.maxTurns === 9 && isWinner && finalScore <= 30) context.golfSub30 = true;
-      }
-    }
-  });
-
-  context.maxDayWins = Math.max(0, ...Object.values(context.winsPerDay));
-
-  // --- 2. DICTIONNAIRE ET ÉVALUATION DES BADGES ---
-  const BADGES_DICTIONARY = [
-    { id: "win_cricket", icon: "🏏", title: "Maître Cricket", desc: "Remporter une partie de Cricket", eval: c => c.wins.cricket >= 1, progress: c => c.wins.cricket > 0 ? "Débloqué !" : "0 / 1" },
-    { id: "win_x01", icon: "💯", title: "Finisseur", desc: "Remporter une partie de X01", eval: c => c.wins.x01 >= 1, progress: c => c.wins.x01 > 0 ? "Débloqué !" : "0 / 1" },
-    { id: "win_world", icon: "🌍", title: "Globetrotter", desc: "Remporter un Tour du Monde", eval: c => c.wins.world >= 1, progress: c => c.wins.world > 0 ? "Débloqué !" : "0 / 1" },
-    { id: "win_bounty", icon: "💰", title: "Chasseur de Primes", desc: "Remporter une partie de Bounty", eval: c => c.wins.bounty >= 1, progress: c => c.wins.bounty > 0 ? "Débloqué !" : "0 / 1" },
-    { id: "win_shanghai", icon: "🐉", title: "Dragon de Shanghai", desc: "Remporter une partie de Shanghai", eval: c => c.wins.shanghai >= 1, progress: c => c.wins.shanghai > 0 ? "Débloqué !" : "0 / 1" },
-    { id: "win_golf", icon: "⛳", title: "Tigre des Greens", desc: "Remporter une partie de Golf", eval: c => c.wins.golf >= 1, progress: c => c.wins.golf > 0 ? "Débloqué !" : "0 / 1" },
-    
-    { id: "night_owl", icon: "🦉", title: "Oiseau de Nuit", desc: "Jouer une partie entre minuit et 6h du matin", eval: c => c.playedAtNight, progress: c => c.playedAtNight ? "Débloqué !" : "Non accompli" },
-    { id: "streak_5", icon: "🔥", title: "On Fire", desc: "Remporter 5 parties consécutives", eval: c => c.maxStreak >= 5, progress: c => Math.min(c.maxStreak, 5) + " / 5" },
-    { id: "day_5_wins", icon: "🌞", title: "Acharné", desc: "Remporter 5 parties dans la même journée", eval: c => c.maxDayWins >= 5, progress: c => Math.min(c.maxDayWins, 5) + " / 5" },
-    
-    { id: "checkout_1", icon: "🎯", title: "Premier Checkout", desc: "Réussir 1 checkout en Double-Out (X01)", eval: c => c.doubleCheckouts >= 1, progress: c => Math.min(c.doubleCheckouts, 1) + " / 1" },
-    { id: "checkout_10", icon: "🥉", title: "Amateur de Doubles", desc: "Réussir 10 checkouts en Double-Out", eval: c => c.doubleCheckouts >= 10, progress: c => Math.min(c.doubleCheckouts, 10) + " / 10" },
-    { id: "checkout_50", icon: "🥈", title: "Sniper", desc: "Réussir 50 checkouts en Double-Out", eval: c => c.doubleCheckouts >= 50, progress: c => Math.min(c.doubleCheckouts, 50) + " / 50" },
-    
-    { id: "first_180", icon: "🚀", title: "180 !", desc: "Réaliser le score parfait de 180 (X01)", eval: c => c.first180, progress: c => c.first180 ? "Débloqué !" : "0 / 1" },
-    { id: "x01_avg_50", icon: "📈", title: "Régulier", desc: "Terminer un X01 avec plus de 50 de moyenne", eval: c => c.maxX01Avg >= 50, progress: c => `Meilleure moyenne : ${c.maxX01Avg.toFixed(1)}` },
-    { id: "x01_avg_80", icon: "🤯", title: "Pro Player", desc: "Terminer un X01 avec plus de 80 de moyenne", eval: c => c.maxX01Avg >= 80, progress: c => `Meilleure moyenne : ${c.maxX01Avg.toFixed(1)}` },
-    
-    { id: "cricket_mpr_2", icon: "⚔️", title: "Bon bras", desc: "Terminer un Cricket avec un MPR > 2.0", eval: c => c.maxCricketMPR >= 2.0, progress: c => `Meilleur MPR : ${c.maxCricketMPR.toFixed(1)}` },
-    { id: "cricket_mpr_3", icon: "👑", title: "Machine à fermer", desc: "Terminer un Cricket avec un MPR > 3.0", eval: c => c.maxCricketMPR >= 3.0, progress: c => `Meilleur MPR : ${c.maxCricketMPR.toFixed(1)}` },
-    { id: "white_horse", icon: "🐎", title: "White Horse", desc: "Toucher 3 Triples différents en un seul tour (Cricket)", eval: c => c.whiteHorses > 0, progress: c => `${c.whiteHorses} réalisés` },
-    
-    { id: "shanghai_instant", icon: "⚡", title: "Mort Subite", desc: "Gagner par Shanghai direct", eval: c => c.shanghaiInstantWins > 0, progress: c => `${c.shanghaiInstantWins} réalisés` },
-    { id: "x01_shot", icon: "🍸", title: "Tournée Générale", desc: "Faire un SHOT (3 fléchettes dans le 1) au X01", eval: c => c.shotRounds > 0, progress: c => `${c.shotRounds} réalisés` },
-    
-    { id: "bounty_3_turn", icon: "🔫", title: "Gâchette Rapide", desc: "Toucher 3 primes lors d'un même tour", eval: c => c.bountyThreeInTurn > 0, progress: c => `${c.bountyThreeInTurn} réalisés` },
-    { id: "bounty_points", icon: "💎", title: "Braquage", desc: "Gagner en atteignant le score cible (Bounty)", eval: c => c.bountyWinByPoints > 0, progress: c => `${c.bountyWinByPoints} réalisés` },
-    
-    { id: "golf_3_triples", icon: "🦅", title: "Pluie d'Eagles", desc: "Faire au moins 3 Eagles dans une partie de Golf", eval: c => c.golfTriplesGame, progress: c => c.golfTriplesGame ? "Débloqué !" : "Non accompli" },
-    { id: "golf_under_30", icon: "⛳", title: "Carte sous le Par", desc: "Terminer un Golf 9 trous en 30 coups ou moins", eval: c => c.golfSub30, progress: c => c.golfSub30 ? "Débloqué !" : "Non accompli" }
-  ];
-
-  // --- 3. AFFICHAGE DE LA GRILLE ---
-  BADGES_DICTIONARY.forEach(badge => {
-    const isUnlocked = badge.eval(context);
-    
-    const bBtn = document.createElement("div");
-    bBtn.style.width = "48px"; bBtn.style.height = "48px";
-    bBtn.style.borderRadius = "50%";
-    bBtn.style.display = "flex"; bBtn.style.alignItems = "center"; bBtn.style.justifyContent = "center";
-    bBtn.style.fontSize = "26px"; bBtn.style.cursor = "pointer";
-    bBtn.style.transition = "transform 0.1s ease";
-    
-    // Style grisé si bloqué
-    if (isUnlocked) {
-       bBtn.style.background = "radial-gradient(circle, rgba(227, 212, 174, 0.4) 0%, rgba(227, 212, 174, 0.1) 100%)";
-       bBtn.style.border = "2px solid var(--accent)";
-       bBtn.style.boxShadow = "0 2px 8px rgba(154, 123, 28, 0.2)";
-    } else {
-       bBtn.style.background = "#F5F5F5";
-       bBtn.style.border = "2px solid #E0E0E0";
-       bBtn.style.filter = "grayscale(100%)";
-       bBtn.style.opacity = "0.4";
-    }
-
-    bBtn.innerText = badge.icon;
-    
-    // Au clic, on affiche les détails en dessous
-    bBtn.onclick = () => {
-      document.getElementById("badgeDetailIcon").innerText = badge.icon;
-      document.getElementById("badgeDetailTitle").innerText = badge.title;
-      document.getElementById("badgeDetailDesc").innerText = badge.desc;
-      document.getElementById("badgeDetailProgress").innerText = badge.progress(context);
-      
-      document.getElementById("badgeDetailIcon").style.filter = isUnlocked ? "none" : "grayscale(100%)";
-      document.getElementById("badgeDetailIcon").style.opacity = isUnlocked ? "1" : "0.5";
-      
-      detailZone.classList.remove("hidden");
-    };
-    
-    container.appendChild(bBtn);
-  });
 }
 
 const btnTeamInfo = document.getElementById("btnTeamInfo");
