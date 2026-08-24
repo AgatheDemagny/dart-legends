@@ -110,7 +110,7 @@
         </button>
       </div>
       <div style="text-align: center; color: var(--text-soft); font-size: 12px; margin-top: auto; padding-top: 15px;">
-        <p>Version 2.07 - 24/08/2026</p>
+        <p>Version 2.08 - 24/08/2026</p>
       </div>
     </section>
 
@@ -512,7 +512,7 @@
               <option value="double">Double-out</option>
             </select>
           </div>
-          <div style="margin-top: 12px;">
+          <div id="x01ContinueContainer" style="margin-top: 12px; display: none;">
             <div class="stat-row" style="border: none; padding: 0; display: flex; justify-content: space-between; align-items: center;">
               <span class="stat-label"><strong>Continuer après le 1er gagnant</strong></span>
               <input type="checkbox" id="x01ContinueCheckbox" style="width: auto; margin-top: 0;">
@@ -765,7 +765,7 @@
     <div id="rulesModalOverlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); z-index: 2500; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
       <div class="card" style="width: min(420px, calc(100% - 24px)); margin: 0; padding: 20px; max-height: 85vh; display: flex; flex-direction: column;">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--divider); padding-bottom: 10px; margin-bottom: 10px;">
-          <h3 style="margin: 0; color: var(--primary-strong); text-align: center !important;">📖 Règles des différents jeux</h3>
+          <h3 id="rulesModalTitle" style="margin: 0; color: var(--primary-strong); text-align: center !important;">📖 Règles des différents jeux</h3>
           <button id="btnCloseRules" class="icon-btn" style="width: 32px; height: 32px; border: none; font-size: 14px;">❌</button>
         </div>
         

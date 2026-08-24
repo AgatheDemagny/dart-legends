@@ -291,51 +291,63 @@ const RULES_DATA = {
       <li><strong>Simple extérieur = </strong> 4 coups (Bogey)</li>
       <li><strong>Raté = </strong> 5 coups</li>
     </ul>
-    <p style="margin-bottom: 12px; padding: 0;"><strong>Exception pour le Bull :</strong> Double Bull = 1 coup, Simple Bull = 2 coups, Raté = 4 coups.</p>
+    <p style="margin-bottom: 12px; padding: 0;"><strong>Exception pour le Bull :
+    <ul style="padding-left: 18px; margin-bottom: 12px;">
+      <li><strong>Double Bull = </strong> 1 coup (Eagle)</li>
+      <li><strong>Simple Bull = </strong> 2 coups (Birdie)</li>
+      <li><strong>Raté = </strong> 4 coups</li>
+    </ul>
     <div style="display: flex; justify-content: center; margin: 15px 0;">
-      <svg viewBox="0 0 320 320" style="width: 100%; max-width: 300px; overflow: visible;">
+      <svg viewBox="-10 0 340 320" style="width: 100%; max-width: 300px; overflow: visible;">
         <!-- Légendes des zones de la cible -->
-        <g style="font-family: 'Space Grotesk', sans-serif; font-size: 11.5px; font-weight: 700; fill: var(--text-main);">
+        <g style="font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700; fill: var(--text-main);">
           
-          <line x1="150" y1="30" x2="240" y2="30" stroke="var(--primary)" stroke-width="1.5" stroke-dasharray="3,3"/>
-          <text x="245" y="34" fill="var(--primary)">Double (2 coups)</text>
+          <!-- Double (Droite) -->
+          <line x1="185" y1="30" x2="215" y2="30" stroke="var(--primary)" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="220" y="34" fill="var(--primary)">Double</text>
           
-          <line x1="150" y1="80" x2="70" y2="80" stroke="#90A4AE" stroke-width="1.5" stroke-dasharray="3,3"/>
-          <text x="65" y="84" text-anchor="end" fill="#546E7A">Simple Ext. (4 coups)</text>
+          <!-- Simple Ext. (Gauche) -->
+          <line x1="135" y1="80" x2="105" y2="80" stroke="#90A4AE" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="100" y="84" text-anchor="end" fill="#78909C">Simple Extérieur</text>
           
-          <line x1="150" y1="140" x2="240" y2="140" stroke="#FFB300" stroke-width="1.5" stroke-dasharray="3,3"/>
-          <text x="245" y="144" fill="#A67C00">Triple (1 coup)</text>
+          <!-- Triple (Droite) -->
+          <line x1="175" y1="140" x2="215" y2="140" stroke="#FFB300" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="220" y="144" fill="#D99B00">Triple</text>
           
-          <line x1="150" y1="210" x2="70" y2="210" stroke="#78909C" stroke-width="1.5" stroke-dasharray="3,3"/>
-          <text x="65" y="214" text-anchor="end" fill="#546E7A">Simple Int. (3 coups)</text>
+          <!-- Simple Int. (Gauche) -->
+          <line x1="145" y1="210" x2="105" y2="210" stroke="#78909C" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="100" y="214" text-anchor="end" fill="#546E7A">Simple Intérieur</text>
 
-          <line x1="150" y1="270" x2="240" y2="270" stroke="#546E7A" stroke-width="1.5" stroke-dasharray="3,3"/>
-          <text x="245" y="274" fill="#546E7A">Simple Bull (2 coups)</text>
+          <!-- Simple Bull (Droite) -->
+          <line x1="180" y1="270" x2="215" y2="270" stroke="#1C1E21" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="220" y="274" fill="#1C1E21">Simple Bull</text>
 
-          <line x1="150" y1="300" x2="70" y2="300" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3,3"/>
-          <text x="65" y="304" text-anchor="end" fill="var(--danger)">Double Bull (1 coup)</text>
+          <!-- Double Bull (Gauche) -->
+          <line x1="155" y1="300" x2="105" y2="300" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="100" y="304" text-anchor="end" fill="var(--danger)">Double Bull</text>
         </g>
 
-        <!-- Tracé de la portion (Wedge) centré et empilé -->
-        <g transform="translate(150, 300)" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round">
-          <!-- Simple Intérieur (Gris moyen) -->
+        <!-- Tracé de la portion (Wedge) centré sur x=160 -->
+        <g transform="translate(160, 300)" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round">
+          <!-- Simple Intérieur -->
           <polygon points="-24,-150 24,-150 0,0" fill="#78909C" />
           
-          <!-- Triple (Or) -->
+          <!-- Triple -->
           <polygon points="-27,-170 27,-170 24,-150 -24,-150" fill="#FFB300" />
 
-          <!-- Simple Extérieur (Gris Clair) -->
+          <!-- Simple Extérieur -->
           <polygon points="-42,-260 42,-260 27,-170 -27,-170" fill="#90A4AE" />
 
-          <!-- Double (Bleu Primaire) -->
+          <!-- Double -->
           <polygon points="-45,-280 45,-280 42,-260 -42,-260" fill="var(--primary)" />
           
           <!-- Bullseyes (par dessus la pointe) -->
-          <circle cx="0" cy="0" r="30" fill="#546E7A" /> 
+          <circle cx="0" cy="0" r="30" fill="#1C1E21" /> 
           <circle cx="0" cy="0" r="12" fill="var(--danger)" />
         </g>
       </svg>
     </div>
+
     <h4 style="color: var(--primary); margin-bottom: 8px;">🏆 Condition de victoire</h4>
     <p style="margin-bottom: 12px; padding: 0;">Contrairement aux autres modes, le vainqueur est le joueur qui termine le parcours avec le score le plus <strong>bas</strong> possible !</p>
   `,
@@ -349,25 +361,37 @@ const rulesContent = document.getElementById("rulesContent");
 const ruleTabs = document.querySelectorAll("#rulesModalOverlay .tab-btn");
 const rulesTabsContainer = document.getElementById("rulesTabsContainer");
 const btnInGameRules = document.getElementById("btnInGameRules");
+const rulesModalTitle = document.getElementById("rulesModalTitle"); // NOUVEAU
+
+const DICT_NOMS_JEUX = {
+  cricket: "Cricket",
+  x01: "X01",
+  world: "Tour du Monde",
+  bounty: "Chasseur de primes",
+  shanghai: "Shanghai",
+  golf: "Golf"
+};
 
 if (btnOpenRules && rulesModalOverlay) {
   // 1. Bouton "Info" sur l'écran de création de partie (affiche tous les onglets)
   btnOpenRules.addEventListener("click", () => {
-    if (rulesTabsContainer) rulesTabsContainer.style.display = "grid"; // Affiche les onglets
+    if (rulesTabsContainer) rulesTabsContainer.style.display = "grid"; 
+    if (rulesModalTitle) rulesModalTitle.innerText = "📖 Règles des différents jeux";
     const currentGameMode = document.getElementById("gameModeSelect").value || "cricket";
     updateRulesModalContent(currentGameMode);
     rulesModalOverlay.classList.remove("hidden");
   });
 
-  // 2. Bouton "Info" EN PLEINE PARTIE (cache les onglets, n'affiche que le jeu actuel)
+  // 2. Bouton "Info" EN PLEINE PARTIE (cache les onglets, titre adapté)
   if (btnInGameRules) {
     btnInGameRules.addEventListener("click", () => {
-      if (rulesTabsContainer) rulesTabsContainer.style.display = "none"; // Cache les onglets
+      if (rulesTabsContainer) rulesTabsContainer.style.display = "none"; 
       
-      // Sécurité : si on est en entraînement checkout/cricket/target, on force la bonne règle parente
       let modeAAfficher = cricketState.gameMode;
       if (modeAAfficher === "train_cricket" || modeAAfficher === "train_target") modeAAfficher = "cricket";
       if (modeAAfficher === "train_checkout") modeAAfficher = "x01";
+      
+      if (rulesModalTitle) rulesModalTitle.innerText = "📖 Règles du " + (DICT_NOMS_JEUX[modeAAfficher] || "Jeu");
       
       updateRulesModalContent(modeAAfficher);
       rulesModalOverlay.classList.remove("hidden");
@@ -501,6 +525,7 @@ function renderSelectedPlayers() {
     
     div.appendChild(btnRemove);
     container.appendChild(div);
+    updateX01ContinueVisibility();
   });
 
   const teamBlock = document.getElementById("teamModeBlock");
@@ -639,10 +664,12 @@ document.getElementById("teamModeCheckbox").addEventListener("change", (e) => {
   } else {
     configZone.classList.add("hidden");
   }
+  updateX01ContinueVisibility();
 });
 
 document.getElementById("teamCountSelect").addEventListener("change", () => {
   genererEquipesAleatoires();
+  updateX01ContinueVisibility();
 });
 
 document.getElementById("btnReshuffleTeams").addEventListener("click", () => {
@@ -1824,6 +1851,7 @@ function initVariablesMatchGenerales(joueursAlignes) {
   cricketState.scores = {}; 
   cricketState.statsDetails = {};
   cricketState.lastTurnText = "Aucun";
+  cricketState.roundJustFinished = false;
   if (cricketState.isTeamMode) {
     cricketState.teamTurnState = { activeTeamIndex: 0, playerCursors: {} };
     listeEquipesFormees.forEach(eq => { cricketState.teamTurnState.playerCursors[eq.id] = 0; });
@@ -2586,8 +2614,10 @@ function lancerInterfaceJeu(mode, isResume = false) {
   if (btnTeam) {
     if (cricketState.isTeamMode) {
       btnTeam.classList.remove("hidden");
+      btnTeam.style.visibility = "visible"; // Visible
     } else {
-      btnTeam.classList.add("hidden");
+      btnTeam.classList.remove("hidden"); 
+      btnTeam.style.visibility = "hidden";  // Invisible mais garde sa place !
     }
   }
   // 2. Initialisation du clavier
@@ -2676,6 +2706,21 @@ function updateTurnHeader() {
     }
   } else {
     helpZone.classList.add("hidden");
+  }
+}
+
+function updateX01ContinueVisibility() {
+  const container = document.getElementById("x01ContinueContainer");
+  if (!container) return;
+  const isTeam = document.getElementById("teamModeCheckbox").checked;
+  const nbEntities = isTeam ? parseInt(document.getElementById("teamCountSelect").value, 10) : joueursSelectionnesMatch.length;
+  
+  if (nbEntities > 2) {
+     container.style.display = "block"; // Affiche si > 2 joueurs/équipes
+  } else {
+     container.style.display = "none";  // Cache si 2 ou moins
+     const cb = document.getElementById("x01ContinueCheckbox");
+     if (cb) cb.checked = false;
   }
 }
 
@@ -3091,6 +3136,7 @@ function taperChiffre(valeurBouton) {
       scores: JSON.parse(JSON.stringify(cricketState.scores)),
       marks: cricketState.marks ? JSON.parse(JSON.stringify(cricketState.marks)) : null,
       revealedTargets: [...cricketState.revealedTargets], 
+      roundJustFinished: cricketState.roundJustFinished,
       currentTurnDartsText: [...cricketState.currentTurnDartsText],
       teamTurnState: cricketState.teamTurnState ? JSON.parse(JSON.stringify(cricketState.teamTurnState)) : null,
       bountyBonusTargets: cricketState.bountyBonusTargets ? [...cricketState.bountyBonusTargets] : null,
@@ -3262,6 +3308,8 @@ function cloreVoleeActuelle(joueur) {
   cricketState.currentDart = 1; 
   cricketState.currentTurnDartsText = [];
 
+  cricketState.roundJustFinished = false;
+
   // NOUVELLE LOGIQUE D'ALTERNANCE DYNAMIQUE
   if (cricketState.isTeamMode) {
     let loopCount = 0;
@@ -3273,6 +3321,7 @@ function cloreVoleeActuelle(joueur) {
       
       if (cricketState.teamTurnState.activeTeamIndex === 0) {
         cricketState.currentTurn += 1;
+        cricketState.roundJustFinished = true; // Le round est terminé !
       }
       
       const nextTeam = listeEquipesFormees[cricketState.teamTurnState.activeTeamIndex];
@@ -3291,6 +3340,7 @@ function cloreVoleeActuelle(joueur) {
       if (cricketState.currentPlayerIdx >= cricketState.players.length) {
         cricketState.currentPlayerIdx = 0; 
         cricketState.currentTurn += 1;
+        cricketState.roundJustFinished = true; // Le round est terminé !
       }
       loopCount++;
     } while (cricketState.gameMode === "x01" && cricketState.scores[cricketState.players[cricketState.currentPlayerIdx].id] === 0 && loopCount < cricketState.players.length);
@@ -3471,6 +3521,7 @@ function annulerDernierCoup() {
   // Variables spécifiques (sécurisées avec des "if")
   if (precedentState.teamTurnState) cricketState.teamTurnState = precedentState.teamTurnState;
   if (precedentState.bountyBonusTargets) cricketState.bountyBonusTargets = precedentState.bountyBonusTargets;
+  if (precedentState.roundJustFinished !== undefined) cricketState.roundJustFinished = precedentState.roundJustFinished;
   if (precedentState.bountyMalusTarget !== undefined) cricketState.bountyMalusTarget = precedentState.bountyMalusTarget;
   if (precedentState.bountyBonusAges) cricketState.bountyBonusAges = precedentState.bountyBonusAges;
   if (precedentState.bountyMalusAge !== undefined) cricketState.bountyMalusAge = precedentState.bountyMalusAge;
@@ -3506,25 +3557,24 @@ function verifierConditionsFinMatch() {
   if (cricketState.gameMode === "x01") {
     const finishedPlayers = clesEntites.filter(k => cricketState.scores[k] === 0);
     if (finishedPlayers.length > 0) {
-      // Si l'index est 0, c'est que le round (tour) de tout le monde est terminé
-      const isRoundOver = (cricketState.currentPlayerIdx === 0);
+      // isRoundOver est maintenant fiable, peu importe les joueurs qui sont passés (skips)
+      const isRoundOver = cricketState.roundJustFinished;
       const remainingPlayers = clesEntites.length - finishedPlayers.length;
       
       let shouldEnd = false;
       if (cricketState.x01Continue) {
-        // On arrête s'il n'y a plus personne en jeu, ou 1 seul joueur (qui devient perdant d'office à la fin du tour)
-        if (remainingPlayers === 0 || (remainingPlayers === 1 && isRoundOver)) {
+        // Mode Continu : On stoppe quand il reste 1 ou 0 joueur, à la FIN du round (pour les ex aequo)
+        if (remainingPlayers <= 1 && isRoundOver) {
           shouldEnd = true;
         }
       } else {
-        // Fin classique : le 1er qui gagne provoque la fin, mais seulement à la fin du round pour permettre les égalités
-        if (isRoundOver) {
+        // Mode Classique : On stoppe dès qu'il y a un gagnant, mais on attend toujours la FIN du round
+        if (finishedPlayers.length >= 1 && isRoundOver) {
           shouldEnd = true;
         }
       }
       
       if (shouldEnd) {
-        // Le gagnant officiel est celui qui a fini dans le tour le plus bas (en cas d'égalités multiples)
         gagnantId = finishedPlayers.sort((a, b) => (cricketState.statsDetails[a].turnFinished || 999) - (cricketState.statsDetails[b].turnFinished || 999))[0];
       }
     }
@@ -4566,7 +4616,7 @@ function renderTeamInfoContent() {
     
     let html = `<div style="font-weight: 800; color: var(--primary); font-size: 16px; margin-bottom: 6px; text-align: center;">${eq.name}</div>`;
     eq.members.forEach(m => {
-      html += `<div style="padding: 6px 0; border-top: 1px solid rgba(0,0,0,0.05); text-align: center; color: var(--text-main); font-weight: 600;">👤 ${m.name}</div>`;
+      html += `<div style="padding: 6px 0; border-top: 1px solid rgba(0,0,0,0.05); text-align: center; color: var(--text-main); font-weight: 600;">${m.name}</div>`;
     });
     teamDiv.innerHTML = html;
     teamInfoContent.appendChild(teamDiv);
