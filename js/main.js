@@ -290,7 +290,7 @@ const RULES_DATA = {
     <h4 style="color: var(--primary); margin-bottom: 8px;">🎯 Principe du jeu</h4>
     <p style="margin-bottom: 12px; padding: 0;">Ce mode simule un parcours de golf de 9 ou 18 trous. À chaque tour, vous tentez de réaliser le meilleur score sur le numéro du trou en cours. Votre score correspond au résultat de votre <strong>dernière fléchette lancée</strong> lors de la volée. Vous pouvez choisir de vous arrêter à la 1ère, 2ème, ou 3ème fléchette.</p>
     
-    <h4 style="color: var(--primary); margin-bottom: 8px;">🏌🏻‍♀️ Décompte des coups</h4>
+    <h4 style="color: var(--primary); margin-bottom: 8px;">🏌🏻‍♀️ Décompte des coups classiques</h4>
     <ul style="padding-left: 18px; margin-bottom: 12px;">
       <li><strong>Triple = </strong> 1 coup (Eagle)</li>
       <li><strong>Double = </strong> 2 coups (Birdie)</li>
@@ -298,13 +298,13 @@ const RULES_DATA = {
       <li><strong>Simple extérieur = </strong> 4 coups (Bogey)</li>
       <li><strong>Raté = </strong> 5 coups</li>
     </ul>
-    <p style="margin-bottom: 12px; padding: 0;"><strong>Exception pour le Bull :</strong></p>
+    <h4 style="color: var(--primary); margin-bottom: 8px;">🏌🏻 Décompte des coups pour le Bull</h4>
     <ul style="padding-left: 18px; margin-bottom: 12px;">
       <li><strong>Double Bull = </strong> 1 coup (Eagle)</li>
       <li><strong>Simple Bull = </strong> 2 coups (Birdie)</li>
       <li><strong>Raté = </strong> 4 coups</li>
     </ul>
-    
+    <h4 style="color: var(--primary); margin-bottom: 8px;">📐 Schéma des zones</h4>
     <div style="display: flex; justify-content: center; margin: 15px 0;">
       <svg viewBox="-10 0 340 320" style="width: 100%; max-width: 300px; overflow: visible;">
         <g style="font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700; fill: var(--text-main);">
@@ -331,7 +331,7 @@ const RULES_DATA = {
         </g>
       </svg>
     </div>
-    
+
     <h4 style="color: var(--primary); margin-bottom: 8px;">🏆 Condition de victoire</h4>
     <p style="margin-bottom: 12px; padding: 0;">Contrairement aux autres modes, le vainqueur est le joueur qui termine le parcours avec le score le plus <strong>bas</strong> possible !</p>
 
